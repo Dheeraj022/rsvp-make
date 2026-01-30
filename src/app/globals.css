@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(240 1% 11%);
+
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(240 1% 11%);
+
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(240 1% 11%);
+
+  --color-primary: hsl(211 100% 45%);
+  --color-primary-foreground: hsl(0 0% 100%);
+
+  --color-secondary: hsl(240 4% 96%);
+  --color-secondary-foreground: hsl(240 1% 11%);
+
+  --color-muted: hsl(240 4% 96%);
+  --color-muted-foreground: hsl(240 1% 55%);
+
+  --color-accent: hsl(211 100% 45%);
+  --color-accent-foreground: hsl(0 0% 100%);
+
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+
+  --color-border: hsl(240 5.9% 90%);
+  --color-input: hsl(240 5.9% 90%);
+  --color-ring: hsl(211 100% 45%);
+
+  --radius-lg: 0.75rem;
+  --radius-md: calc(0.75rem - 2px);
+  --radius-sm: calc(0.75rem - 4px);
+
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+/* Dark mode overrides if needed, v4 handles dark mode via media queries or selectors differently, 
+   but for simplicity, we'll keep the variables responsive to light/dark scheme or class. 
+   Tailwind v4 uses CSS variables natively. */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: hsl(0 0% 0%);
+    --color-foreground: hsl(0 0% 98%);
+    --color-card: hsl(240 10% 3.9%);
+    --color-card-foreground: hsl(0 0% 98%);
+    --color-popover: hsl(240 10% 3.9%);
+    --color-popover-foreground: hsl(0 0% 98%);
+    --color-primary: hsl(211 100% 45%);
+    --color-primary-foreground: hsl(0 0% 100%);
+    --color-secondary: hsl(240 3.7% 15.9%);
+    --color-secondary-foreground: hsl(0 0% 98%);
+    --color-muted: hsl(240 3.7% 15.9%);
+    --color-muted-foreground: hsl(240 5% 64.9%);
+    --color-accent: hsl(211 100% 45%);
+    --color-accent-foreground: hsl(0 0% 98%);
+    --color-destructive: hsl(0 62.8% 30.6%);
+    --color-destructive-foreground: hsl(0 0% 98%);
+    --color-border: hsl(240 3.7% 15.9%);
+    --color-input: hsl(240 3.7% 15.9%);
+    --color-ring: hsl(211 100% 45%);
+  }
+}
+
+/* Custom Utilities */
+@layer utilities {
+  .border-border {
+    border-color: var(--color-border);
+  }
+
+  .bg-background {
+    background-color: var(--color-background);
+  }
+
+  .text-foreground {
+    color: var(--color-foreground);
+  }
+}
+
+/* Base Reset */
+@layer base {
+
+  *,
+  ::after,
+  ::before {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
