@@ -1,5 +1,7 @@
-import { X, User, FileText, Download } from "lucide-react";
+import { X, User, FileText, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import jsPDF from "jspdf";
+import { useState } from "react";
 
 type GuestDetailsModalProps = {
     guest: any;
@@ -7,9 +9,130 @@ type GuestDetailsModalProps = {
 };
 
 export default function GuestDetailsModal({ guest, onClose }: GuestDetailsModalProps) {
+    const [downloading, setDownloading] = useState(false);
+
     if (!guest) return null;
 
     const attendees = guest.attendees_data || [];
+
+    const getBase64FromUrl = async (url: string): Promise<string> => {
+        const data = await fetch(url);
+        const blob = await data.blob();
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = () => {
+                const base64data = reader.result as string;
+                resolve(base64data);
+            };
+        });
+    };
+
+    const handleDownloadPDF = async () => {
+        try {
+            setDownloading(true);
+            const doc = new jsPDF();
+            let yPos = 20;
+
+            // Title
+            doc.setFontSize(20);
+            doc.text(guest.name, 20, yPos);
+            yPos += 10;
+
+            doc.setFontSize(12);
+            doc.setTextColor(100);
+            doc.text("Guest Details & Documents", 20, yPos);
+            yPos += 20;
+
+            // Main Details
+            doc.setFontSize(10);
+            doc.setTextColor(0);
+            doc.text(`Email: ${guest.email || "-"}`, 20, yPos);
+            yPos += 7;
+            doc.text(`Phone: ${guest.phone || "-"}`, 20, yPos);
+            yPos += 7;
+            doc.text(`Status: ${guest.status}`, 20, yPos);
+            yPos += 7;
+            doc.text(`Total Guests: ${attendees.length > 0 ? attendees.length : guest.attending_count}`, 20, yPos);
+            yPos += 15;
+
+            // Message
+            if (guest.message) {
+                doc.text("Message:", 20, yPos);
+                yPos += 7;
+                const splitMessage = doc.splitTextToSize(guest.message, 170);
+                doc.setTextColor(100);
+                doc.text(splitMessage, 20, yPos);
+                yPos += (splitMessage.length * 5) + 10;
+                doc.setTextColor(0);
+            }
+
+            // Attendees
+            doc.setFontSize(14);
+            doc.text("Family Members & IDs", 20, yPos);
+            yPos += 10;
+
+            for (let i = 0; i < attendees.length; i++) {
+                const attendee = attendees[i];
+
+                // Check page break
+                if (yPos > 250) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+
+                doc.setFontSize(12);
+                doc.text(`${attendee.name} (${attendee.id_type || "No Type"})`, 20, yPos);
+                yPos += 10;
+
+                // Images
+                const imagesToAdd = [];
+                if (attendee.id_front) imagesToAdd.push({ label: "Front ID", url: attendee.id_front });
+                if (attendee.id_back) imagesToAdd.push({ label: "Back ID", url: attendee.id_back });
+
+                if (imagesToAdd.length > 0) {
+                    for (const img of imagesToAdd) {
+                        try {
+                            if (yPos > 200) {
+                                doc.addPage();
+                                yPos = 20;
+                            }
+
+                            doc.setFontSize(10);
+                            doc.setTextColor(100);
+                            doc.text(img.label, 20, yPos);
+                            yPos += 5;
+
+                            const base64 = await getBase64FromUrl(img.url);
+                            // Add image (x, y, w, h) - keeping aspect ratio roughly or fixed width
+                            doc.addImage(base64, "JPEG", 20, yPos, 80, 50);
+                            yPos += 60;
+                        } catch (err) {
+                            console.error("Error loading image for PDF", err);
+                            doc.text(`[Error loading image: ${img.label}]`, 20, yPos);
+                            yPos += 10;
+                        }
+                    }
+                } else {
+                    doc.setFontSize(10);
+                    doc.setTextColor(150);
+                    doc.text("No documents uploaded.", 20, yPos);
+                    yPos += 10;
+                }
+
+                yPos += 10; // Space between attendees
+                doc.setTextColor(0);
+            }
+
+            doc.save(`${guest.name.replace(/\s+/g, "_")}_Details.pdf`);
+
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            alert("Failed to generate PDF");
+        } finally {
+            setDownloading(false);
+        }
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
@@ -143,7 +266,11 @@ export default function GuestDetailsModal({ guest, onClose }: GuestDetailsModalP
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 flex justify-end">
+                <div className="p-6 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 flex justify-end gap-2">
+                    <Button variant="outline" onClick={handleDownloadPDF} disabled={downloading}>
+                        {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                        Download PDF
+                    </Button>
                     <Button onClick={onClose}>Close</Button>
                 </div>
             </div>
