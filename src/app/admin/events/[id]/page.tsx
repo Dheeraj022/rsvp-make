@@ -154,6 +154,18 @@ function EventDetails() {
         }
     };
 
+    const handleDeleteEvent = async () => {
+        if (!confirm("Are you sure you want to delete this event? This action cannot be undone.")) return;
+
+        try {
+            const { error } = await supabase.from("events").delete().eq("id", eventId);
+            if (error) throw error;
+            router.push("/admin/dashboard");
+        } catch (error: any) {
+            alert("Error deleting event: " + error.message);
+        }
+    };
+
     const handleExport = () => {
         const csv = Papa.unparse(guests.map(g => ({
             Name: g.name,
@@ -185,6 +197,14 @@ function EventDetails() {
         accepted: guests.filter(g => g.status === "accepted").length,
         declined: guests.filter(g => g.status === "declined").length,
         pending: guests.filter(g => g.status === "pending").length,
+    };
+
+    const handleGuestUpdate = async () => {
+        await fetchEventData(); // Refresh list
+        if (selectedGuest) {
+            const { data } = await supabase.from('guests').select('*').eq('id', selectedGuest.id).single();
+            if (data) setSelectedGuest(data);
+        }
     };
 
     if (loading) return <div className="p-10 text-center">Loading...</div>;
@@ -238,7 +258,9 @@ function EventDetails() {
                         <Button variant="outline" onClick={handleExport}>
                             <Download className="mr-2 h-4 w-4" /> Export CSV
                         </Button>
-                        {/* Future: Edit Event Button */}
+                        <Button variant="destructive" onClick={handleDeleteEvent} className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 dark:border-red-800">
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete Event
+                        </Button>
                     </div>
                 </div>
 
@@ -349,7 +371,11 @@ function EventDetails() {
                 </div>
             </div>
 
-            <GuestDetailsModal guest={selectedGuest} onClose={() => setSelectedGuest(null)} />
+            <GuestDetailsModal
+                guest={selectedGuest}
+                onClose={() => setSelectedGuest(null)}
+                onUpdate={handleGuestUpdate}
+            />
         </div>
     );
 }

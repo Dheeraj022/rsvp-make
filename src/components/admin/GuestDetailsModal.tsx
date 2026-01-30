@@ -1,15 +1,27 @@
-import { X, User, FileText, Download, Loader2 } from "lucide-react";
+import { X, User, FileText, Download, Loader2, Plus, Upload, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/lib/supabase";
 import jsPDF from "jspdf";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 type GuestDetailsModalProps = {
     guest: any;
     onClose: () => void;
+    onUpdate?: () => void;
 };
 
-export default function GuestDetailsModal({ guest, onClose }: GuestDetailsModalProps) {
+export default function GuestDetailsModal({ guest, onClose, onUpdate }: GuestDetailsModalProps) {
     const [downloading, setDownloading] = useState(false);
+    const [isAdding, setIsAdding] = useState(false);
+    const [addingLoader, setAddingLoader] = useState(false);
+
+    // New Member State
+    const [newMemberName, setNewMemberName] = useState("");
+    const [newMemberIdType, setNewMemberIdType] = useState("Aadhar Card");
+    const [frontFile, setFrontFile] = useState<File | null>(null);
+    const [backFile, setBackFile] = useState<File | null>(null);
 
     if (!guest) return null;
 
@@ -26,6 +38,102 @@ export default function GuestDetailsModal({ guest, onClose }: GuestDetailsModalP
                 resolve(base64data);
             };
         });
+    };
+
+    const getImageProperties = (base64: string): Promise<{ width: number; height: number; ratio: number }> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = base64;
+            img.onload = () => {
+                resolve({
+                    width: img.width,
+                    height: img.height,
+                    ratio: img.width / img.height
+                });
+            };
+            img.onerror = reject;
+        });
+    };
+
+    const handleAddMember = async () => {
+        if (!newMemberName.trim()) {
+            alert("Please enter a member name.");
+            return;
+        }
+
+        try {
+            setAddingLoader(true);
+            let frontUrl = "";
+            let backUrl = "";
+
+            // Upload Front ID
+            if (frontFile) {
+                const fileExt = frontFile.name.split('.').pop();
+                const fileName = `${guest.id}/${Date.now()}_front.${fileExt}`;
+                const { error: uploadError } = await supabase.storage
+                    .from('guest-ids')
+                    .upload(fileName, frontFile);
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('guest-ids')
+                    .getPublicUrl(fileName);
+
+                frontUrl = publicUrl;
+            }
+
+            // Upload Back ID
+            if (backFile) {
+                const fileExt = backFile.name.split('.').pop();
+                const fileName = `${guest.id}/${Date.now()}_back.${fileExt}`;
+                const { error: uploadError } = await supabase.storage
+                    .from('guest-ids')
+                    .upload(fileName, backFile);
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('guest-ids')
+                    .getPublicUrl(fileName);
+
+                backUrl = publicUrl;
+            }
+
+            const newMember = {
+                name: newMemberName,
+                id_type: newMemberIdType,
+                id_front: frontUrl,
+                id_back: backUrl
+            };
+
+            const updatedAttendees = [...(guest.attendees_data || []), newMember];
+
+            const { error } = await supabase
+                .from('guests')
+                .update({
+                    attendees_data: updatedAttendees,
+                    attending_count: (guest.attending_count || 1) + 1 // Optional: depending on if we want to incr count
+                    // Actually, let's keep it safe and just update array. User might not want to affect count if it's strict.
+                    // But usually adding a member means +1. Let's act like user flow.
+                })
+                .eq('id', guest.id);
+
+            if (error) throw error;
+
+            alert("Member added successfully!");
+            setIsAdding(false);
+            setNewMemberName("");
+            setFrontFile(null);
+            setBackFile(null);
+            if (onUpdate) onUpdate();
+
+        } catch (error: any) {
+            console.error("Error adding member:", error);
+            alert("Failed to add member: " + error.message);
+        } finally {
+            setAddingLoader(false);
+        }
     };
 
     const handleDownloadPDF = async () => {
@@ -75,7 +183,7 @@ export default function GuestDetailsModal({ guest, onClose }: GuestDetailsModalP
             for (let i = 0; i < attendees.length; i++) {
                 const attendee = attendees[i];
 
-                // Check page break
+                // Check page break for text
                 if (yPos > 250) {
                     doc.addPage();
                     yPos = 20;
@@ -93,20 +201,44 @@ export default function GuestDetailsModal({ guest, onClose }: GuestDetailsModalP
                 if (imagesToAdd.length > 0) {
                     for (const img of imagesToAdd) {
                         try {
-                            if (yPos > 200) {
+                            doc.setFontSize(10);
+                            doc.setTextColor(100);
+
+                            // Check specific space for label only first
+                            if (yPos > 270) {
                                 doc.addPage();
                                 yPos = 20;
                             }
-
-                            doc.setFontSize(10);
-                            doc.setTextColor(100);
                             doc.text(img.label, 20, yPos);
                             yPos += 5;
 
                             const base64 = await getBase64FromUrl(img.url);
-                            // Add image (x, y, w, h) - keeping aspect ratio roughly or fixed width
-                            doc.addImage(base64, "JPEG", 20, yPos, 80, 50);
-                            yPos += 60;
+                            const props = await getImageProperties(base64);
+
+                            // Calculate Dimensions
+                            const maxWidth = 100; // mm
+                            const maxHeight = 120; // mm limit
+
+                            let imgWidth = maxWidth;
+                            let imgHeight = maxWidth / props.ratio;
+
+                            // If height exceeds max, scale by height instead
+                            if (imgHeight > maxHeight) {
+                                imgHeight = maxHeight;
+                                imgWidth = imgHeight * props.ratio;
+                            }
+
+                            // Check page break for image
+                            if (yPos + imgHeight > 280) {
+                                doc.addPage();
+                                yPos = 20;
+                                // Reprint label since we moved to new page
+                                doc.text(`${img.label} (cont.)`, 20, yPos);
+                                yPos += 5;
+                            }
+
+                            doc.addImage(base64, "JPEG", 20, yPos, imgWidth, imgHeight);
+                            yPos += imgHeight + 10;
                         } catch (err) {
                             console.error("Error loading image for PDF", err);
                             doc.text(`[Error loading image: ${img.label}]`, 20, yPos);
@@ -198,10 +330,65 @@ export default function GuestDetailsModal({ guest, onClose }: GuestDetailsModalP
 
                     {/* Attendees & IDs */}
                     <div className="space-y-4">
-                        <h3 className="font-medium text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                            <User className="w-4 h-4" />
-                            Family Members & IDs
-                        </h3>
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-medium text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                                <User className="w-4 h-4" />
+                                Family Members & IDs
+                            </h3>
+                            <Button size="sm" variant="outline" onClick={() => setIsAdding(!isAdding)}>
+                                <Plus className="w-4 h-4 mr-1" /> Add Member
+                            </Button>
+                        </div>
+
+                        {/* Add Member Form */}
+                        {isAdding && (
+                            <div className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 space-y-4 animate-in slide-in-from-top-2">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Full Name</Label>
+                                        <Input
+                                            placeholder="Enter name"
+                                            value={newMemberName}
+                                            onChange={(e) => setNewMemberName(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>ID Type</Label>
+                                        <select
+                                            className="flex h-9 w-full rounded-md border border-zinc-200 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:focus-visible:ring-zinc-300"
+                                            value={newMemberIdType}
+                                            onChange={(e) => setNewMemberIdType(e.target.value)}
+                                        >
+                                            <option value="Aadhar Card">Aadhar Card</option>
+                                            <option value="Passport">Passport</option>
+                                            <option value="Pan Card">Pan Card</option>
+                                            <option value="Driving License">Driving License</option>
+                                            <option value="Voter ID">Voter ID</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Front ID</Label>
+                                        <Input type="file" onChange={(e) => setFrontFile(e.target.files?.[0] || null)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Back ID</Label>
+                                        <Input type="file" onChange={(e) => setBackFile(e.target.files?.[0] || null)} />
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end gap-2 pt-2">
+                                    <Button variant="ghost" size="sm" onClick={() => setIsAdding(false)}>Cancel</Button>
+                                    <Button size="sm" onClick={handleAddMember} disabled={addingLoader}>
+                                        {addingLoader ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                        Save Member
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
 
                         {attendees.length === 0 ? (
                             <div className="text-center py-8 bg-zinc-50 dark:bg-zinc-800/30 rounded-xl text-zinc-500 text-sm">
