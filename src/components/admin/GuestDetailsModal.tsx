@@ -10,9 +10,10 @@ type GuestDetailsModalProps = {
     guest: any;
     onClose: () => void;
     onUpdate?: () => void;
+    readonly?: boolean;
 };
 
-export default function GuestDetailsModal({ guest, onClose, onUpdate }: GuestDetailsModalProps) {
+export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly }: GuestDetailsModalProps) {
     const [downloading, setDownloading] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
     const [addingLoader, setAddingLoader] = useState(false);
@@ -133,6 +134,33 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate }: GuestDet
             alert("Failed to add member: " + error.message);
         } finally {
             setAddingLoader(false);
+        }
+    };
+
+
+    const handleDeleteMember = async (index: number) => {
+        if (!confirm("Are you sure you want to delete this member? This cannot be undone.")) return;
+
+        try {
+            const updatedAttendees = [...(guest.attendees_data || [])];
+            updatedAttendees.splice(index, 1);
+
+            const { error } = await supabase
+                .from('guests')
+                .update({
+                    attendees_data: updatedAttendees,
+                    attending_count: Math.max((guest.attending_count || 1) - 1, 0)
+                })
+                .eq('id', guest.id);
+
+            if (error) throw error;
+
+            alert("Member deleted successfully.");
+            if (onUpdate) onUpdate();
+
+        } catch (error: any) {
+            console.error("Error deleting member:", error);
+            alert("Failed to delete member: " + error.message);
         }
     };
 
@@ -335,13 +363,15 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate }: GuestDet
                                 <User className="w-4 h-4" />
                                 Family Members & IDs
                             </h3>
-                            <Button size="sm" variant="outline" onClick={() => setIsAdding(!isAdding)}>
-                                <Plus className="w-4 h-4 mr-1" /> Add Member
-                            </Button>
+                            {!readonly && (
+                                <Button size="sm" variant="outline" onClick={() => setIsAdding(!isAdding)}>
+                                    <Plus className="w-4 h-4 mr-1" /> Add Member
+                                </Button>
+                            )}
                         </div>
 
                         {/* Add Member Form */}
-                        {isAdding && (
+                        {isAdding && !readonly && (
                             <div className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 space-y-4 animate-in slide-in-from-top-2">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
@@ -403,7 +433,20 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate }: GuestDet
                                                 <p className="font-medium text-zinc-900 dark:text-zinc-100">{attendee.name}</p>
                                                 <p className="text-xs text-zinc-500">{attendee.id_type || "ID Type Not Specified"}</p>
                                             </div>
-                                            <span className="text-xs font-mono text-zinc-400">#{idx + 1}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-mono text-zinc-400">#{idx + 1}</span>
+                                                {!readonly && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-6 w-6 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                        onClick={() => handleDeleteMember(idx)}
+                                                        title="Delete Member"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4">

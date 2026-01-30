@@ -18,6 +18,8 @@ type Event = {
     date: string;
     location: string;
     slug: string;
+    assigned_hotel_email?: string;
+    assigned_hotel_name?: string;
 };
 
 type Guest = {
@@ -45,6 +47,12 @@ function EventDetails() {
     const [uploading, setUploading] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
 
+    // Hotel Assignment State
+    const [showHotelModal, setShowHotelModal] = useState(false);
+    const [hotelEmail, setHotelEmail] = useState("");
+    const [hotelName, setHotelName] = useState("");
+    const [assignLoading, setAssignLoading] = useState(false);
+
     const eventId = params.id as string;
 
     useEffect(() => {
@@ -62,6 +70,8 @@ function EventDetails() {
 
             if (eventError) throw eventError;
             setEvent(eventData);
+            setHotelEmail(eventData.assigned_hotel_email || "");
+            setHotelName(eventData.assigned_hotel_name || "");
 
             // Fetch Guests
             const { data: guestData, error: guestError } = await supabase
@@ -77,6 +87,29 @@ function EventDetails() {
             console.error("Error fetching data:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleAssignHotel = async () => {
+        setAssignLoading(true);
+        try {
+            const { error } = await supabase
+                .from("events")
+                .update({
+                    assigned_hotel_email: hotelEmail,
+                    assigned_hotel_name: hotelName
+                })
+                .eq("id", eventId);
+
+            if (error) throw error;
+
+            setEvent(prev => prev ? ({ ...prev, assigned_hotel_email: hotelEmail, assigned_hotel_name: hotelName }) : null);
+            setShowHotelModal(false);
+            alert("Hotel assigned successfully.");
+        } catch (error: any) {
+            alert("Error assigning hotel: " + error.message);
+        } finally {
+            setAssignLoading(false);
         }
     };
 
@@ -142,6 +175,10 @@ function EventDetails() {
         });
     };
 
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deletePassword, setDeletePassword] = useState("");
+    const [deleteLoading, setDeleteLoading] = useState(false);
+
     const handleDeleteGuest = async (guestId: string) => {
         if (!confirm("Are you sure you want to remove this guest?")) return;
 
@@ -154,15 +191,39 @@ function EventDetails() {
         }
     };
 
-    const handleDeleteEvent = async () => {
-        if (!confirm("Are you sure you want to delete this event? This action cannot be undone.")) return;
+    const handleDeleteEvent = () => {
+        setShowDeleteModal(true);
+    };
 
+    const executeDelete = async () => {
+        if (!deletePassword) {
+            alert("Please enter your password to confirm.");
+            return;
+        }
+
+        setDeleteLoading(true);
         try {
+            // Verify Password by attempting re-login
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user || !user.email) throw new Error("User not found");
+
+            const { error: authError } = await supabase.auth.signInWithPassword({
+                email: user.email,
+                password: deletePassword
+            });
+
+            if (authError) {
+                throw new Error("Incorrect password. Please try again.");
+            }
+
+            // Proceed with Deletion
             const { error } = await supabase.from("events").delete().eq("id", eventId);
             if (error) throw error;
+
             router.push("/admin/dashboard");
         } catch (error: any) {
-            alert("Error deleting event: " + error.message);
+            alert(error.message);
+            setDeleteLoading(false);
         }
     };
 
@@ -255,6 +316,9 @@ function EventDetails() {
                                 Copy Invite Link
                             </Button>
                         </div>
+                        <Button variant="outline" onClick={() => setShowHotelModal(true)}>
+                            Hotel Access
+                        </Button>
                         <Button variant="outline" onClick={handleExport}>
                             <Download className="mr-2 h-4 w-4" /> Export CSV
                         </Button>
@@ -376,6 +440,131 @@ function EventDetails() {
                 onClose={() => setSelectedGuest(null)}
                 onUpdate={handleGuestUpdate}
             />
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 border border-zinc-200 dark:border-zinc-800">
+                        <div className="mb-4">
+                            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Delete Event?</h3>
+                            <p className="text-zinc-500 text-sm">
+                                This action cannot be undone. All guests and data associated with this event will be permanently deleted.
+                            </p>
+                        </div>
+
+                        <div className="space-y-4 mb-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-zinc-900 dark:text-zinc-300">
+                                    Enter Admin Password to Confirm
+                                </label>
+                                <Input
+                                    type="password"
+                                    placeholder="Password"
+                                    value={deletePassword}
+                                    onChange={(e) => setDeletePassword(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <Button variant="ghost" onClick={() => {
+                                setShowDeleteModal(false);
+                                setDeletePassword("");
+                            }}>
+                                Cancel
+                            </Button>
+                            <Button variant="destructive" onClick={executeDelete} disabled={deleteLoading}>
+                                {deleteLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                                Delete Forever
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Hotel Assignment Modal */}
+            {showHotelModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 border border-zinc-200 dark:border-zinc-800">
+                        <div className="mb-4">
+                            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Assign Hotel Access</h3>
+                            <p className="text-zinc-500 text-sm">
+                                Enter the email address of the hotel partner. They will be able to view the guest list and download data.
+                            </p>
+                        </div>
+
+                        <div className="space-y-4 mb-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-zinc-900 dark:text-zinc-300">
+                                    Hotel Name (Optional)
+                                </label>
+                                <Input
+                                    type="text"
+                                    placeholder="e.g. Grand Hyatt Goa"
+                                    value={hotelName}
+                                    onChange={(e) => setHotelName(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-zinc-900 dark:text-zinc-300">
+                                    Hotel Email Address
+                                </label>
+                                <Input
+                                    type="email"
+                                    placeholder="hotel@example.com"
+                                    value={hotelEmail}
+                                    onChange={(e) => setHotelEmail(e.target.value)}
+                                />
+                                {event?.assigned_hotel_email && (
+                                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                                        Currently assigned to: <span className="font-semibold">
+                                            {event.assigned_hotel_name ? (
+                                                <>{event.assigned_hotel_name} <span className="font-normal text-zinc-500 dark:text-zinc-400">({event.assigned_hotel_email})</span></>
+                                            ) : (
+                                                event.assigned_hotel_email
+                                            )}
+                                        </span>
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <Button variant="ghost" onClick={() => setShowHotelModal(false)}>
+                                Cancel
+                            </Button>
+                            {event?.assigned_hotel_email && (
+                                <Button
+                                    variant="destructive"
+                                    onClick={async () => {
+                                        if (!confirm("Are you sure you want to remove hotel access?")) return;
+                                        setAssignLoading(true);
+                                        try {
+                                            const { error } = await supabase.from("events").update({ assigned_hotel_email: null, assigned_hotel_name: null }).eq("id", eventId);
+                                            if (error) throw error;
+                                            setEvent(prev => prev ? ({ ...prev, assigned_hotel_email: undefined, assigned_hotel_name: undefined }) : null);
+                                            setHotelEmail("");
+                                            setHotelName("");
+                                            setShowHotelModal(false);
+                                            alert("Access removed successfully.");
+                                        } catch (e: any) {
+                                            alert(e.message);
+                                        } finally {
+                                            setAssignLoading(false);
+                                        }
+                                    }}
+                                    disabled={assignLoading}
+                                    className="mr-auto"
+                                >
+                                    Remove Access
+                                </Button>
+                            )}
+                            <Button onClick={handleAssignHotel} disabled={assignLoading}>
+                                {assignLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Save Assignment"}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
