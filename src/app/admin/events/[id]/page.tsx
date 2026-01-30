@@ -6,10 +6,11 @@ import { supabase } from "@/lib/supabase";
 import withAuth from "@/components/admin/withAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, ArrowLeft, Upload, Download, Trash2, Search, UserPlus } from "lucide-react";
+import { Loader2, ArrowLeft, Upload, Download, Trash2, Search, UserPlus, Eye } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import Papa from "papaparse";
+import GuestDetailsModal from "@/components/admin/GuestDetailsModal";
 
 type Event = {
     id: string;
@@ -39,6 +40,7 @@ function EventDetails() {
 
     const [event, setEvent] = useState<Event | null>(null);
     const [guests, setGuests] = useState<Guest[]>([]);
+    const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -329,9 +331,14 @@ function EventDetails() {
                                                 })()}
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-red-600" onClick={() => handleDeleteGuest(guest.id)}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-red-600" onClick={() => handleDeleteGuest(guest.id)}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
@@ -341,6 +348,8 @@ function EventDetails() {
                     </div>
                 </div>
             </div>
+
+            <GuestDetailsModal guest={selectedGuest} onClose={() => setSelectedGuest(null)} />
         </div>
     );
 }
