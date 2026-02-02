@@ -335,7 +335,12 @@ export default function PublicEventPage() {
                                 </div>
 
                                 <div className="space-y-4 border rounded-lg p-4 bg-zinc-50 dark:bg-zinc-800/50">
-                                    <h3 className="font-medium">Travel Details (Optional)</h3>
+                                    <div className="space-y-1">
+                                        <h3 className="font-medium">Travel Details (Optional)</h3>
+                                        <p className="text-xs text-zinc-500">
+                                            Guests are requested to mention their departure time at least 4 hours prior to departure
+                                        </p>
+                                    </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label>Arrival Location</Label>
