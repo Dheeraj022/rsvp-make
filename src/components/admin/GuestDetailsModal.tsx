@@ -187,7 +187,7 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                 }
 
                 // Travel Details (Right Side below Event Details)
-                if (guest.pickup_location || guest.drop_location) {
+                if (guest.arrival_location || guest.departure_location) {
                     let rightY = 40;
                     doc.setFontSize(10);
                     doc.setTextColor(100);
@@ -195,22 +195,22 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                     rightY += 6;
                     doc.setTextColor(0);
 
-                    if (guest.pickup_location) {
-                        doc.text(`Pickup: ${guest.pickup_location}`, pageWidth - 20, rightY, { align: "right" });
+                    if (guest.arrival_location) {
+                        doc.text(`Arrival: ${guest.arrival_location}`, pageWidth - 20, rightY, { align: "right" });
                         rightY += 5;
-                        if (guest.pickup_date) {
-                            doc.text(format(new Date(guest.pickup_date), "MMM d, h:mm a"), pageWidth - 20, rightY, { align: "right" });
+                        if (guest.arrival_date) {
+                            doc.text(format(new Date(guest.arrival_date), "MMM d, h:mm a"), pageWidth - 20, rightY, { align: "right" });
                             rightY += 6;
                         }
                     }
                     // Add a small spacer if both exist
-                    if (guest.pickup_location && guest.drop_location) rightY += 2;
+                    if (guest.arrival_location && guest.departure_location) rightY += 2;
 
-                    if (guest.drop_location) {
-                        doc.text(`Drop: ${guest.drop_location}`, pageWidth - 20, rightY, { align: "right" });
+                    if (guest.departure_location) {
+                        doc.text(`Departure: ${guest.departure_location}`, pageWidth - 20, rightY, { align: "right" });
                         rightY += 5;
-                        if (guest.drop_date) {
-                            doc.text(format(new Date(guest.drop_date), "MMM d, h:mm a"), pageWidth - 20, rightY, { align: "right" });
+                        if (guest.departure_date) {
+                            doc.text(format(new Date(guest.departure_date), "MMM d, h:mm a"), pageWidth - 20, rightY, { align: "right" });
                         }
                     }
                 }
@@ -283,9 +283,6 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                                 doc.addPage();
                                 yPos = 20;
                             }
-                            doc.text(img.label, 20, yPos);
-                            yPos += 5;
-
                             doc.text(img.label, 20, yPos);
                             yPos += 5;
 
@@ -387,24 +384,24 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                     </div>
 
                     {/* Travel Details */}
-                    {(guest.pickup_location || guest.drop_location) && (
+                    {(guest.arrival_location || guest.departure_location) && (
                         <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-4 space-y-3">
                             <h3 className="font-medium text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                                 <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Travel Details</span>
                             </h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                                {guest.pickup_location && (
+                                {guest.arrival_location && (
                                     <div>
-                                        <span className="text-zinc-500 block text-xs">Pickup</span>
-                                        <p className="font-medium text-zinc-900 dark:text-zinc-100">{guest.pickup_location}</p>
-                                        {guest.pickup_date && <p className="text-zinc-500 text-xs">{format(new Date(guest.pickup_date), "MMMM d, h:mm a")}</p>}
+                                        <span className="text-zinc-500 block text-xs">Arrival</span>
+                                        <p className="font-medium text-zinc-900 dark:text-zinc-100">{guest.arrival_location}</p>
+                                        {guest.arrival_date && <p className="text-zinc-500 text-xs">{format(new Date(guest.arrival_date), "MMMM d, h:mm a")}</p>}
                                     </div>
                                 )}
-                                {guest.drop_location && (
+                                {guest.departure_location && (
                                     <div>
-                                        <span className="text-zinc-500 block text-xs">Drop</span>
-                                        <p className="font-medium text-zinc-900 dark:text-zinc-100">{guest.drop_location}</p>
-                                        {guest.drop_date && <p className="text-zinc-500 text-xs">{format(new Date(guest.drop_date), "MMMM d, h:mm a")}</p>}
+                                        <span className="text-zinc-500 block text-xs">Departure</span>
+                                        <p className="font-medium text-zinc-900 dark:text-zinc-100">{guest.departure_location}</p>
+                                        {guest.departure_date && <p className="text-zinc-500 text-xs">{format(new Date(guest.departure_date), "MMMM d, h:mm a")}</p>}
                                     </div>
                                 )}
                             </div>

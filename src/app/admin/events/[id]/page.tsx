@@ -27,10 +27,10 @@ type Guest = {
     name: string;
     email: string | null;
     phone: string | null;
-    pickup_location: string | null;
-    pickup_date: string | null;
-    drop_location: string | null;
-    drop_date: string | null;
+    arrival_location: string | null;
+    arrival_date: string | null;
+    departure_location: string | null;
+    departure_date: string | null;
     allowed_guests: number;
     status: "pending" | "accepted" | "declined";
     attending_count: number;

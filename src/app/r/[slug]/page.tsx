@@ -24,10 +24,10 @@ type Guest = {
     name: string;
     email: string | null;
     phone: string | null;
-    pickup_location: string | null;
-    pickup_date: string | null;
-    drop_location: string | null;
-    drop_date: string | null;
+    arrival_location: string | null;
+    arrival_date: string | null;
+    departure_location: string | null;
+    departure_date: string | null;
     status: string;
     allowed_guests: number;
     attending_count: number;
@@ -50,10 +50,10 @@ export default function PublicEventPage() {
     // Form State
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
-    const [pickupLocation, setPickupLocation] = useState("");
-    const [pickupDate, setPickupDate] = useState("");
-    const [dropLocation, setDropLocation] = useState("");
-    const [dropDate, setDropDate] = useState("");
+    const [arrivalLocation, setArrivalLocation] = useState("");
+    const [arrivalDate, setArrivalDate] = useState("");
+    const [departureLocation, setDepartureLocation] = useState("");
+    const [departureDate, setDepartureDate] = useState("");
     const [status, setStatus] = useState<"accepted" | "declined">("accepted");
     const [attendingCount, setAttendingCount] = useState(1);
     const [attendees, setAttendees] = useState<any[]>([]);
@@ -70,10 +70,10 @@ export default function PublicEventPage() {
         if (selectedGuest) {
             setEmail(selectedGuest.email || "");
             setPhone(selectedGuest.phone || "");
-            setPickupLocation(selectedGuest.pickup_location || "");
-            setPickupDate(selectedGuest.pickup_date || "");
-            setDropLocation(selectedGuest.drop_location || "");
-            setDropDate(selectedGuest.drop_date || "");
+            setArrivalLocation(selectedGuest.arrival_location || "");
+            setArrivalDate(selectedGuest.arrival_date || "");
+            setDepartureLocation(selectedGuest.departure_location || "");
+            setDepartureDate(selectedGuest.departure_date || "");
 
             if (status === "accepted") {
                 // Initialize attendees array if empty
@@ -179,10 +179,10 @@ export default function PublicEventPage() {
                 .update({
                     email: email,
                     phone: phone,
-                    pickup_location: pickupLocation,
-                    pickup_date: pickupDate,
-                    drop_location: dropLocation,
-                    drop_date: dropDate,
+                    arrival_location: arrivalLocation,
+                    arrival_date: arrivalDate,
+                    departure_location: departureLocation,
+                    departure_date: departureDate,
                     status: status,
                     attending_count: status === 'accepted' ? attendingCount : 0,
                     message: message,
@@ -338,35 +338,35 @@ export default function PublicEventPage() {
                                     <h3 className="font-medium">Travel Details (Optional)</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label>Pickup Location</Label>
+                                            <Label>Arrival Location</Label>
                                             <Input
                                                 placeholder="e.g. Airport, Train Station"
-                                                value={pickupLocation}
-                                                onChange={(e) => setPickupLocation(e.target.value)}
+                                                value={arrivalLocation}
+                                                onChange={(e) => setArrivalLocation(e.target.value)}
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Pickup Date & Time</Label>
+                                            <Label>Arrival Date & Time</Label>
                                             <Input
                                                 type="datetime-local"
-                                                value={pickupDate}
-                                                onChange={(e) => setPickupDate(e.target.value)}
+                                                value={arrivalDate}
+                                                onChange={(e) => setArrivalDate(e.target.value)}
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Drop Location</Label>
+                                            <Label>Departure Location</Label>
                                             <Input
                                                 placeholder="e.g. Airport, Hotel"
-                                                value={dropLocation}
-                                                onChange={(e) => setDropLocation(e.target.value)}
+                                                value={departureLocation}
+                                                onChange={(e) => setDepartureLocation(e.target.value)}
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Drop Date & Time</Label>
+                                            <Label>Departure Date & Time</Label>
                                             <Input
                                                 type="datetime-local"
-                                                value={dropDate}
-                                                onChange={(e) => setDropDate(e.target.value)}
+                                                value={departureDate}
+                                                onChange={(e) => setDepartureDate(e.target.value)}
                                             />
                                         </div>
                                     </div>
