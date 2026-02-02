@@ -5,15 +5,18 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import jsPDF from "jspdf";
 import { useState, useRef } from "react";
+import { format } from "date-fns";
 
 type GuestDetailsModalProps = {
     guest: any;
     onClose: () => void;
     onUpdate?: () => void;
     readonly?: boolean;
+    eventName?: string;
+    eventDate?: string;
 };
 
-export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly }: GuestDetailsModalProps) {
+export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, eventName, eventDate }: GuestDetailsModalProps) {
     const [downloading, setDownloading] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
     const [addingLoader, setAddingLoader] = useState(false);
@@ -173,6 +176,19 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly }
             // Title
             doc.setFontSize(20);
             doc.text(guest.name, 20, yPos);
+            
+            // Event Details (Top Right)
+            if (eventName) {
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                const pageWidth = doc.internal.pageSize.getWidth();
+                doc.text(eventName, pageWidth - 20, 20, { align: "right" });
+                if (eventDate) {
+                    doc.text(format(new Date(eventDate), "MMMM d, yyyy"), pageWidth - 20, 26, { align: "right" });
+                }
+                doc.setTextColor(0);
+            }
+
             yPos += 10;
 
             doc.setFontSize(12);

@@ -439,6 +439,8 @@ function EventDetails() {
                 guest={selectedGuest}
                 onClose={() => setSelectedGuest(null)}
                 onUpdate={handleGuestUpdate}
+                eventName={event?.name}
+                eventDate={event?.date}
             />
 
             {/* Delete Confirmation Modal */}

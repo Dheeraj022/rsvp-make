@@ -221,6 +221,8 @@ function HotelEventDetails() {
                 guest={selectedGuest}
                 onClose={() => setSelectedGuest(null)}
                 readonly={true}
+                eventName={event?.name}
+                eventDate={event?.date}
             />
         </div>
     );
