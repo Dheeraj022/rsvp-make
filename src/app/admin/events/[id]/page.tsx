@@ -395,7 +395,7 @@ function EventDetails() {
                                     filteredGuests.map((guest) => (
                                         <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                                             <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{guest.name}</td>
-                                            <td className="px-6 py-4 text-zinc-500">{guest.email || guest.phone || "-"}</td>
+                                            <td className="px-6 py-4 text-zinc-500">{guest.phone || "-"}</td>
                                             <td className="px-6 py-4">
                                                 {guest.status === 'accepted' && guest.attendees_data && guest.attendees_data.some((a: any) => a.id_front || a.id_back) ? (
                                                     <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
