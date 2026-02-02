@@ -13,6 +13,7 @@ export default function HotelSignup() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const router = useRouter();
 
     const handleSignup = async (e: React.FormEvent) => {
@@ -30,8 +31,8 @@ export default function HotelSignup() {
                 throw error;
             }
 
-            alert("Account created successfully! Please sign in.");
-            router.push("/hotel/login");
+            setSuccessMessage("Signup successful! Please check your email to confirm your account.");
+            // router.push("/hotel/login"); // Stay on page to show message
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -73,11 +74,12 @@ export default function HotelSignup() {
                         />
                     </div>
 
+                    {/* Errors and Success messages moved below button */}{/* 
                     {error && (
                         <div className="text-sm text-red-500 text-center bg-red-50 dark:bg-red-900/20 p-2 rounded-md">
                             {error}
                         </div>
-                    )}
+                    )} */}
 
                     <Button
                         type="submit"
@@ -86,6 +88,18 @@ export default function HotelSignup() {
                     >
                         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sign Up"}
                     </Button>
+
+                    {error && (
+                        <div className="text-sm text-red-500 text-center bg-red-50 dark:bg-red-900/20 p-2 rounded-md">
+                            {error}
+                        </div>
+                    )}
+
+                    {successMessage && (
+                        <div className="text-sm text-green-600 text-center bg-green-50 dark:bg-green-900/20 p-2 rounded-md">
+                            {successMessage}
+                        </div>
+                    )}
 
                     <div className="text-center text-sm">
                         <Link href="/hotel/login" className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 underline">
