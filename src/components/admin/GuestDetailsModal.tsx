@@ -31,31 +31,30 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
 
     const attendees = guest.attendees_data || [];
 
-    const getBase64FromUrl = async (url: string): Promise<string> => {
-        const data = await fetch(url);
-        const blob = await data.blob();
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(blob);
-            reader.onloadend = () => {
-                const base64data = reader.result as string;
-                resolve(base64data);
-            };
-        });
-    };
-
-    const getImageProperties = (base64: string): Promise<{ width: number; height: number; ratio: number }> => {
+    const getNormalizedImage = (url: string): Promise<{ base64: string; width: number; height: number; ratio: number }> => {
         return new Promise((resolve, reject) => {
             const img = new Image();
-            img.src = base64;
+            img.crossOrigin = "Anonymous"; // Handle CORS
+            img.src = url;
             img.onload = () => {
+                const canvas = document.createElement("canvas");
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext("2d");
+                if (!ctx) {
+                    reject(new Error("Could not get canvas context"));
+                    return;
+                }
+                ctx.drawImage(img, 0, 0);
+                const base64 = canvas.toDataURL("image/jpeg", 0.95); // Convert to JPEG with good quality
                 resolve({
+                    base64,
                     width: img.width,
                     height: img.height,
                     ratio: img.width / img.height
                 });
             };
-            img.onerror = reject;
+            img.onerror = (err) => reject(err);
         });
     };
 
@@ -287,20 +286,22 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                             doc.text(img.label, 20, yPos);
                             yPos += 5;
 
-                            const base64 = await getBase64FromUrl(img.url);
-                            const props = await getImageProperties(base64);
+                            doc.text(img.label, 20, yPos);
+                            yPos += 5;
+
+                            const { base64, width, height, ratio } = await getNormalizedImage(img.url);
 
                             // Calculate Dimensions
                             const maxWidth = 100; // mm
                             const maxHeight = 120; // mm limit
 
                             let imgWidth = maxWidth;
-                            let imgHeight = maxWidth / props.ratio;
+                            let imgHeight = maxWidth / ratio;
 
                             // If height exceeds max, scale by height instead
                             if (imgHeight > maxHeight) {
                                 imgHeight = maxHeight;
-                                imgWidth = imgHeight * props.ratio;
+                                imgWidth = imgHeight * ratio;
                             }
 
                             // Check page break for image
