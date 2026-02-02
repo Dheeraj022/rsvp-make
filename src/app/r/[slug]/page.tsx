@@ -24,6 +24,10 @@ type Guest = {
     name: string;
     email: string | null;
     phone: string | null;
+    pickup_location: string | null;
+    pickup_date: string | null;
+    drop_location: string | null;
+    drop_date: string | null;
     status: string;
     allowed_guests: number;
     attending_count: number;
@@ -46,6 +50,10 @@ export default function PublicEventPage() {
     // Form State
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
+    const [pickupLocation, setPickupLocation] = useState("");
+    const [pickupDate, setPickupDate] = useState("");
+    const [dropLocation, setDropLocation] = useState("");
+    const [dropDate, setDropDate] = useState("");
     const [status, setStatus] = useState<"accepted" | "declined">("accepted");
     const [attendingCount, setAttendingCount] = useState(1);
     const [attendees, setAttendees] = useState<any[]>([]);
@@ -62,6 +70,10 @@ export default function PublicEventPage() {
         if (selectedGuest) {
             setEmail(selectedGuest.email || "");
             setPhone(selectedGuest.phone || "");
+            setPickupLocation(selectedGuest.pickup_location || "");
+            setPickupDate(selectedGuest.pickup_date || "");
+            setDropLocation(selectedGuest.drop_location || "");
+            setDropDate(selectedGuest.drop_date || "");
 
             if (status === "accepted") {
                 // Initialize attendees array if empty
@@ -167,6 +179,10 @@ export default function PublicEventPage() {
                 .update({
                     email: email,
                     phone: phone,
+                    pickup_location: pickupLocation,
+                    pickup_date: pickupDate,
+                    drop_location: dropLocation,
+                    drop_date: dropDate,
                     status: status,
                     attending_count: status === 'accepted' ? attendingCount : 0,
                     message: message,
@@ -315,6 +331,44 @@ export default function PublicEventPage() {
                                             value={phone}
                                             onChange={(e) => setPhone(e.target.value)}
                                         />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 border rounded-lg p-4 bg-zinc-50 dark:bg-zinc-800/50">
+                                    <h3 className="font-medium">Travel Details (Optional)</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Pickup Location</Label>
+                                            <Input
+                                                placeholder="e.g. Airport, Train Station"
+                                                value={pickupLocation}
+                                                onChange={(e) => setPickupLocation(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Pickup Date & Time</Label>
+                                            <Input
+                                                type="datetime-local"
+                                                value={pickupDate}
+                                                onChange={(e) => setPickupDate(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Drop Location</Label>
+                                            <Input
+                                                placeholder="e.g. Airport, Hotel"
+                                                value={dropLocation}
+                                                onChange={(e) => setDropLocation(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Drop Date & Time</Label>
+                                            <Input
+                                                type="datetime-local"
+                                                value={dropDate}
+                                                onChange={(e) => setDropDate(e.target.value)}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
