@@ -22,6 +22,8 @@ type Event = {
 type Guest = {
     id: string;
     name: string;
+    email: string | null;
+    phone: string | null;
     status: string;
     allowed_guests: number;
     attending_count: number;
@@ -42,6 +44,8 @@ export default function PublicEventPage() {
     const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
 
     // Form State
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
     const [status, setStatus] = useState<"accepted" | "declined">("accepted");
     const [attendingCount, setAttendingCount] = useState(1);
     const [attendees, setAttendees] = useState<any[]>([]);
@@ -55,17 +59,22 @@ export default function PublicEventPage() {
     }, [slug]);
 
     useEffect(() => {
-        if (selectedGuest && status === "accepted") {
-            // Initialize attendees array if empty
-            setAttendees(prev => {
-                if (prev.length > 0) return prev; // Don't overwrite if already modified
-                return [{
-                    name: selectedGuest.name,
-                    id_type: "Aadhar Card",
-                    id_front: "",
-                    id_back: ""
-                }];
-            });
+        if (selectedGuest) {
+            setEmail(selectedGuest.email || "");
+            setPhone(selectedGuest.phone || "");
+
+            if (status === "accepted") {
+                // Initialize attendees array if empty
+                setAttendees(prev => {
+                    if (prev.length > 0) return prev; // Don't overwrite if already modified
+                    return [{
+                        name: selectedGuest.name,
+                        id_type: "Aadhar Card",
+                        id_front: "",
+                        id_back: ""
+                    }];
+                });
+            }
         }
     }, [selectedGuest, status]);
 
@@ -156,6 +165,8 @@ export default function PublicEventPage() {
             const { error } = await supabase
                 .from("guests")
                 .update({
+                    email: email,
+                    phone: phone,
                     status: status,
                     attending_count: status === 'accepted' ? attendingCount : 0,
                     message: message,
@@ -285,6 +296,27 @@ export default function PublicEventPage() {
                             </div>
 
                             <form onSubmit={handleSubmitRSVP} className="space-y-6">
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Email</Label>
+                                        <Input
+                                            type="email"
+                                            placeholder="your@email.com"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Phone</Label>
+                                        <Input
+                                            type="tel"
+                                            placeholder="Your phone number"
+                                            value={phone}
+                                            onChange={(e) => setPhone(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
 
 
 
