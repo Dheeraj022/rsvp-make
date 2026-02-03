@@ -35,6 +35,17 @@ type Guest = {
     status: "pending" | "accepted" | "declined";
     attending_count: number;
     attendees_data?: any[];
+    departure_details?: {
+        departure_date?: string;
+        departure_time?: string;
+        travelers?: Array<{
+            name: string;
+            mode_of_travel: string;
+            station_airport?: string;
+            ticket_url: string;
+        }>;
+        message?: string;
+    };
 };
 
 function EventDetails() {
@@ -50,6 +61,8 @@ function EventDetails() {
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [activeTab, setActiveTab] = useState<"guests" | "departure">("guests");
+
 
     // Hotel Assignment State
     const [showHotelModal, setShowHotelModal] = useState(false);
@@ -252,6 +265,49 @@ function EventDetails() {
         document.body.removeChild(link);
     };
 
+    const handleExportDeparture = () => {
+        // Get all guests with departure details
+        const guestsWithDeparture = guests.filter(g => g.departure_details);
+
+        // Flatten data for export
+        const exportData = guestsWithDeparture.flatMap(guest => {
+            const departureData = guest.departure_details;
+            const travelers = departureData?.travelers || [];
+
+            if (travelers.length === 0) {
+                return [{
+                    Name: guest.name,
+                    "Departure Date": departureData?.departure_date ? format(new Date(departureData.departure_date), "MMM d, yyyy") : "-",
+                    "Departure Time": departureData?.departure_time || "-",
+                    "Mode of Travel": "-",
+                    "No of Pax": "0",
+                    Contact: guest.phone || "-"
+                }];
+            }
+
+            return travelers.map((traveler: any, idx: number) => ({
+                Name: `${traveler.name} (${guest.name})`,
+                "Departure Date": departureData?.departure_date ? format(new Date(departureData.departure_date), "MMM d, yyyy") : "-",
+                "Departure Time": departureData?.departure_time || "-",
+                "Station/Airport": traveler.station_airport || "-",
+                "Mode of Travel": traveler.mode_of_travel || "-",
+                "No of Pax": travelers.length.toString(),
+                Contact: guest.phone || "-"
+            }));
+        });
+
+        const csv = Papa.unparse(exportData);
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `${event?.name || "departure"}_departure_details.csv`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const filteredGuests = guests.filter(g =>
         g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         g.email?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -347,96 +403,242 @@ function EventDetails() {
                     ))}
                 </div>
 
+                {/* Tab Toggle */}
+                <div className="flex gap-2 bg-white dark:bg-zinc-900 p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm w-fit">
+                    <button
+                        onClick={() => setActiveTab("guests")}
+                        className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-200 ${activeTab === "guests"
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            }`}
+                    >
+                        Guest Details
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("departure")}
+                        className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-200 ${activeTab === "departure"
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            }`}
+                    >
+                        Departure Details
+                    </button>
+                </div>
+
                 {/* Guest Management */}
-                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                    <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row gap-4 justify-between items-center">
-                        <h2 className="text-lg font-semibold">Guest List</h2>
-                        <div className="flex gap-2 w-full sm:w-auto">
-                            <div className="relative flex-1 sm:w-64">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-400" />
-                                <Input
-                                    placeholder="Search guests..."
-                                    className="pl-9"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
+                {activeTab === "guests" && (
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                        <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                            <h2 className="text-lg font-semibold">Guest List</h2>
+                            <div className="flex gap-2 w-full sm:w-auto">
+                                <div className="relative flex-1 sm:w-64">
+                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-400" />
+                                    <Input
+                                        placeholder="Search guests..."
+                                        className="pl-9"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                                <div className="relative">
+                                    <input
+                                        type="file"
+                                        accept=".csv"
+                                        className="hidden"
+                                        ref={fileInputRef}
+                                        onChange={handleFileUpload}
+                                    />
+                                    <Button onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                                        {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                                        Import CSV
+                                    </Button>
+                                </div>
                             </div>
-                            <div className="relative">
-                                <input
-                                    type="file"
-                                    accept=".csv"
-                                    className="hidden"
-                                    ref={fileInputRef}
-                                    onChange={handleFileUpload}
-                                />
-                                <Button onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                                    {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                                    Import CSV
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="text-zinc-500 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/50">
+                                    <tr>
+                                        <th className="px-6 py-3 font-medium">Name</th>
+                                        <th className="px-6 py-3 font-medium">Contact</th>
+                                        <th className="px-6 py-3 font-medium">Status</th>
+                                        <th className="px-6 py-3 font-medium">Guests</th>
+                                        <th className="px-6 py-3 font-medium text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                                    {filteredGuests.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-8 text-center text-zinc-500">
+                                                No guests found. Import a CSV to get started.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        filteredGuests.map((guest) => (
+                                            <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                                <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{guest.name}</td>
+                                                <td className="px-6 py-4 text-zinc-500">{guest.phone || "-"}</td>
+                                                <td className="px-6 py-4">
+                                                    {guest.status === 'accepted' && guest.attendees_data && guest.attendees_data.some((a: any) => a.id_front || a.id_back) ? (
+                                                        <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                                            Docs Uploaded
+                                                        </span>
+                                                    ) : (
+                                                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium capitalize 
+                                                ${guest.status === 'accepted' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                                guest.status === 'declined' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                                                    'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                                                            {guest.status}
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-zinc-500">
+                                                    {(() => {
+                                                        const docCount = guest.attendees_data?.filter((a: any) => a.id_front || a.id_back).length || 0;
+                                                        return `${docCount} Docs Uploaded`;
+                                                    })()}
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-red-600" onClick={() => handleDeleteGuest(guest.id)}>
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* Departure Details Table */}
+                {activeTab === "departure" && (
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                        <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                            <h2 className="text-lg font-semibold">Departure Details</h2>
+                            <div className="flex gap-2 w-full sm:w-auto">
+                                <div className="relative flex-1 sm:w-64">
+                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-400" />
+                                    <Input
+                                        placeholder="Search guests..."
+                                        className="pl-9"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                                <Button variant="outline" onClick={handleExportDeparture}>
+                                    <Download className="mr-2 h-4 w-4" /> Export CSV
                                 </Button>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="text-zinc-500 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/50">
-                                <tr>
-                                    <th className="px-6 py-3 font-medium">Name</th>
-                                    <th className="px-6 py-3 font-medium">Contact</th>
-                                    <th className="px-6 py-3 font-medium">Status</th>
-                                    <th className="px-6 py-3 font-medium">Guests</th>
-                                    <th className="px-6 py-3 font-medium text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                                {filteredGuests.length === 0 ? (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="text-zinc-500 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/50">
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-8 text-center text-zinc-500">
-                                            No guests found. Import a CSV to get started.
-                                        </td>
+                                        <th className="px-6 py-3 font-medium">Guest Name</th>
+                                        <th className="px-6 py-3 font-medium">Departure Date</th>
+                                        <th className="px-6 py-3 font-medium">Time</th>
+                                        <th className="px-6 py-3 font-medium">Station/Airport</th>
+                                        <th className="px-6 py-3 font-medium">Travel Mode</th>
+                                        <th className="px-6 py-3 font-medium">Ticket</th>
+                                        <th className="px-6 py-3 font-medium text-right">Actions</th>
                                     </tr>
-                                ) : (
-                                    filteredGuests.map((guest) => (
-                                        <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                            <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{guest.name}</td>
-                                            <td className="px-6 py-4 text-zinc-500">{guest.phone || "-"}</td>
-                                            <td className="px-6 py-4">
-                                                {guest.status === 'accepted' && guest.attendees_data && guest.attendees_data.some((a: any) => a.id_front || a.id_back) ? (
-                                                    <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                                                        Docs Uploaded
-                                                    </span>
-                                                ) : (
-                                                    <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium capitalize 
-                                                ${guest.status === 'accepted' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                                            guest.status === 'declined' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                                                'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}`}>
-                                                        {guest.status}
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 text-zinc-500">
-                                                {(() => {
-                                                    const docCount = guest.attendees_data?.filter((a: any) => a.id_front || a.id_back).length || 0;
-                                                    return `${docCount} Docs Uploaded`;
-                                                })()}
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-red-600" onClick={() => handleDeleteGuest(guest.id)}>
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                                    {(() => {
+                                        const guestsWithDeparture = filteredGuests.filter(g => g.departure_details);
+
+                                        if (guestsWithDeparture.length === 0) {
+                                            return (
+                                                <tr>
+                                                    <td colSpan={7} className="px-6 py-8 text-center text-zinc-500">
+                                                        No departure details submitted yet.
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }
+
+                                        return guestsWithDeparture.flatMap((guest: any) => {
+                                            const departureData = guest.departure_details;
+                                            const travelers = departureData?.travelers || [];
+
+                                            if (travelers.length === 0) {
+                                                return (
+                                                    <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                                        <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{guest.name}</td>
+                                                        <td className="px-6 py-4 text-zinc-500">
+                                                            {departureData?.departure_date ? format(new Date(departureData.departure_date), "MMM d, yyyy") : "-"}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-zinc-500">
+                                                            {departureData?.departure_time || "-"}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-zinc-500">-</td>
+                                                        <td className="px-6 py-4 text-zinc-500">-</td>
+                                                        <td className="px-6 py-4 text-right">
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
+                                                                <Eye className="h-4 w-4" />
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            }
+
+                                            return travelers.map((traveler: any, idx: number) => (
+                                                <tr key={`${guest.id}-${idx}`} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                                    <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
+                                                        {traveler.name}
+                                                        <span className="ml-2 text-xs text-zinc-500">({guest.name})</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-zinc-500">
+                                                        {departureData?.departure_date ? format(new Date(departureData.departure_date), "MMM d, yyyy") : "-"}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-zinc-500">
+                                                        {departureData?.departure_time || "-"}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-zinc-500">
+                                                        {traveler.station_airport || "-"}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${traveler.mode_of_travel === "By Air" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
+                                                            traveler.mode_of_travel === "Train" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                                                                "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
+                                                            }`}>
+                                                            {traveler.mode_of_travel || "-"}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {traveler.ticket_url ? (
+                                                            <a href={traveler.ticket_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 text-xs font-medium">
+                                                                View Ticket
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-zinc-400 text-xs">No ticket</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        {idx === 0 && (
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
+                                                                <Eye className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ));
+                                        });
+                                    })()}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             <GuestDetailsModal
