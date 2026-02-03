@@ -52,8 +52,6 @@ export default function PublicEventPage() {
     const [phone, setPhone] = useState("");
     const [arrivalLocation, setArrivalLocation] = useState("");
     const [arrivalDate, setArrivalDate] = useState("");
-    const [departureLocation, setDepartureLocation] = useState("");
-    const [departureDate, setDepartureDate] = useState("");
     const [status, setStatus] = useState<"accepted" | "declined">("accepted");
     const [attendingCount, setAttendingCount] = useState(1);
     const [attendees, setAttendees] = useState<any[]>([]);
@@ -72,8 +70,6 @@ export default function PublicEventPage() {
             setPhone(selectedGuest.phone || "");
             setArrivalLocation(selectedGuest.arrival_location || "");
             setArrivalDate(selectedGuest.arrival_date || "");
-            setDepartureLocation(selectedGuest.departure_location || "");
-            setDepartureDate(selectedGuest.departure_date || "");
 
             if (status === "accepted") {
                 // Initialize attendees array if empty
@@ -181,8 +177,6 @@ export default function PublicEventPage() {
                     phone: phone,
                     arrival_location: arrivalLocation,
                     arrival_date: arrivalDate,
-                    departure_location: departureLocation,
-                    departure_date: departureDate,
                     status: status,
                     attending_count: status === 'accepted' ? attendingCount : 0,
                     message: message,
@@ -338,7 +332,7 @@ export default function PublicEventPage() {
                                     <div className="space-y-1">
                                         <h3 className="font-medium">Travel Details (Optional)</h3>
                                         <p className="text-xs text-zinc-500">
-                                            Guests are requested to mention their departure time at least 4 hours prior to departure
+
                                         </p>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -356,22 +350,6 @@ export default function PublicEventPage() {
                                                 type="datetime-local"
                                                 value={arrivalDate}
                                                 onChange={(e) => setArrivalDate(e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Departure Location</Label>
-                                            <Input
-                                                placeholder="e.g. Airport, Hotel"
-                                                value={departureLocation}
-                                                onChange={(e) => setDepartureLocation(e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Departure Date & Time</Label>
-                                            <Input
-                                                type="datetime-local"
-                                                value={departureDate}
-                                                onChange={(e) => setDepartureDate(e.target.value)}
                                             />
                                         </div>
                                     </div>
