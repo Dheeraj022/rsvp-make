@@ -279,6 +279,7 @@ function EventDetails() {
                     Name: guest.name,
                     "Departure Date": departureData?.departure_date ? format(new Date(departureData.departure_date), "MMM d, yyyy") : "-",
                     "Departure Time": departureData?.departure_time || "-",
+                    "Station/Airport": "-",
                     "Mode of Travel": "-",
                     "No of Pax": "0",
                     Contact: guest.phone || "-"
