@@ -40,6 +40,7 @@ export default function PublicEventPage() {
     const [event, setEvent] = useState<Event | null>(null);
     const [loading, setLoading] = useState(true);
     const [step, setStep] = useState<"landing" | "search" | "form" | "success" | "departure">("landing");
+    const [activeSection, setActiveSection] = useState<"rsvp" | "departure">("rsvp"); // New state for section toggle
 
     // Search State
     const [searchQuery, setSearchQuery] = useState("");
@@ -161,6 +162,7 @@ export default function PublicEventPage() {
         }
     };
 
+
     const handleSubmitRSVP = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedGuest) return;
@@ -195,7 +197,40 @@ export default function PublicEventPage() {
                 .eq("id", selectedGuest.id);
 
             if (error) throw error;
-            setStep("success");
+
+            // Refetch guest data to get the latest departure_details
+            const { data: updatedGuest } = await supabase
+                .from("guests")
+                .select("*")
+                .eq("id", selectedGuest.id)
+                .single();
+
+            if (updatedGuest) {
+                setSelectedGuest(updatedGuest);
+            }
+
+            // Check if departure details are already filled
+            const hasDepartureDetails = updatedGuest?.departure_details &&
+                updatedGuest.departure_details.travelers &&
+                updatedGuest.departure_details.travelers.length > 0;
+
+            if (status === 'accepted' && !hasDepartureDetails) {
+                // Initialize departure travelers from attendees
+                const travelers = attendees.map((attendee) => ({
+                    name: attendee.name,
+                    mode_of_travel: "",
+                    station_airport: "",
+                    ticket_url: ""
+                }));
+                setDepartureTravelers(travelers);
+
+                // Switch to departure section instead of showing success
+                setActiveSection("departure");
+                alert("RSVP submitted successfully! Please complete your Departure Details.");
+            } else {
+                // Show success screen if declined or departure details already exist
+                setStep("success");
+            }
         } catch (error: any) {
             alert("Error submitting RSVP: " + error.message);
         } finally {
@@ -237,7 +272,18 @@ export default function PublicEventPage() {
         setSubmittingDeparture(true);
 
         try {
-            // Validation
+            // Validation - All fields are required
+            if (!departureDate) {
+                alert("Please select a departure date");
+                setSubmittingDeparture(false);
+                return;
+            }
+            if (!departureTime) {
+                alert("Please select a departure time");
+                setSubmittingDeparture(false);
+                return;
+            }
+
             for (let i = 0; i < departureTravelers.length; i++) {
                 const traveler = departureTravelers[i];
                 if (!traveler.name) {
@@ -245,9 +291,19 @@ export default function PublicEventPage() {
                     setSubmittingDeparture(false);
                     return;
                 }
-                // Ticket is mandatory for Train and By Air
-                if ((traveler.mode_of_travel === "Train" || traveler.mode_of_travel === "By Air") && !traveler.ticket_url) {
-                    alert(`Please upload ticket for ${traveler.name} (${traveler.mode_of_travel})`);
+                if (!traveler.mode_of_travel) {
+                    alert(`Please select mode of travel for ${traveler.name}`);
+                    setSubmittingDeparture(false);
+                    return;
+                }
+                if (!traveler.station_airport) {
+                    alert(`Please enter station/airport name for ${traveler.name}`);
+                    setSubmittingDeparture(false);
+                    return;
+                }
+                // Ticket is now mandatory for all modes of travel
+                if (!traveler.ticket_url) {
+                    alert(`Please upload ticket for ${traveler.name}`);
                     setSubmittingDeparture(false);
                     return;
                 }
@@ -390,231 +446,461 @@ export default function PublicEventPage() {
                                 <p className="text-zinc-500">Will you be joining us?</p>
                             </div>
 
-                            <form onSubmit={handleSubmitRSVP} className="space-y-6">
+                            {/* Toggle Buttons */}
+                            <div className="flex gap-2 bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-xl mb-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveSection("rsvp")}
+                                    className={`flex-1 px-6 py-2.5 rounded-lg font-medium transition-all duration-200 ${activeSection === "rsvp"
+                                        ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 shadow-sm"
+                                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                                        }`}
+                                >
+                                    RSVP
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setActiveSection("departure");
+                                        // Initialize departure travelers from attendees if not already done
+                                        if (departureTravelers.length === 0 && attendees.length > 0) {
+                                            const travelers = attendees.map((attendee) => ({
+                                                name: attendee.name,
+                                                mode_of_travel: "",
+                                                station_airport: "",
+                                                ticket_url: ""
+                                            }));
+                                            setDepartureTravelers(travelers);
+                                        }
+                                    }}
+                                    className={`flex-1 px-6 py-2.5 rounded-lg font-medium transition-all duration-200 ${activeSection === "departure"
+                                        ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 shadow-sm"
+                                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                                        }`}
+                                >
+                                    Departure
+                                </button>
+                            </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label>Email</Label>
-                                        <Input
-                                            type="email"
-                                            placeholder="your@email.com"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Phone</Label>
-                                        <Input
-                                            type="tel"
-                                            placeholder="Your phone number"
-                                            value={phone}
-                                            onChange={(e) => setPhone(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
+                            {/* RSVP Section */}
+                            {activeSection === "rsvp" && (
+                                <form onSubmit={handleSubmitRSVP} className="space-y-6">
 
-                                <div className="space-y-4 border rounded-lg p-4 bg-zinc-50 dark:bg-zinc-800/50">
-                                    <div className="space-y-1">
-                                        <h3 className="font-medium">Travel Details (Optional)</h3>
-                                        <p className="text-xs text-zinc-500">
-
-                                        </p>
-                                    </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label>Arrival Location</Label>
+                                            <Label>Email</Label>
                                             <Input
-                                                placeholder="e.g. Airport, Train Station"
-                                                value={arrivalLocation}
-                                                onChange={(e) => setArrivalLocation(e.target.value)}
+                                                type="email"
+                                                placeholder="your@email.com"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Arrival Date & Time</Label>
+                                            <Label>Phone</Label>
                                             <Input
-                                                type="datetime-local"
-                                                value={arrivalDate}
-                                                onChange={(e) => setArrivalDate(e.target.value)}
+                                                type="tel"
+                                                placeholder="Your phone number"
+                                                value={phone}
+                                                onChange={(e) => setPhone(e.target.value)}
                                             />
                                         </div>
                                     </div>
-                                </div>
 
+                                    <div className="space-y-4 border rounded-lg p-4 bg-zinc-50 dark:bg-zinc-800/50">
+                                        <div className="space-y-1">
+                                            <h3 className="font-medium">Travel Details (Optional)</h3>
+                                            <p className="text-xs text-zinc-500">
 
-
-                                <div className="space-y-6 border-zinc-100 dark:border-zinc-800">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="font-medium text-lg">Guest Details & ID Verification</h3>
-                                        <div className="text-sm text-zinc-500">
-                                            {attendees.length} Guests Attending
+                                            </p>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label>Arrival Location</Label>
+                                                <Input
+                                                    placeholder="e.g. Airport, Train Station"
+                                                    value={arrivalLocation}
+                                                    onChange={(e) => setArrivalLocation(e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Arrival Date & Time</Label>
+                                                <Input
+                                                    type="datetime-local"
+                                                    value={arrivalDate}
+                                                    onChange={(e) => setArrivalDate(e.target.value)}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {attendees.map((attendee, idx) => (
-                                        <div key={idx} className="relative p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 space-y-5">
-                                            <div className="flex items-center justify-between">
-                                                <h4 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
-                                                    {idx === 0 ? "Main Guest" : `Guest ${idx + 1}`}
-                                                </h4>
-                                                {idx > 0 && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 h-8 px-2"
-                                                        onClick={() => {
-                                                            const newA = attendees.filter((_, i) => i !== idx);
-                                                            setAttendees(newA);
-                                                            setAttendingCount(newA.length);
-                                                        }}
-                                                    >
-                                                        Remove
-                                                    </Button>
-                                                )}
-                                            </div>
 
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Full Name</Label>
-                                                <Input
-                                                    value={attendee.name}
-                                                    onChange={(e) => {
-                                                        const newA = [...attendees];
-                                                        newA[idx].name = e.target.value;
-                                                        setAttendees(newA);
-                                                    }}
-                                                    placeholder="Enter full name"
-                                                    className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 focus:border-zinc-400 dark:focus:border-zinc-500 text-base"
-                                                />
-                                            </div>
 
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">ID Document Type</Label>
-                                                <select
-                                                    className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition"
-                                                    value={attendee.id_type}
-                                                    onChange={(e) => {
-                                                        const newA = [...attendees];
-                                                        newA[idx].id_type = e.target.value;
-                                                        setAttendees(newA);
-                                                    }}
-                                                >
-                                                    <option value="Aadhar Card">Aadhar Card</option>
-                                                    <option value="Passport">Passport</option>
-                                                    <option value="Driving License">Driving License</option>
-                                                </select>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Front Side</Label>
-                                                    <div className="relative group">
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            className="hidden"
-                                                            id={`file-${idx}-front`}
-                                                            onChange={(e) => {
-                                                                const file = e.target.files?.[0];
-                                                                if (file) handleFileUpload(file, idx, "id_front");
-                                                            }}
-                                                        />
-                                                        <label
-                                                            htmlFor={`file-${idx}-front`}
-                                                            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
-                                                                    ${attendee.id_front ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800'}`}
-                                                        >
-                                                            {uploading === `${idx}-id_front` ? (
-                                                                <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
-                                                            ) : attendee.id_front ? (
-                                                                <div className="relative w-full h-full overflow-hidden rounded-xl">
-                                                                    <img src={attendee.id_front} alt="Front ID" className="object-cover w-full h-full" />
-                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">Change</div>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
-                                                                    <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
-                                                                        <Upload className="w-4 h-4" />
-                                                                    </div>
-                                                                    <span className="text-xs font-medium">Upload Front</span>
-                                                                </div>
-                                                            )}
-                                                        </label>
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Back Side</Label>
-                                                    <div className="relative group">
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            className="hidden"
-                                                            id={`file-${idx}-back`}
-                                                            onChange={(e) => {
-                                                                const file = e.target.files?.[0];
-                                                                if (file) handleFileUpload(file, idx, "id_back");
-                                                            }}
-                                                        />
-                                                        <label
-                                                            htmlFor={`file-${idx}-back`}
-                                                            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
-                                                                    ${attendee.id_back ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800'}`}
-                                                        >
-                                                            {uploading === `${idx}-id_back` ? (
-                                                                <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
-                                                            ) : attendee.id_back ? (
-                                                                <div className="relative w-full h-full overflow-hidden rounded-xl">
-                                                                    <img src={attendee.id_back} alt="Back ID" className="object-cover w-full h-full" />
-                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">Change</div>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
-                                                                    <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
-                                                                        <Upload className="w-4 h-4" />
-                                                                    </div>
-                                                                    <span className="text-xs font-medium">Upload Back</span>
-                                                                </div>
-                                                            )}
-                                                        </label>
-                                                    </div>
-                                                </div>
+                                    <div className="space-y-6 border-zinc-100 dark:border-zinc-800">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="font-medium text-lg">Guest Details & ID Verification</h3>
+                                            <div className="text-sm text-zinc-500">
+                                                {attendees.length} Guests Attending
                                             </div>
                                         </div>
-                                    ))}
 
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="w-full border-dashed border-2 py-6 text-zinc-500 hover:text-zinc-900 hover:border-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                                        onClick={() => {
-                                            const newA = [
-                                                ...attendees,
-                                                { name: "", id_type: "Aadhar Card", id_front: "", id_back: "" }
-                                            ];
-                                            setAttendees(newA);
-                                            setAttendingCount(newA.length);
-                                        }}
-                                    >
-                                        + Add Family Member
+                                        {attendees.map((attendee, idx) => (
+                                            <div key={idx} className="relative p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 space-y-5">
+                                                <div className="flex items-center justify-between">
+                                                    <h4 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                                                        {idx === 0 ? "Main Guest" : `Guest ${idx + 1}`}
+                                                    </h4>
+                                                    {idx > 0 && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 h-8 px-2"
+                                                            onClick={() => {
+                                                                const newA = attendees.filter((_, i) => i !== idx);
+                                                                setAttendees(newA);
+                                                                setAttendingCount(newA.length);
+                                                            }}
+                                                        >
+                                                            Remove
+                                                        </Button>
+                                                    )}
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Full Name</Label>
+                                                    <Input
+                                                        value={attendee.name}
+                                                        onChange={(e) => {
+                                                            const newA = [...attendees];
+                                                            newA[idx].name = e.target.value;
+                                                            setAttendees(newA);
+                                                        }}
+                                                        placeholder="Enter full name"
+                                                        className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 focus:border-zinc-400 dark:focus:border-zinc-500 text-base"
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">ID Document Type</Label>
+                                                    <select
+                                                        className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition"
+                                                        value={attendee.id_type}
+                                                        onChange={(e) => {
+                                                            const newA = [...attendees];
+                                                            newA[idx].id_type = e.target.value;
+                                                            setAttendees(newA);
+                                                        }}
+                                                    >
+                                                        <option value="Aadhar Card">Aadhar Card</option>
+                                                        <option value="Passport">Passport</option>
+                                                        <option value="Driving License">Driving License</option>
+                                                    </select>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Front Side</Label>
+                                                        <div className="relative group">
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                className="hidden"
+                                                                id={`file-${idx}-front`}
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (file) handleFileUpload(file, idx, "id_front");
+                                                                }}
+                                                            />
+                                                            <label
+                                                                htmlFor={`file-${idx}-front`}
+                                                                className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
+                                                                    ${attendee.id_front ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800'}`}
+                                                            >
+                                                                {uploading === `${idx}-id_front` ? (
+                                                                    <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+                                                                ) : attendee.id_front ? (
+                                                                    <div className="relative w-full h-full overflow-hidden rounded-xl">
+                                                                        <img src={attendee.id_front} alt="Front ID" className="object-cover w-full h-full" />
+                                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">Change</div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
+                                                                        <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
+                                                                            <Upload className="w-4 h-4" />
+                                                                        </div>
+                                                                        <span className="text-xs font-medium">Upload Front</span>
+                                                                    </div>
+                                                                )}
+                                                            </label>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Back Side</Label>
+                                                        <div className="relative group">
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                className="hidden"
+                                                                id={`file-${idx}-back`}
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (file) handleFileUpload(file, idx, "id_back");
+                                                                }}
+                                                            />
+                                                            <label
+                                                                htmlFor={`file-${idx}-back`}
+                                                                className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
+                                                                    ${attendee.id_back ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800'}`}
+                                                            >
+                                                                {uploading === `${idx}-id_back` ? (
+                                                                    <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+                                                                ) : attendee.id_back ? (
+                                                                    <div className="relative w-full h-full overflow-hidden rounded-xl">
+                                                                        <img src={attendee.id_back} alt="Back ID" className="object-cover w-full h-full" />
+                                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">Change</div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
+                                                                        <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
+                                                                            <Upload className="w-4 h-4" />
+                                                                        </div>
+                                                                        <span className="text-xs font-medium">Upload Back</span>
+                                                                    </div>
+                                                                )}
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="w-full border-dashed border-2 py-6 text-zinc-500 hover:text-zinc-900 hover:border-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                                            onClick={() => {
+                                                const newA = [
+                                                    ...attendees,
+                                                    { name: "", id_type: "Aadhar Card", id_front: "", id_back: "" }
+                                                ];
+                                                setAttendees(newA);
+                                                setAttendingCount(newA.length);
+                                            }}
+                                        >
+                                            + Add Family Member
+                                        </Button>
+                                    </div>
+
+
+
+
+                                    <div className="space-y-3">
+                                        <Label>Message (Optional)</Label>
+                                        <Textarea
+                                            placeholder="Any words for the host?"
+                                            value={message}
+                                            onChange={(e) => setMessage(e.target.value)}
+                                        />
+                                    </div>
+
+                                    <Button type="submit" className="w-full h-12 text-base rounded-xl" disabled={submitting}>
+                                        {submitting ? <Loader2 className="animate-spin w-4 h-4" /> : "Submit RSVP"}
                                     </Button>
-                                </div>
+                                </form>
+                            )}
 
+                            {/* Departure Section */}
+                            {activeSection === "departure" && (
+                                <form onSubmit={handleSubmitDeparture} className="space-y-6">
+                                    {/* Departure Details Card */}
+                                    <div className="space-y-4 border rounded-2xl p-6 bg-zinc-50 dark:bg-zinc-800/30">
+                                        <h3 className="font-medium text-lg">Departure Details</h3>
 
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label>Departure Date <span className="text-red-500">*</span></Label>
+                                                <Input
+                                                    type="date"
+                                                    value={departureDate}
+                                                    onChange={(e) => setDepartureDate(e.target.value)}
+                                                    className="bg-white dark:bg-zinc-900"
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Departure Time <span className="text-red-500">*</span></Label>
+                                                <Input
+                                                    type="time"
+                                                    value={departureTime}
+                                                    onChange={(e) => setDepartureTime(e.target.value)}
+                                                    className="bg-white dark:bg-zinc-900"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
 
+                                    {/* Departure Travel Details */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="font-medium text-lg">Departure Travel Details</h3>
+                                            <div className="text-sm text-zinc-500">
+                                                {departureTravelers.length} {departureTravelers.length === 1 ? 'Guest' : 'Guests'} Departing
+                                            </div>
+                                        </div>
 
-                                <div className="space-y-3">
-                                    <Label>Message (Optional)</Label>
-                                    <Textarea
-                                        placeholder="Any words for the host?"
-                                        value={message}
-                                        onChange={(e) => setMessage(e.target.value)}
-                                    />
-                                </div>
+                                        {departureTravelers.map((traveler, idx) => (
+                                            <div key={idx} className="relative p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <h4 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                                                        {idx === 0 ? "Main Guest" : `Family Member ${idx}`}
+                                                    </h4>
+                                                    {idx > 0 && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 h-8 px-2"
+                                                            onClick={() => {
+                                                                const newTravelers = departureTravelers.filter((_, i) => i !== idx);
+                                                                setDepartureTravelers(newTravelers);
+                                                            }}
+                                                        >
+                                                            Remove
+                                                        </Button>
+                                                    )}
+                                                </div>
 
-                                <Button type="submit" className="w-full h-12 text-base rounded-xl" disabled={submitting}>
-                                    {submitting ? <Loader2 className="animate-spin w-4 h-4" /> : "Submit RSVP"}
-                                </Button>
-                            </form>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Full Name <span className="text-red-500">*</span></Label>
+                                                    <Input
+                                                        value={traveler.name}
+                                                        onChange={(e) => {
+                                                            const newTravelers = [...departureTravelers];
+                                                            newTravelers[idx].name = e.target.value;
+                                                            setDepartureTravelers(newTravelers);
+                                                        }}
+                                                        placeholder="Enter full name"
+                                                        className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700"
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Mode of Travel <span className="text-red-500">*</span></Label>
+                                                    <select
+                                                        className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition"
+                                                        value={traveler.mode_of_travel}
+                                                        onChange={(e) => {
+                                                            const newTravelers = [...departureTravelers];
+                                                            newTravelers[idx].mode_of_travel = e.target.value;
+                                                            setDepartureTravelers(newTravelers);
+                                                        }}
+                                                    >
+                                                        <option value="">- Select Option -</option>
+                                                        <option value="Bus">Bus</option>
+                                                        <option value="Train">Train</option>
+                                                        <option value="By Air">By Air</option>
+                                                    </select>
+                                                </div>
+
+                                                {/* Station/Airport Name */}
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                                                        Station / Airport Name <span className="text-red-500">*</span>
+                                                    </Label>
+                                                    <Input
+                                                        placeholder="Enter station or airport name"
+                                                        value={traveler.station_airport || ""}
+                                                        onChange={(e) => {
+                                                            const newTravelers = [...departureTravelers];
+                                                            newTravelers[idx].station_airport = e.target.value;
+                                                            setDepartureTravelers(newTravelers);
+                                                        }}
+                                                        className="w-full"
+                                                    />
+                                                </div>
+
+                                                {/* Ticket Upload */}
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                                                        Upload Ticket <span className="text-red-500">*</span>
+                                                    </Label>
+                                                    <div className="relative group">
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*,application/pdf"
+                                                            className="hidden"
+                                                            id={`departure-ticket-${idx}`}
+                                                            onChange={(e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (file) handleDepartureTicketUpload(file, idx);
+                                                            }}
+                                                        />
+                                                        <label
+                                                            htmlFor={`departure-ticket-${idx}`}
+                                                            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
+                                                                ${traveler.ticket_url ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800'}`}
+                                                        >
+                                                            {uploadingDepartureTicket === `${idx}` ? (
+                                                                <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+                                                            ) : traveler.ticket_url ? (
+                                                                <div className="flex flex-col items-center text-green-600 dark:text-green-400 space-y-2">
+                                                                    <Check className="w-8 h-8" />
+                                                                    <span className="text-sm font-medium">Ticket Uploaded</span>
+                                                                    <span className="text-xs text-zinc-500">Click to change</span>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
+                                                                    <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
+                                                                        <Upload className="w-4 h-4" />
+                                                                    </div>
+                                                                    <span className="text-xs font-medium">Upload Ticket</span>
+                                                                    <span className="text-xs text-zinc-500">
+                                                                        Required
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {/* Add Family Member Button */}
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="w-full border-dashed border-2 py-6 text-zinc-500 hover:text-zinc-900 hover:border-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                                            onClick={() => {
+                                                const newTravelers = [
+                                                    ...departureTravelers,
+                                                    { name: "", mode_of_travel: "", station_airport: "", ticket_url: "" }
+                                                ];
+                                                setDepartureTravelers(newTravelers);
+                                            }}
+                                        >
+                                            + Add Family Member
+                                        </Button>
+                                    </div>
+
+                                    {/* Message */}
+                                    <div className="space-y-3">
+                                        <Label>Message (Optional)</Label>
+                                        <Textarea
+                                            placeholder="Any words for the host?"
+                                            value={departureMessage}
+                                            onChange={(e) => setDepartureMessage(e.target.value)}
+                                        />
+                                    </div>
+
+                                    {/* Submit Button */}
+                                    <Button type="submit" className="w-full h-12 text-base rounded-xl" disabled={submittingDeparture}>
+                                        {submittingDeparture ? <Loader2 className="animate-spin w-4 h-4" /> : "Submit Departure Details"}
+                                    </Button>
+                                </form>
+                            )}
                         </motion.div>
                     )}
 
@@ -634,237 +920,12 @@ export default function PublicEventPage() {
                                 {status === 'accepted' ? "We can't wait to see you there." : "We're sorry you can't make it."}
                             </p>
 
-                            {status === 'accepted' && (
-                                <Button
-                                    className="w-full"
-                                    onClick={() => {
-                                        // Initialize departure travelers from attendees
-                                        const travelers = attendees.map((attendee, idx) => ({
-                                            name: attendee.name,
-                                            mode_of_travel: "",
-                                            station_airport: "",
-                                            ticket_url: ""
-                                        }));
-                                        setDepartureTravelers(travelers);
-                                        setStep("departure");
-                                    }}
-                                >
-                                    Continue to Departure Details
-                                </Button>
-                            )}
-
                             <Button variant="outline" onClick={() => window.location.reload()}>
                                 Back to Event
                             </Button>
                         </motion.div>
                     )}
 
-                    {/* STEP 5: DEPARTURE DETAILS */}
-                    {step === "departure" && selectedGuest && (
-                        <motion.div
-                            key="departure"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="bg-white dark:bg-zinc-900 p-8 rounded-3xl shadow-xl border border-zinc-100 dark:border-zinc-800"
-                        >
-                            {/* Header */}
-                            <div className="mb-6">
-                                <Button variant="ghost" size="sm" className="-ml-2 mb-2 text-zinc-400" onClick={() => setStep("success")}>
-                                    <ArrowLeft className="w-4 h-4 mr-1" /> Back
-                                </Button>
-                                <h2 className="text-2xl font-semibold">Hi, {selectedGuest.name}</h2>
-                                <p className="text-zinc-500">Will you be departing?</p>
-                            </div>
-
-                            <form onSubmit={handleSubmitDeparture} className="space-y-6">
-
-                                {/* Departure Details Card */}
-                                <div className="space-y-4 border rounded-2xl p-6 bg-zinc-50 dark:bg-zinc-800/30">
-                                    <h3 className="font-medium text-lg">Departure Details (Optional)</h3>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label>Departure Date</Label>
-                                            <Input
-                                                type="date"
-                                                value={departureDate}
-                                                onChange={(e) => setDepartureDate(e.target.value)}
-                                                className="bg-white dark:bg-zinc-900"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Departure Time</Label>
-                                            <Input
-                                                type="time"
-                                                value={departureTime}
-                                                onChange={(e) => setDepartureTime(e.target.value)}
-                                                className="bg-white dark:bg-zinc-900"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Departure Travel Details */}
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="font-medium text-lg">Departure Travel Details</h3>
-                                        <div className="text-sm text-zinc-500">
-                                            {departureTravelers.length} {departureTravelers.length === 1 ? 'Guest' : 'Guests'} Departing
-                                        </div>
-                                    </div>
-
-                                    {departureTravelers.map((traveler, idx) => (
-                                        <div key={idx} className="relative p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <h4 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
-                                                    {idx === 0 ? "Main Guest" : `Family Member ${idx}`}
-                                                </h4>
-                                                {idx > 0 && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 h-8 px-2"
-                                                        onClick={() => {
-                                                            const newTravelers = departureTravelers.filter((_, i) => i !== idx);
-                                                            setDepartureTravelers(newTravelers);
-                                                        }}
-                                                    >
-                                                        Remove
-                                                    </Button>
-                                                )}
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Full Name</Label>
-                                                <Input
-                                                    value={traveler.name}
-                                                    onChange={(e) => {
-                                                        const newTravelers = [...departureTravelers];
-                                                        newTravelers[idx].name = e.target.value;
-                                                        setDepartureTravelers(newTravelers);
-                                                    }}
-                                                    placeholder="Enter full name"
-                                                    className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700"
-                                                />
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Mode of Travel</Label>
-                                                <select
-                                                    className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition"
-                                                    value={traveler.mode_of_travel}
-                                                    onChange={(e) => {
-                                                        const newTravelers = [...departureTravelers];
-                                                        newTravelers[idx].mode_of_travel = e.target.value;
-                                                        setDepartureTravelers(newTravelers);
-                                                    }}
-                                                >
-                                                    <option value="">- Select Option -</option>
-                                                    <option value="Bus">Bus</option>
-                                                    <option value="Train">Train</option>
-                                                    <option value="By Air">By Air</option>
-                                                </select>
-                                            </div>
-
-                                            {/* Station/Airport Name */}
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                                                    Station / Airport Name
-                                                </Label>
-                                                <Input
-                                                    placeholder="Enter station or airport name"
-                                                    value={traveler.station_airport || ""}
-                                                    onChange={(e) => {
-                                                        const newTravelers = [...departureTravelers];
-                                                        newTravelers[idx].station_airport = e.target.value;
-                                                        setDepartureTravelers(newTravelers);
-                                                    }}
-                                                    className="w-full"
-                                                />
-                                            </div>
-
-                                            {/* Ticket Upload */}
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                                                    Upload Ticket {(traveler.mode_of_travel === "Train" || traveler.mode_of_travel === "By Air") && <span className="text-red-500">*</span>}
-                                                </Label>
-                                                <div className="relative group">
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*,application/pdf"
-                                                        className="hidden"
-                                                        id={`departure-ticket-${idx}`}
-                                                        onChange={(e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) handleDepartureTicketUpload(file, idx);
-                                                        }}
-                                                    />
-                                                    <label
-                                                        htmlFor={`departure-ticket-${idx}`}
-                                                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
-                                                            ${traveler.ticket_url ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800'}`}
-                                                    >
-                                                        {uploadingDepartureTicket === `${idx}` ? (
-                                                            <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
-                                                        ) : traveler.ticket_url ? (
-                                                            <div className="flex flex-col items-center text-green-600 dark:text-green-400 space-y-2">
-                                                                <Check className="w-8 h-8" />
-                                                                <span className="text-sm font-medium">Ticket Uploaded</span>
-                                                                <span className="text-xs text-zinc-500">Click to change</span>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
-                                                                <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
-                                                                    <Upload className="w-4 h-4" />
-                                                                </div>
-                                                                <span className="text-xs font-medium">Upload Ticket</span>
-                                                                <span className="text-xs text-zinc-500">
-                                                                    {traveler.mode_of_travel === "Bus" ? "Optional" : "Required"}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-
-                                    {/* Add Family Member Button */}
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="w-full border-dashed border-2 py-6 text-zinc-500 hover:text-zinc-900 hover:border-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                                        onClick={() => {
-                                            const newTravelers = [
-                                                ...departureTravelers,
-                                                { name: "", mode_of_travel: "", station_airport: "", ticket_url: "" }
-                                            ];
-                                            setDepartureTravelers(newTravelers);
-                                        }}
-                                    >
-                                        + Add Family Member
-                                    </Button>
-                                </div>
-
-                                {/* Message */}
-                                <div className="space-y-3">
-                                    <Label>Message (Optional)</Label>
-                                    <Textarea
-                                        placeholder="Any words for the host?"
-                                        value={departureMessage}
-                                        onChange={(e) => setDepartureMessage(e.target.value)}
-                                    />
-                                </div>
-
-                                {/* Submit Button */}
-                                <Button type="submit" className="w-full h-12 text-base rounded-xl" disabled={submittingDeparture}>
-                                    {submittingDeparture ? <Loader2 className="animate-spin w-4 h-4" /> : "Submit Departure Details"}
-                                </Button>
-                            </form>
-                        </motion.div>
-                    )}
 
                 </AnimatePresence>
             </div>

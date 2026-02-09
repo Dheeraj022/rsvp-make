@@ -309,6 +309,25 @@ function EventDetails() {
         document.body.removeChild(link);
     };
 
+    const handleDeleteDepartureDetails = async (guestId: string) => {
+        if (!confirm("Are you sure you want to delete this guest's departure details?")) return;
+
+        try {
+            const { error } = await supabase
+                .from("guests")
+                .update({ departure_details: null })
+                .eq("id", guestId);
+
+            if (error) throw error;
+
+            // Refresh the guest list
+            await fetchEventData();
+            alert("Departure details deleted successfully.");
+        } catch (error: any) {
+            alert("Error deleting departure details: " + error.message);
+        }
+    };
+
     const filteredGuests = guests.filter(g =>
         g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         g.email?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -584,9 +603,14 @@ function EventDetails() {
                                                         <td className="px-6 py-4 text-zinc-500">-</td>
                                                         <td className="px-6 py-4 text-zinc-500">-</td>
                                                         <td className="px-6 py-4 text-right">
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
-                                                                <Eye className="h-4 w-4" />
-                                                            </Button>
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-red-600" onClick={() => handleDeleteDepartureDetails(guest.id)}>
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 );
@@ -625,11 +649,18 @@ function EventDetails() {
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
-                                                        {idx === 0 && (
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
-                                                                <Eye className="h-4 w-4" />
-                                                            </Button>
-                                                        )}
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            {idx === 0 && (
+                                                                <>
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
+                                                                        <Eye className="h-4 w-4" />
+                                                                    </Button>
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-red-600" onClick={() => handleDeleteDepartureDetails(guest.id)}>
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ));
