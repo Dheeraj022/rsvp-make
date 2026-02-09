@@ -57,35 +57,35 @@ function AdminDashboard() {
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-black">
             {/* Top Bar */}
-            <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white/80 px-6 py-4 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/80">
+            <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white/80 px-4 sm:px-6 py-3 sm:py-4 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/80">
                 <div className="mx-auto flex max-w-6xl items-center justify-between">
-                    <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+                    <h1 className="text-base sm:text-xl font-semibold text-zinc-900 dark:text-zinc-50">
                         Admin Dashboard
                     </h1>
-                    <div className="flex items-center gap-4">
-                        <Button size="sm" variant="ghost" onClick={handleLogout}>
-                            <LogOut className="mr-2 h-4 w-4" />
-                            Sign Out
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        <Button size="sm" variant="ghost" onClick={handleLogout} className="text-xs sm:text-sm">
+                            <LogOut className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Sign Out</span>
                         </Button>
                     </div>
                 </div>
             </div>
 
             {/* Content */}
-            <main className="mx-auto max-w-6xl p-6">
-                <div className="mb-8 flex items-center justify-between">
+            <main className="mx-auto max-w-6xl p-4 sm:p-6">
+                <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
                     <div>
-                        <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
                             Your Events
                         </h2>
-                        <p className="mt-1 text-zinc-500 dark:text-zinc-400">
+                        <p className="mt-1 text-sm sm:text-base text-zinc-500 dark:text-zinc-400">
                             Manage your events and guest lists.
                         </p>
                     </div>
-                    <Link href="/admin/events/new">
-                        <Button className="bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black hover:dark:bg-zinc-200">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Create Event
+                    <Link href="/admin/events/new" className="w-full sm:w-auto">
+                        <Button className="w-full sm:w-auto bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black hover:dark:bg-zinc-200 text-sm sm:text-base">
+                            <Plus className="h-4 w-4 sm:mr-2" />
+                            <span className="ml-2 sm:ml-0">Create Event</span>
                         </Button>
                     </Link>
                 </div>

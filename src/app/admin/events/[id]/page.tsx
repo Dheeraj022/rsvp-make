@@ -354,56 +354,59 @@ function EventDetails() {
         <div className="min-h-screen bg-zinc-50 dark:bg-black p-6">
             <div className="mx-auto max-w-6xl space-y-8">
                 {/* Header */}
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col gap-4">
                     <div>
-                        <Link href="/admin/dashboard" className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-50 flex items-center mb-2">
-                            <ArrowLeft className="mr-1 h-4 w-4" />
+                        <Link href="/admin/dashboard" className="text-xs sm:text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-50 flex items-center mb-2">
+                            <ArrowLeft className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
                             Back to Dashboard
                         </Link>
-                        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
                             {event?.name}
                         </h1>
-                        <p className="text-zinc-500 dark:text-zinc-400">
+                        <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400">
                             {event && format(new Date(event.date), "MMMM d, yyyy • h:mm a")} | {event?.location}
                         </p>
                     </div>
-                    <div className="flex gap-2">
-                        <div className="flex items-center gap-2 mr-2">
-                            <Button
-                                variant="outline"
-                                className="gap-2"
-                                onClick={() => {
-                                    const url = `${window.location.origin}/r/${event?.slug}`;
-                                    navigator.clipboard.writeText(url);
-                                    alert("Invite link copied to clipboard!");
-                                }}
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+                        <Button
+                            variant="outline"
+                            className="gap-1 sm:gap-2 text-xs sm:text-sm"
+                            onClick={() => {
+                                const url = `${window.location.origin}/r/${event?.slug}`;
+                                navigator.clipboard.writeText(url);
+                                alert("Invite link copied to clipboard!");
+                            }}
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="lucide lucide-link sm:w-4 sm:h-4"
                             >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    className="lucide lucide-link"
-                                >
-                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                                </svg>
-                                Copy Invite Link
-                            </Button>
-                        </div>
-                        <Button variant="outline" onClick={() => setShowHotelModal(true)}>
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                            </svg>
+                            <span className="hidden sm:inline">Copy Invite Link</span>
+                            <span className="sm:hidden">Copy Link</span>
+                        </Button>
+                        <Button variant="outline" onClick={() => setShowHotelModal(true)} className="text-xs sm:text-sm">
                             Hotel Access
                         </Button>
-                        <Button variant="outline" onClick={handleExport}>
-                            <Download className="mr-2 h-4 w-4" /> Export CSV
+                        <Button variant="outline" onClick={handleExport} className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="hidden sm:inline">Export CSV</span>
+                            <span className="sm:hidden">Export</span>
                         </Button>
-                        <Button variant="destructive" onClick={handleDeleteEvent} className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 dark:border-red-800">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete Event
+                        <Button variant="destructive" onClick={handleDeleteEvent} className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 dark:border-red-800 text-xs sm:text-sm gap-1 sm:gap-2">
+                            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="hidden sm:inline">Delete Event</span>
+                            <span className="sm:hidden">Delete</span>
                         </Button>
                     </div>
                 </div>
@@ -424,10 +427,10 @@ function EventDetails() {
                 </div>
 
                 {/* Tab Toggle */}
-                <div className="flex gap-2 bg-white dark:bg-zinc-900 p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm w-fit">
+                <div className="flex gap-2 bg-white dark:bg-zinc-900 p-1.5 sm:p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm w-full sm:w-fit">
                     <button
                         onClick={() => setActiveTab("guests")}
-                        className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-200 ${activeTab === "guests"
+                        className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 ${activeTab === "guests"
                             ? "bg-blue-600 text-white shadow-sm"
                             : "bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                             }`}
@@ -436,7 +439,7 @@ function EventDetails() {
                     </button>
                     <button
                         onClick={() => setActiveTab("departure")}
-                        className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-200 ${activeTab === "departure"
+                        className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 ${activeTab === "departure"
                             ? "bg-blue-600 text-white shadow-sm"
                             : "bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                             }`}
