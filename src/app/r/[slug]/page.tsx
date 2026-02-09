@@ -170,6 +170,12 @@ export default function PublicEventPage() {
 
         try {
             // Validation
+            if (!phone) {
+                alert("Please enter your phone number");
+                setSubmitting(false);
+                return;
+            }
+
             if (status === "accepted") {
                 for (let i = 0; i < attendees.length; i++) {
                     const a = attendees[i];
@@ -497,12 +503,13 @@ export default function PublicEventPage() {
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Phone</Label>
+                                            <Label>Phone <span className="text-red-500">*</span></Label>
                                             <Input
                                                 type="tel"
                                                 placeholder="Your phone number"
                                                 value={phone}
                                                 onChange={(e) => setPhone(e.target.value)}
+                                                required
                                             />
                                         </div>
                                     </div>
