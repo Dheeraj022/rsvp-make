@@ -749,11 +749,11 @@ export default function PublicEventPage() {
                                     {/* Departure Applicability Question */}
                                     <div className="space-y-4 border rounded-2xl p-6 bg-zinc-50 dark:bg-zinc-800/30">
                                         <h3 className="font-medium text-lg">Is departure applicable for you?</h3>
-                                        <div className="flex gap-3">
+                                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                                             <button
                                                 type="button"
                                                 onClick={() => setIsDepartureApplicable(true)}
-                                                className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 border-2 ${isDepartureApplicable === true
+                                                className={`flex-1 px-4 py-2.5 sm:py-2 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 border-2 ${isDepartureApplicable === true
                                                     ? "bg-blue-600 text-white border-blue-600 shadow-md"
                                                     : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:border-blue-400"
                                                     }`}
@@ -763,7 +763,7 @@ export default function PublicEventPage() {
                                             <button
                                                 type="button"
                                                 onClick={() => setIsDepartureApplicable(false)}
-                                                className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 border-2 ${isDepartureApplicable === false
+                                                className={`flex-1 px-4 py-2.5 sm:py-2 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 border-2 ${isDepartureApplicable === false
                                                     ? "bg-blue-600 text-white border-blue-600 shadow-md"
                                                     : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:border-blue-400"
                                                     }`}
