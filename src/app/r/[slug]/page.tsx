@@ -40,7 +40,8 @@ export default function PublicEventPage() {
     const [event, setEvent] = useState<Event | null>(null);
     const [loading, setLoading] = useState(true);
     const [step, setStep] = useState<"landing" | "search" | "form" | "success" | "departure">("landing");
-    const [activeSection, setActiveSection] = useState<"rsvp" | "departure">("rsvp"); // New state for section toggle
+    const [activeSection, setActiveSection] = useState<"rsvp" | "departure">("rsvp");
+    const [isDepartureApplicable, setIsDepartureApplicable] = useState<boolean | null>(null); // New state for section toggle
 
     // Search State
     const [searchQuery, setSearchQuery] = useState("");
@@ -215,10 +216,10 @@ export default function PublicEventPage() {
                 setSelectedGuest(updatedGuest);
             }
 
-            // Check if departure details are already filled
+            // Check if departure details are already filled or marked as not applicable
             const hasDepartureDetails = updatedGuest?.departure_details &&
-                updatedGuest.departure_details.travelers &&
-                updatedGuest.departure_details.travelers.length > 0;
+                (updatedGuest.departure_details.applicable === false ||
+                    (updatedGuest.departure_details.travelers && updatedGuest.departure_details.travelers.length > 0));
 
             if (status === 'accepted' && !hasDepartureDetails) {
                 // Initialize departure travelers from attendees
@@ -278,7 +279,29 @@ export default function PublicEventPage() {
         setSubmittingDeparture(true);
 
         try {
-            // Validation - All fields are required
+            // If departure is not applicable, save minimal data and proceed
+            if (isDepartureApplicable === false) {
+                const departureDetails = {
+                    applicable: false,
+                    message: departureMessage
+                };
+
+                const { error } = await supabase
+                    .from("guests")
+                    .update({
+                        departure_details: departureDetails
+                    })
+                    .eq("id", selectedGuest.id);
+
+                if (error) throw error;
+
+                alert("Departure details submitted successfully!");
+                setStep("success");
+                setSubmittingDeparture(false);
+                return;
+            }
+
+            // Validation - All fields are required when departure is applicable
             if (!departureDate) {
                 alert("Please select a departure date");
                 setSubmittingDeparture(false);
@@ -316,6 +339,7 @@ export default function PublicEventPage() {
             }
 
             const departureDetails = {
+                applicable: true,
                 departure_date: departureDate,
                 departure_time: departureTime,
                 travelers: departureTravelers,
@@ -721,191 +745,226 @@ export default function PublicEventPage() {
                             {/* Departure Section */}
                             {activeSection === "departure" && (
                                 <form onSubmit={handleSubmitDeparture} className="space-y-6">
-                                    {/* Departure Details Card */}
-                                    <div className="space-y-4 border rounded-2xl p-6 bg-zinc-50 dark:bg-zinc-800/30">
-                                        <h3 className="font-medium text-lg">Departure Details</h3>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label>Departure Date <span className="text-red-500">*</span></Label>
-                                                <Input
-                                                    type="date"
-                                                    value={departureDate}
-                                                    onChange={(e) => setDepartureDate(e.target.value)}
-                                                    className="bg-white dark:bg-zinc-900"
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Departure Time <span className="text-red-500">*</span></Label>
-                                                <Input
-                                                    type="time"
-                                                    value={departureTime}
-                                                    onChange={(e) => setDepartureTime(e.target.value)}
-                                                    className="bg-white dark:bg-zinc-900"
-                                                    required
-                                                />
-                                            </div>
+                                    {/* Departure Applicability Question */}
+                                    <div className="space-y-4 border rounded-2xl p-6 bg-zinc-50 dark:bg-zinc-800/30">
+                                        <h3 className="font-medium text-lg">Is departure applicable for you?</h3>
+                                        <div className="flex gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsDepartureApplicable(true)}
+                                                className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 border-2 ${isDepartureApplicable === true
+                                                    ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                                                    : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:border-blue-400"
+                                                    }`}
+                                            >
+                                                Yes
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsDepartureApplicable(false)}
+                                                className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 border-2 ${isDepartureApplicable === false
+                                                    ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                                                    : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:border-blue-400"
+                                                    }`}
+                                            >
+                                                No (Not Applicable)
+                                            </button>
                                         </div>
                                     </div>
 
-                                    {/* Departure Travel Details */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="font-medium text-lg">Departure Travel Details</h3>
-                                            <div className="text-sm text-zinc-500">
-                                                {departureTravelers.length} {departureTravelers.length === 1 ? 'Guest' : 'Guests'} Departing
-                                            </div>
-                                        </div>
+                                    {/* Show departure form only if applicable */}
+                                    {isDepartureApplicable === true && (
+                                        <>
+                                            {/* Departure Details Card */}
+                                            <div className="space-y-4 border rounded-2xl p-6 bg-zinc-50 dark:bg-zinc-800/30">
+                                                <h3 className="font-medium text-lg">Departure Details</h3>
 
-                                        {departureTravelers.map((traveler, idx) => (
-                                            <div key={idx} className="relative p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 space-y-4">
-                                                <div className="flex items-center justify-between">
-                                                    <h4 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
-                                                        {idx === 0 ? "Main Guest" : `Family Member ${idx}`}
-                                                    </h4>
-                                                    {idx > 0 && (
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 h-8 px-2"
-                                                            onClick={() => {
-                                                                const newTravelers = departureTravelers.filter((_, i) => i !== idx);
-                                                                setDepartureTravelers(newTravelers);
-                                                            }}
-                                                        >
-                                                            Remove
-                                                        </Button>
-                                                    )}
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Full Name <span className="text-red-500">*</span></Label>
-                                                    <Input
-                                                        value={traveler.name}
-                                                        onChange={(e) => {
-                                                            const newTravelers = [...departureTravelers];
-                                                            newTravelers[idx].name = e.target.value;
-                                                            setDepartureTravelers(newTravelers);
-                                                        }}
-                                                        placeholder="Enter full name"
-                                                        className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700"
-                                                    />
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Mode of Travel <span className="text-red-500">*</span></Label>
-                                                    <select
-                                                        className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition"
-                                                        value={traveler.mode_of_travel}
-                                                        onChange={(e) => {
-                                                            const newTravelers = [...departureTravelers];
-                                                            newTravelers[idx].mode_of_travel = e.target.value;
-                                                            setDepartureTravelers(newTravelers);
-                                                        }}
-                                                    >
-                                                        <option value="">- Select Option -</option>
-                                                        <option value="Bus">Bus</option>
-                                                        <option value="Train">Train</option>
-                                                        <option value="By Air">By Air</option>
-                                                    </select>
-                                                </div>
-
-                                                {/* Station/Airport Name */}
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                                                        Station / Airport Name <span className="text-red-500">*</span>
-                                                    </Label>
-                                                    <Input
-                                                        placeholder="Enter station or airport name"
-                                                        value={traveler.station_airport || ""}
-                                                        onChange={(e) => {
-                                                            const newTravelers = [...departureTravelers];
-                                                            newTravelers[idx].station_airport = e.target.value;
-                                                            setDepartureTravelers(newTravelers);
-                                                        }}
-                                                        className="w-full"
-                                                    />
-                                                </div>
-
-                                                {/* Ticket Upload */}
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                                                        Upload Ticket <span className="text-red-500">*</span>
-                                                    </Label>
-                                                    <div className="relative group">
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*,application/pdf"
-                                                            className="hidden"
-                                                            id={`departure-ticket-${idx}`}
-                                                            onChange={(e) => {
-                                                                const file = e.target.files?.[0];
-                                                                if (file) handleDepartureTicketUpload(file, idx);
-                                                            }}
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label>Departure Date <span className="text-red-500">*</span></Label>
+                                                        <Input
+                                                            type="date"
+                                                            value={departureDate}
+                                                            onChange={(e) => setDepartureDate(e.target.value)}
+                                                            className="bg-white dark:bg-zinc-900"
+                                                            required
                                                         />
-                                                        <label
-                                                            htmlFor={`departure-ticket-${idx}`}
-                                                            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
-                                                                ${traveler.ticket_url ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800'}`}
-                                                        >
-                                                            {uploadingDepartureTicket === `${idx}` ? (
-                                                                <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
-                                                            ) : traveler.ticket_url ? (
-                                                                <div className="flex flex-col items-center text-green-600 dark:text-green-400 space-y-2">
-                                                                    <Check className="w-8 h-8" />
-                                                                    <span className="text-sm font-medium">Ticket Uploaded</span>
-                                                                    <span className="text-xs text-zinc-500">Click to change</span>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
-                                                                    <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
-                                                                        <Upload className="w-4 h-4" />
-                                                                    </div>
-                                                                    <span className="text-xs font-medium">Upload Ticket</span>
-                                                                    <span className="text-xs text-zinc-500">
-                                                                        Required
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                        </label>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Departure Time <span className="text-red-500">*</span></Label>
+                                                        <Input
+                                                            type="time"
+                                                            value={departureTime}
+                                                            onChange={(e) => setDepartureTime(e.target.value)}
+                                                            className="bg-white dark:bg-zinc-900"
+                                                            required
+                                                        />
                                                     </div>
                                                 </div>
                                             </div>
-                                        ))}
 
-                                        {/* Add Family Member Button */}
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="w-full border-dashed border-2 py-6 text-zinc-500 hover:text-zinc-900 hover:border-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                                            onClick={() => {
-                                                const newTravelers = [
-                                                    ...departureTravelers,
-                                                    { name: "", mode_of_travel: "", station_airport: "", ticket_url: "" }
-                                                ];
-                                                setDepartureTravelers(newTravelers);
-                                            }}
-                                        >
-                                            + Add Family Member
+                                            {/* Departure Travel Details */}
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <h3 className="font-medium text-lg">Departure Travel Details</h3>
+                                                    <div className="text-sm text-zinc-500">
+                                                        {departureTravelers.length} {departureTravelers.length === 1 ? 'Guest' : 'Guests'} Departing
+                                                    </div>
+                                                </div>
+
+                                                {departureTravelers.map((traveler, idx) => (
+                                                    <div key={idx} className="relative p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 space-y-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <h4 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                                                                {idx === 0 ? "Main Guest" : `Family Member ${idx}`}
+                                                            </h4>
+                                                            {idx > 0 && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 h-8 px-2"
+                                                                    onClick={() => {
+                                                                        const newTravelers = departureTravelers.filter((_, i) => i !== idx);
+                                                                        setDepartureTravelers(newTravelers);
+                                                                    }}
+                                                                >
+                                                                    Remove
+                                                                </Button>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Full Name <span className="text-red-500">*</span></Label>
+                                                            <Input
+                                                                value={traveler.name}
+                                                                onChange={(e) => {
+                                                                    const newTravelers = [...departureTravelers];
+                                                                    newTravelers[idx].name = e.target.value;
+                                                                    setDepartureTravelers(newTravelers);
+                                                                }}
+                                                                placeholder="Enter full name"
+                                                                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700"
+                                                            />
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Mode of Travel <span className="text-red-500">*</span></Label>
+                                                            <select
+                                                                className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition"
+                                                                value={traveler.mode_of_travel}
+                                                                onChange={(e) => {
+                                                                    const newTravelers = [...departureTravelers];
+                                                                    newTravelers[idx].mode_of_travel = e.target.value;
+                                                                    setDepartureTravelers(newTravelers);
+                                                                }}
+                                                            >
+                                                                <option value="">- Select Option -</option>
+                                                                <option value="Bus">Bus</option>
+                                                                <option value="Train">Train</option>
+                                                                <option value="By Air">By Air</option>
+                                                            </select>
+                                                        </div>
+
+                                                        {/* Station/Airport Name */}
+                                                        <div className="space-y-2">
+                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                                                                Station / Airport Name <span className="text-red-500">*</span>
+                                                            </Label>
+                                                            <Input
+                                                                placeholder="Enter station or airport name"
+                                                                value={traveler.station_airport || ""}
+                                                                onChange={(e) => {
+                                                                    const newTravelers = [...departureTravelers];
+                                                                    newTravelers[idx].station_airport = e.target.value;
+                                                                    setDepartureTravelers(newTravelers);
+                                                                }}
+                                                                className="w-full"
+                                                            />
+                                                        </div>
+
+                                                        {/* Ticket Upload */}
+                                                        <div className="space-y-2">
+                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                                                                Upload Ticket <span className="text-red-500">*</span>
+                                                            </Label>
+                                                            <div className="relative group">
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/*,application/pdf"
+                                                                    className="hidden"
+                                                                    id={`departure-ticket-${idx}`}
+                                                                    onChange={(e) => {
+                                                                        const file = e.target.files?.[0];
+                                                                        if (file) handleDepartureTicketUpload(file, idx);
+                                                                    }}
+                                                                />
+                                                                <label
+                                                                    htmlFor={`departure-ticket-${idx}`}
+                                                                    className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
+                                                                ${traveler.ticket_url ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800'}`}
+                                                                >
+                                                                    {uploadingDepartureTicket === `${idx}` ? (
+                                                                        <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+                                                                    ) : traveler.ticket_url ? (
+                                                                        <div className="flex flex-col items-center text-green-600 dark:text-green-400 space-y-2">
+                                                                            <Check className="w-8 h-8" />
+                                                                            <span className="text-sm font-medium">Ticket Uploaded</span>
+                                                                            <span className="text-xs text-zinc-500">Click to change</span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
+                                                                            <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
+                                                                                <Upload className="w-4 h-4" />
+                                                                            </div>
+                                                                            <span className="text-xs font-medium">Upload Ticket</span>
+                                                                            <span className="text-xs text-zinc-500">
+                                                                                Required
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+
+                                                {/* Add Family Member Button */}
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="w-full border-dashed border-2 py-6 text-zinc-500 hover:text-zinc-900 hover:border-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                                                    onClick={() => {
+                                                        const newTravelers = [
+                                                            ...departureTravelers,
+                                                            { name: "", mode_of_travel: "", station_airport: "", ticket_url: "" }
+                                                        ];
+                                                        setDepartureTravelers(newTravelers);
+                                                    }}
+                                                >
+                                                    + Add Family Member
+                                                </Button>
+                                            </div>
+
+                                            {/* Message */}
+                                            <div className="space-y-3">
+                                                <Label>Message (Optional)</Label>
+                                                <Textarea
+                                                    placeholder="Any words for the host?"
+                                                    value={departureMessage}
+                                                    onChange={(e) => setDepartureMessage(e.target.value)}
+                                                />
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* Submit Button - Always visible */}
+                                    {isDepartureApplicable !== null && (
+                                        <Button type="submit" className="w-full h-12 text-base rounded-xl" disabled={submittingDeparture}>
+                                            {submittingDeparture ? <Loader2 className="animate-spin w-4 h-4" /> : "Submit Departure Details"}
                                         </Button>
-                                    </div>
-
-                                    {/* Message */}
-                                    <div className="space-y-3">
-                                        <Label>Message (Optional)</Label>
-                                        <Textarea
-                                            placeholder="Any words for the host?"
-                                            value={departureMessage}
-                                            onChange={(e) => setDepartureMessage(e.target.value)}
-                                        />
-                                    </div>
-
-                                    {/* Submit Button */}
-                                    <Button type="submit" className="w-full h-12 text-base rounded-xl" disabled={submittingDeparture}>
-                                        {submittingDeparture ? <Loader2 className="animate-spin w-4 h-4" /> : "Submit Departure Details"}
-                                    </Button>
+                                    )}
                                 </form>
                             )}
                         </motion.div>

@@ -590,6 +590,32 @@ function EventDetails() {
                                             const departureData = guest.departure_details;
                                             const travelers = departureData?.travelers || [];
 
+                                            // Check if departure is not applicable
+                                            if (departureData?.applicable === false) {
+                                                return (
+                                                    <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                                        <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{guest.name}</td>
+                                                        <td className="px-6 py-4 text-zinc-500 italic">Not Applicable</td>
+                                                        <td className="px-6 py-4 text-zinc-500 italic">Not Applicable</td>
+                                                        <td className="px-6 py-4 text-zinc-500 italic">Not Applicable</td>
+                                                        <td className="px-6 py-4 text-zinc-500 italic">Not Applicable</td>
+                                                        <td className="px-6 py-4">
+                                                            <span className="text-zinc-400 text-xs italic">Not Required</span>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right">
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-red-600" onClick={() => handleDeleteDepartureDetails(guest.id)}>
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            }
+
                                             if (travelers.length === 0) {
                                                 return (
                                                     <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
