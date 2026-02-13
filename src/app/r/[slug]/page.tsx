@@ -91,6 +91,8 @@ export default function PublicEventPage() {
                     if (prev.length > 0) return prev; // Don't overwrite if already modified
                     return [{
                         name: selectedGuest.name,
+                        age: "",
+                        guest_type: "Adult",
                         id_type: "Aadhar Card",
                         id_front: "",
                         id_back: ""
@@ -183,8 +185,8 @@ export default function PublicEventPage() {
             if (status === "accepted") {
                 for (let i = 0; i < attendees.length; i++) {
                     const a = attendees[i];
-                    if (!a.name || !a.id_front || !a.id_back) {
-                        alert(`Please fill all details for Guest ${i + 1} (Name and ID images)`);
+                    if (!a.name || !a.age || !a.id_front || !a.id_back) {
+                        alert(`Please fill all details for Guest ${i + 1} (Name, Age, and ID images)`);
                         setSubmitting(false);
                         return;
                     }
@@ -521,6 +523,43 @@ export default function PublicEventPage() {
                                 {activeSection === "rsvp" && (
                                     <form onSubmit={handleSubmitRSVP} className="space-y-6">
 
+                                        {/* Number of Members Selector */}
+                                        <div className="space-y-2">
+                                            <Label>No. of Members <span className="text-red-500">*</span></Label>
+                                            <select
+                                                className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition"
+                                                value={attendingCount}
+                                                onChange={(e) => {
+                                                    const count = parseInt(e.target.value);
+                                                    setAttendingCount(count);
+
+                                                    // Adjust attendees array to match the selected count
+                                                    const newAttendees = [...attendees];
+                                                    if (count > attendees.length) {
+                                                        // Add new attendees
+                                                        for (let i = attendees.length; i < count; i++) {
+                                                            newAttendees.push({
+                                                                name: "",
+                                                                age: "",
+                                                                guest_type: "Adult",
+                                                                id_type: "Aadhar Card",
+                                                                id_front: "",
+                                                                id_back: ""
+                                                            });
+                                                        }
+                                                    } else if (count < attendees.length) {
+                                                        // Remove excess attendees
+                                                        newAttendees.splice(count);
+                                                    }
+                                                    setAttendees(newAttendees);
+                                                }}
+                                            >
+                                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                                                    <option key={num} value={num}>{num}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label>Email</Label>
@@ -617,6 +656,41 @@ export default function PublicEventPage() {
                                                         />
                                                     </div>
 
+                                                    {/* Age and Type Fields */}
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Age</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={attendee.age}
+                                                                onChange={(e) => {
+                                                                    const newA = [...attendees];
+                                                                    newA[idx].age = e.target.value;
+                                                                    setAttendees(newA);
+                                                                }}
+                                                                placeholder="Enter age"
+                                                                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 focus:border-zinc-400 dark:focus:border-zinc-500 text-base"
+                                                                min="0"
+                                                                max="120"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Type</Label>
+                                                            <select
+                                                                className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition"
+                                                                value={attendee.guest_type}
+                                                                onChange={(e) => {
+                                                                    const newA = [...attendees];
+                                                                    newA[idx].guest_type = e.target.value;
+                                                                    setAttendees(newA);
+                                                                }}
+                                                            >
+                                                                <option value="Adult">Adult</option>
+                                                                <option value="Child">Child</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
                                                     <div className="space-y-2">
                                                         <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">ID Document Type</Label>
                                                         <select
@@ -631,6 +705,7 @@ export default function PublicEventPage() {
                                                             <option value="Aadhar Card">Aadhar Card</option>
                                                             <option value="Passport">Passport</option>
                                                             <option value="Driving License">Driving License</option>
+                                                            <option value="Voter ID Card">Voter ID Card</option>
                                                         </select>
                                                     </div>
 
@@ -719,7 +794,7 @@ export default function PublicEventPage() {
                                                 onClick={() => {
                                                     const newA = [
                                                         ...attendees,
-                                                        { name: "", id_type: "Aadhar Card", id_front: "", id_back: "" }
+                                                        { name: "", age: "", guest_type: "Adult", id_type: "Aadhar Card", id_front: "", id_back: "" }
                                                     ];
                                                     setAttendees(newA);
                                                     setAttendingCount(newA.length);
