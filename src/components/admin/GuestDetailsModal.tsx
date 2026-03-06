@@ -186,32 +186,41 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                     doc.text(format(new Date(eventDate), "MMMM d, yyyy"), pageWidth - 20, 26, { align: "right" });
                 }
 
-                // Travel Details (Right Side below Event Details)
-                if (guest.arrival_location || guest.departure_location) {
+                // Transport Details
+                if (guest.departure_details?.applicable !== false) {
+                    const transport = guest.departure_details;
                     let rightY = 40;
                     doc.setFontSize(10);
                     doc.setTextColor(100);
-                    doc.text("Travel Details", pageWidth - 20, rightY, { align: "right" });
+                    doc.text("Transport Details", pageWidth - 20, rightY, { align: "right" });
                     rightY += 6;
                     doc.setTextColor(0);
 
-                    if (guest.arrival_location) {
-                        doc.text(`Arrival: ${guest.arrival_location}`, pageWidth - 20, rightY, { align: "right" });
+                    if (transport?.arrival?.date) {
+                        const arrival = transport.arrival;
+                        doc.text(`Arrival: ${format(new Date(arrival.date), "MMM d")}${arrival.time ? ` @ ${arrival.time}` : ""}`, pageWidth - 20, rightY, { align: "right" });
                         rightY += 5;
-                        if (guest.arrival_date) {
-                            doc.text(format(new Date(guest.arrival_date), "MMM d, h:mm a"), pageWidth - 20, rightY, { align: "right" });
-                            rightY += 6;
+                        if (arrival.travelers?.[0]?.mode_of_travel) {
+                            const t = arrival.travelers[0];
+                            doc.setFontSize(8);
+                            doc.setTextColor(100);
+                            doc.text(`${t.mode_of_travel}${t.transport_number ? ` (${t.transport_number})` : ""}`, pageWidth - 20, rightY, { align: "right" });
+                            rightY += 4;
+                            if (t.pickup_location || t.drop_location) {
+                                doc.text(`${t.pickup_location || ""} -> ${t.drop_location || ""}`, pageWidth - 20, rightY, { align: "right" });
+                                rightY += 4;
+                            }
+                            if (t.number_of_vehicles) {
+                                doc.text(`Vehicles: ${t.number_of_vehicles}`, pageWidth - 20, rightY, { align: "right" });
+                                rightY += 4;
+                            }
+                            doc.setFontSize(10);
+                            doc.setTextColor(0);
                         }
                     }
-                    // Add a small spacer if both exist
-                    if (guest.arrival_location && guest.departure_location) rightY += 2;
-
-                    if (guest.departure_location) {
-                        doc.text(`Departure: ${guest.departure_location}`, pageWidth - 20, rightY, { align: "right" });
+                    if (transport?.departure?.date) {
+                        doc.text(`Departure: ${format(new Date(transport.departure.date), "MMM d")}${transport.departure.time ? ` @ ${transport.departure.time}` : ""}`, pageWidth - 20, rightY, { align: "right" });
                         rightY += 5;
-                        if (guest.departure_date) {
-                            doc.text(format(new Date(guest.departure_date), "MMM d, h:mm a"), pageWidth - 20, rightY, { align: "right" });
-                        }
                     }
                 }
                 doc.setTextColor(0);
@@ -383,25 +392,49 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                         </div>
                     </div>
 
-                    {/* Travel Details */}
-                    {(guest.arrival_location || guest.departure_location) && (
+                    {/* Transport Details (Arrival & Departure) */}
+                    {guest.departure_details?.applicable !== false && (
                         <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-4 space-y-3">
                             <h3 className="font-medium text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                                <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Travel Details</span>
+                                <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Transport Details</span>
                             </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                                {guest.arrival_location && (
-                                    <div>
-                                        <span className="text-zinc-500 block text-xs">Arrival</span>
-                                        <p className="font-medium text-zinc-900 dark:text-zinc-100">{guest.arrival_location}</p>
-                                        {guest.arrival_date && <p className="text-zinc-500 text-xs">{format(new Date(guest.arrival_date), "MMMM d, h:mm a")}</p>}
+                            <div className="grid grid-cols-1 gap-6 text-sm">
+                                {guest.departure_details?.arrival?.date && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-700 pb-2">
+                                            <span className="text-zinc-500 block text-xs font-bold uppercase tracking-widest">Arrival</span>
+                                            <p className="font-semibold text-zinc-900 dark:text-zinc-100">{format(new Date(guest.departure_details.arrival.date), "MMMM d, yyyy")} @ {guest.departure_details.arrival.time || "N/A"}</p>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8">
+                                            {guest.departure_details.arrival.travelers?.map((t: any, i: number) => (
+                                                <div key={i} className="space-y-2 p-3 rounded-lg bg-zinc-100/50 dark:bg-zinc-700/20 border border-zinc-100 dark:border-zinc-700">
+                                                    <p className="font-bold text-xs text-zinc-400 uppercase">{t.name || `Guest ${i + 1}`}</p>
+                                                    <div className="grid grid-cols-1 gap-1 text-[11px]">
+                                                        <p><span className="text-zinc-500">Mode:</span> {t.mode_of_travel} {t.transport_number ? `(${t.transport_number})` : ""}</p>
+                                                        <p><span className="text-zinc-500">Loc:</span> {t.station_airport}</p>
+                                                        <p><span className="text-zinc-500">Phone:</span> {t.contact_number || "N/A"}</p>
+                                                        <p><span className="text-zinc-500">Pax / Bags:</span> {t.number_of_pax || "1"} / {t.number_of_bags || "0"}</p>
+                                                        {t.pickup_location && <p><span className="text-zinc-500">Pickup:</span> {t.pickup_location}</p>}
+                                                        {t.drop_location && <p><span className="text-zinc-500">Drop:</span> {t.drop_location}</p>}
+                                                        <p><span className="text-zinc-500">Vehicles:</span> {t.number_of_vehicles || "1"}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
-                                {guest.departure_location && (
-                                    <div>
-                                        <span className="text-zinc-500 block text-xs">Departure</span>
-                                        <p className="font-medium text-zinc-900 dark:text-zinc-100">{guest.departure_location}</p>
-                                        {guest.departure_date && <p className="text-zinc-500 text-xs">{format(new Date(guest.departure_date), "MMMM d, h:mm a")}</p>}
+                                {guest.departure_details?.departure?.date && (
+                                    <div className="space-y-2 border-t border-zinc-200 dark:border-zinc-700 pt-4">
+                                        <span className="text-zinc-500 block text-xs font-semibold uppercase">Departure</span>
+                                        <p className="font-medium text-zinc-900 dark:text-zinc-100">{format(new Date(guest.departure_details.departure.date), "MMMM d, yyyy")} @ {guest.departure_details.departure.time || "N/A"}</p>
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                            {guest.departure_details.departure.travelers?.map((t: any, i: number) => (
+                                                <div key={i} className="text-[10px] text-zinc-400 bg-white dark:bg-zinc-800 px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700">
+                                                    {t.name} · {t.mode_of_travel} · {t.station_airport}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
