@@ -196,15 +196,44 @@ function EventDetails() {
     const [deletePassword, setDeletePassword] = useState("");
     const [deleteLoading, setDeleteLoading] = useState(false);
 
-    const handleDeleteGuest = async (guestId: string) => {
-        if (!confirm("Are you sure you want to remove this guest?")) return;
+    // Guest delete state
+    const [guestToDelete, setGuestToDelete] = useState<string | null>(null);
+    const [showGuestDeleteModal, setShowGuestDeleteModal] = useState(false);
+    const [guestDeletePassword, setGuestDeletePassword] = useState("");
+    const [guestDeleteLoading, setGuestDeleteLoading] = useState(false);
 
+    const handleDeleteGuest = (guestId: string) => {
+        setGuestToDelete(guestId);
+        setGuestDeletePassword("");
+        setShowGuestDeleteModal(true);
+    };
+
+    const executeDeleteGuest = async () => {
+        if (!guestDeletePassword) {
+            alert("Please enter your password to confirm.");
+            return;
+        }
+        setGuestDeleteLoading(true);
         try {
-            const { error } = await supabase.from("guests").delete().eq("id", guestId);
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user || !user.email) throw new Error("User not found");
+
+            const { error: authError } = await supabase.auth.signInWithPassword({
+                email: user.email,
+                password: guestDeletePassword,
+            });
+            if (authError) throw new Error("Incorrect password. Please try again.");
+
+            const { error } = await supabase.from("guests").delete().eq("id", guestToDelete!);
             if (error) throw error;
-            setGuests(guests.filter(g => g.id !== guestId));
-        } catch (error: any) {
-            alert("Error deleting guest: " + error.message);
+
+            setGuests(prev => prev.filter(g => g.id !== guestToDelete));
+            setShowGuestDeleteModal(false);
+            setGuestToDelete(null);
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setGuestDeleteLoading(false);
         }
     };
 
@@ -750,7 +779,47 @@ function EventDetails() {
                     </div>
                 </div>
             )}
-            {/* Hotel Assignment Modal */}
+            {/* Guest Delete Confirmation Modal */}
+            {showGuestDeleteModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 border border-zinc-200 dark:border-zinc-800">
+                        <div className="mb-4">
+                            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Delete Guest?</h3>
+                            <p className="text-zinc-500 text-sm">
+                                This will permanently remove the guest and all their data. Enter your admin password to confirm.
+                            </p>
+                        </div>
+                        <div className="space-y-4 mb-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-zinc-900 dark:text-zinc-300">
+                                    Admin Password
+                                </label>
+                                <Input
+                                    type="password"
+                                    placeholder="Enter your password"
+                                    value={guestDeletePassword}
+                                    onChange={(e) => setGuestDeletePassword(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && executeDeleteGuest()}
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <Button variant="ghost" onClick={() => {
+                                setShowGuestDeleteModal(false);
+                                setGuestToDelete(null);
+                                setGuestDeletePassword("");
+                            }}>Cancel</Button>
+                            <Button variant="destructive" onClick={executeDeleteGuest} disabled={guestDeleteLoading}>
+                                {guestDeleteLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                                Delete Guest
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
             {showHotelModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 border border-zinc-200 dark:border-zinc-800">
