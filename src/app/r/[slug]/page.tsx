@@ -360,29 +360,31 @@ export default function PublicEventPage() {
                 (updatedGuest.departure_details.applicable === false ||
                     (updatedGuest.departure_details.travelers && updatedGuest.departure_details.travelers.length > 0));
 
-            if (status === 'accepted' && !hasDepartureDetails) {
-                // Initialize departure travelers from attendees
-                const travelers = attendees.map((attendee) => ({
-                    name: attendee.name,
-                    mode_of_travel: "",
-                    station_airport: "",
-                    ticket_url: "",
-                    contact_number: "",
-                    number_of_pax: "1",
-                    transport_number: "",
-                    drop_location: "",
-                    number_of_bags: "0",
-                    number_of_vehicles: "1",
-                    same_as_main: true
-                }));
-                setDepartureTravelers(travelers);
-                setArrivalTravelers([...travelers]);
+            if (status === 'accepted') {
+                // Initialize departure travelers from attendees if not present
+                if (!hasDepartureDetails) {
+                    const travelers = attendees.map((attendee) => ({
+                        name: attendee.name,
+                        mode_of_travel: "",
+                        station_airport: "",
+                        ticket_url: "",
+                        contact_number: "",
+                        number_of_pax: "1",
+                        transport_number: "",
+                        drop_location: "",
+                        number_of_bags: "0",
+                        number_of_vehicles: "1",
+                        same_as_main: true
+                    }));
+                    setDepartureTravelers(travelers);
+                    setArrivalTravelers([...travelers]);
+                }
 
-                // Switch to transport section instead of showing success
+                // Switch to transport section
                 setActiveSection("transport");
-                alert("RSVP submitted successfully! Please complete your Transport Details.");
+                success("RSVP submitted successfully! Please provide your travel details.");
             } else {
-                // Show success screen if declined or transport details already exist
+                // Show success screen if declined
                 setStep("success");
             }
         } catch (error: any) {
@@ -460,8 +462,13 @@ export default function PublicEventPage() {
 
             if (error) throw error;
 
-            success("Transport details submitted successfully!");
-            setStep("success");
+            if (transportType === "arrival" && isTransportApplicable !== false) {
+                setTransportType("departure");
+                success("Arrival details saved! Please add departure details.");
+            } else {
+                success("Transport details submitted successfully!");
+                setStep("success");
+            }
         } catch (err: any) {
             error("Error submitting transport details: " + err.message);
         } finally {
