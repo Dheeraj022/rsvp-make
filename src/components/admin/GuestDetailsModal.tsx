@@ -264,7 +264,7 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                 }
 
                 doc.setFontSize(12);
-                doc.text(`${attendee.name} (${attendee.id_type || "No Type"})`, 20, yPos);
+                doc.text(`${attendee.name}${attendee.age ? `, Age: ${attendee.age}` : ''} (${attendee.id_type || "No Type"})`, 20, yPos);
                 yPos += 10;
 
                 // Images
@@ -501,7 +501,7 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <p className="font-medium text-zinc-900 dark:text-zinc-100">{attendee.name}</p>
-                                                <p className="text-xs text-zinc-500">{attendee.id_type || "ID Type Not Specified"}</p>
+                                                <p className="text-xs text-zinc-500">{attendee.id_type || "ID Type Not Specified"}{attendee.age ? ` · Age: ${attendee.age}` : ""}</p>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs font-mono text-zinc-400">#{idx + 1}</span>
