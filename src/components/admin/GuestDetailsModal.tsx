@@ -205,9 +205,8 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                             doc.setFontSize(8);
                             doc.setTextColor(100);
                             doc.text(`${t.mode_of_travel}${t.transport_number ? ` (${t.transport_number})` : ""}`, pageWidth - 20, rightY, { align: "right" });
-                            rightY += 4;
-                            if (t.pickup_location || t.drop_location) {
-                                doc.text(`${t.pickup_location || ""} -> ${t.drop_location || ""}`, pageWidth - 20, rightY, { align: "right" });
+                            if (t.drop_location) {
+                                doc.text(`Drop: ${t.drop_location}`, pageWidth - 20, rightY, { align: "right" });
                                 rightY += 4;
                             }
                             if (t.number_of_vehicles) {
@@ -394,50 +393,56 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
 
                     {/* Transport Details (Arrival & Departure) */}
                     {guest.departure_details?.applicable !== false && (
-                        <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-4 space-y-3">
-                            <h3 className="font-medium text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                                <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Transport Details</span>
-                            </h3>
-                            <div className="grid grid-cols-1 gap-6 text-sm">
-                                {guest.departure_details?.arrival?.date && (
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-700 pb-2">
-                                            <span className="text-zinc-500 block text-xs font-bold uppercase tracking-widest">Arrival</span>
-                                            <p className="font-semibold text-zinc-900 dark:text-zinc-100">{format(new Date(guest.departure_details.arrival.date), "MMMM d, yyyy")} @ {guest.departure_details.arrival.time || "N/A"}</p>
-                                        </div>
+                        <div className="space-y-4">
+                            {/* Arrival Section */}
+                            {guest.departure_details?.arrival?.date && (
+                                <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-xl p-4 border border-blue-100 dark:border-blue-900/30 space-y-3">
+                                    <h3 className="font-medium text-blue-900 dark:text-blue-300 flex items-center justify-between">
+                                        <span className="text-xs font-bold uppercase tracking-widest">Arrival Details</span>
+                                        <p className="text-sm font-semibold">{format(new Date(guest.departure_details.arrival.date), "MMMM d, yyyy")} @ {guest.departure_details.arrival.time || "N/A"}</p>
+                                    </h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {guest.departure_details.arrival.travelers?.map((t: any, i: number) => (
+                                            <div key={i} className="space-y-2 p-3 rounded-lg bg-white dark:bg-zinc-800 border border-blue-50 dark:border-blue-900/20 shadow-sm">
+                                                <p className="font-bold text-[10px] text-blue-500 uppercase">{t.name || `Guest ${i + 1}`}</p>
+                                                <div className="grid grid-cols-1 gap-1 text-[11px]">
+                                                    <p><span className="text-zinc-500">Mode:</span> {t.mode_of_travel} {t.transport_number ? `(${t.transport_number})` : ""}</p>
+                                                    <p><span className="text-zinc-500">Loc:</span> {t.station_airport}</p>
+                                                    <p><span className="text-zinc-500">Phone:</span> {t.contact_number || "N/A"}</p>
+                                                    <p><span className="text-zinc-500">Pax / Bags:</span> {t.number_of_pax || "1"} / {t.number_of_bags || "0"}</p>
+                                                    {t.drop_location && <p><span className="text-zinc-500">Drop:</span> {t.drop_location}</p>}
+                                                    <p><span className="text-zinc-500">Vehicles:</span> {t.number_of_vehicles || "1"}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8">
-                                            {guest.departure_details.arrival.travelers?.map((t: any, i: number) => (
-                                                <div key={i} className="space-y-2 p-3 rounded-lg bg-zinc-100/50 dark:bg-zinc-700/20 border border-zinc-100 dark:border-zinc-700">
-                                                    <p className="font-bold text-xs text-zinc-400 uppercase">{t.name || `Guest ${i + 1}`}</p>
-                                                    <div className="grid grid-cols-1 gap-1 text-[11px]">
-                                                        <p><span className="text-zinc-500">Mode:</span> {t.mode_of_travel} {t.transport_number ? `(${t.transport_number})` : ""}</p>
-                                                        <p><span className="text-zinc-500">Loc:</span> {t.station_airport}</p>
-                                                        <p><span className="text-zinc-500">Phone:</span> {t.contact_number || "N/A"}</p>
-                                                        <p><span className="text-zinc-500">Pax / Bags:</span> {t.number_of_pax || "1"} / {t.number_of_bags || "0"}</p>
-                                                        {t.pickup_location && <p><span className="text-zinc-500">Pickup:</span> {t.pickup_location}</p>}
-                                                        {t.drop_location && <p><span className="text-zinc-500">Drop:</span> {t.drop_location}</p>}
-                                                        <p><span className="text-zinc-500">Vehicles:</span> {t.number_of_vehicles || "1"}</p>
-                                                    </div>
+                            {/* Departure Section */}
+                            {guest.departure_details?.departure?.date && (
+                                <div className="bg-orange-50/50 dark:bg-orange-900/10 rounded-xl p-4 border border-orange-100 dark:border-orange-900/30 space-y-3">
+                                    <h3 className="font-medium text-orange-900 dark:text-orange-300 flex items-center justify-between">
+                                        <span className="text-xs font-bold uppercase tracking-widest">Departure Details</span>
+                                        <p className="text-sm font-semibold">{format(new Date(guest.departure_details.departure.date), "MMMM d, yyyy")} @ {guest.departure_details.departure.time || "N/A"}</p>
+                                    </h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {guest.departure_details.departure.travelers?.map((t: any, i: number) => (
+                                            <div key={i} className="space-y-2 p-3 rounded-lg bg-white dark:bg-zinc-800 border border-orange-50 dark:border-orange-900/20 shadow-sm">
+                                                <p className="font-bold text-[10px] text-orange-500 uppercase">{t.name || `Guest ${i + 1}`}</p>
+                                                <div className="grid grid-cols-1 gap-1 text-[11px]">
+                                                    <p><span className="text-zinc-500">Mode:</span> {t.mode_of_travel} {t.transport_number ? `(${t.transport_number})` : ""}</p>
+                                                    <p><span className="text-zinc-500">Loc:</span> {t.station_airport}</p>
+                                                    <p><span className="text-zinc-500">Phone:</span> {t.contact_number || "N/A"}</p>
+                                                    <p><span className="text-zinc-500">Pax / Bags:</span> {t.number_of_pax || "1"} / {t.number_of_bags || "0"}</p>
+                                                    {t.drop_location && <p><span className="text-zinc-500">Drop:</span> {t.drop_location}</p>}
+                                                    <p><span className="text-zinc-500">Vehicles:</span> {t.number_of_vehicles || "1"}</p>
                                                 </div>
-                                            ))}
-                                        </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                )}
-                                {guest.departure_details?.departure?.date && (
-                                    <div className="space-y-2 border-t border-zinc-200 dark:border-zinc-700 pt-4">
-                                        <span className="text-zinc-500 block text-xs font-semibold uppercase">Departure</span>
-                                        <p className="font-medium text-zinc-900 dark:text-zinc-100">{format(new Date(guest.departure_details.departure.date), "MMMM d, yyyy")} @ {guest.departure_details.departure.time || "N/A"}</p>
-                                        <div className="mt-2 flex flex-wrap gap-2">
-                                            {guest.departure_details.departure.travelers?.map((t: any, i: number) => (
-                                                <div key={i} className="text-[10px] text-zinc-400 bg-white dark:bg-zinc-800 px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700">
-                                                    {t.name} · {t.mode_of_travel} · {t.station_airport}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
                     )}
 

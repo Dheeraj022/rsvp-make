@@ -6,6 +6,8 @@ import { supabase } from "@/lib/supabase";
 import withAuth from "@/components/admin/withAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2, ArrowLeft, Upload, Download, Trash2, Search, UserPlus, Eye } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -20,6 +22,7 @@ type Event = {
     slug: string;
     assigned_hotel_email?: string;
     assigned_hotel_name?: string;
+    drop_locations?: string[];
 };
 
 type Guest = {
@@ -36,14 +39,37 @@ type Guest = {
     attending_count: number;
     attendees_data?: any[];
     departure_details?: {
-        departure_date?: string;
-        departure_time?: string;
-        travelers?: Array<{
-            name: string;
-            mode_of_travel: string;
-            station_airport?: string;
-            ticket_url: string;
-        }>;
+        applicable?: boolean;
+        arrival?: {
+            date?: string;
+            time?: string;
+            travelers?: Array<{
+                name: string;
+                mode_of_travel: string;
+                transport_number?: string;
+                station_airport?: string;
+                contact_number?: string;
+                number_of_pax?: string;
+                number_of_bags?: string;
+                drop_location?: string;
+                number_of_vehicles?: string;
+            }>;
+        };
+        departure?: {
+            date?: string;
+            time?: string;
+            travelers?: Array<{
+                name: string;
+                mode_of_travel: string;
+                transport_number?: string;
+                station_airport?: string;
+                contact_number?: string;
+                number_of_pax?: string;
+                number_of_bags?: string;
+                drop_location?: string;
+                number_of_vehicles?: string;
+            }>;
+        };
         message?: string;
     };
 };
@@ -61,14 +87,18 @@ function EventDetails() {
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [activeTab, setActiveTab] = useState<"guests" | "departure">("guests");
+    const [activeTab, setActiveTab] = useState<"guests" | "arrival" | "departure">("guests");
 
 
-    // Hotel Assignment State
     const [showHotelModal, setShowHotelModal] = useState(false);
     const [hotelEmail, setHotelEmail] = useState("");
     const [hotelName, setHotelName] = useState("");
     const [assignLoading, setAssignLoading] = useState(false);
+
+    // Drop Locations Management State
+    const [showDropLocationsModal, setShowDropLocationsModal] = useState(false);
+    const [dropLocationsText, setDropLocationsText] = useState("");
+    const [dropLocationsLoading, setDropLocationsLoading] = useState(false);
 
     const eventId = params.id as string;
 
@@ -89,6 +119,7 @@ function EventDetails() {
             setEvent(eventData);
             setHotelEmail(eventData.assigned_hotel_email || "");
             setHotelName(eventData.assigned_hotel_name || "");
+            setDropLocationsText(eventData.drop_locations?.join(", ") || "");
 
             // Fetch Guests
             const { data: guestData, error: guestError } = await supabase
@@ -127,6 +158,27 @@ function EventDetails() {
             alert("Error assigning hotel: " + error.message);
         } finally {
             setAssignLoading(false);
+        }
+    };
+
+    const handleUpdateDropLocations = async () => {
+        setDropLocationsLoading(true);
+        try {
+            const locations = dropLocationsText.split(',').map(s => s.trim()).filter(s => s !== "");
+            const { error } = await supabase
+                .from("events")
+                .update({ drop_locations: locations })
+                .eq("id", eventId);
+
+            if (error) throw error;
+
+            setEvent(prev => prev ? ({ ...prev, drop_locations: locations }) : null);
+            setShowDropLocationsModal(false);
+            alert("Drop locations updated successfully.");
+        } catch (error: any) {
+            alert("Error updating drop locations: " + error.message);
+        } finally {
+            setDropLocationsLoading(false);
         }
     };
 
@@ -294,35 +346,63 @@ function EventDetails() {
         document.body.removeChild(link);
     };
 
+    const handleExportArrival = () => {
+        const guestsWithArrival = guests.filter(g => g.departure_details?.arrival);
+        const exportData = guestsWithArrival.flatMap(guest => {
+            const arrival = guest.departure_details?.arrival;
+            const travelers = arrival?.travelers || [];
+            if (travelers.length === 0) return [];
+            return travelers.map((traveler) => ({
+                "Main Guest": guest.name,
+                "Traveler Name": traveler.name,
+                "Arrival Date": arrival?.date ? format(new Date(arrival.date), "MMM d, yyyy") : "-",
+                "Arrival Time": arrival?.time || "-",
+                "Station/Airport": traveler.station_airport || "-",
+                "Mode of Travel": traveler.mode_of_travel || "-",
+                "Transport No": traveler.transport_number || "-",
+                "Contact": traveler.contact_number || guest.phone || "-",
+                "Pax": traveler.number_of_pax || "1",
+                "Bags": traveler.number_of_bags || "0",
+                "Vehicles": traveler.number_of_vehicles || "1",
+                "Drop Location": traveler.drop_location || "-"
+            }));
+        });
+        const csv = Papa.unparse(exportData);
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `${event?.name || "arrival"}_arrival_details.csv`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const handleExportDeparture = () => {
         // Get all guests with departure details
-        const guestsWithDeparture = guests.filter(g => g.departure_details);
+        const guestsWithDeparture = guests.filter(g => g.departure_details?.departure);
 
         // Flatten data for export
         const exportData = guestsWithDeparture.flatMap(guest => {
-            const departureData = guest.departure_details;
-            const travelers = departureData?.travelers || [];
+            const departure = guest.departure_details?.departure;
+            const travelers = departure?.travelers || [];
 
-            if (travelers.length === 0) {
-                return [{
-                    Name: guest.name,
-                    "Departure Date": departureData?.departure_date ? format(new Date(departureData.departure_date), "MMM d, yyyy") : "-",
-                    "Departure Time": departureData?.departure_time || "-",
-                    "Station/Airport": "-",
-                    "Mode of Travel": "-",
-                    "No of Pax": "0",
-                    Contact: guest.phone || "-"
-                }];
-            }
+            if (travelers.length === 0) return [];
 
-            return travelers.map((traveler: any, idx: number) => ({
-                Name: `${traveler.name} (${guest.name})`,
-                "Departure Date": departureData?.departure_date ? format(new Date(departureData.departure_date), "MMM d, yyyy") : "-",
-                "Departure Time": departureData?.departure_time || "-",
+            return travelers.map((traveler: any) => ({
+                "Main Guest": guest.name,
+                "Traveler Name": traveler.name,
+                "Departure Date": departure?.date ? format(new Date(departure.date), "MMM d, yyyy") : "-",
+                "Departure Time": departure?.time || "-",
                 "Station/Airport": traveler.station_airport || "-",
                 "Mode of Travel": traveler.mode_of_travel || "-",
-                "No of Pax": travelers.length.toString(),
-                Contact: guest.phone || "-"
+                "Transport No": traveler.transport_number || "-",
+                "Contact": traveler.contact_number || guest.phone || "-",
+                "Pax": traveler.number_of_pax || "1",
+                "Bags": traveler.number_of_bags || "0",
+                "Vehicles": traveler.number_of_vehicles || "1",
+                "Drop Location": traveler.drop_location || "-"
             }));
         });
 
@@ -339,7 +419,7 @@ function EventDetails() {
     };
 
     const handleDeleteDepartureDetails = async (guestId: string) => {
-        if (!confirm("Are you sure you want to delete this guest's departure details?")) return;
+        if (!confirm("Are you sure you want to delete this guest's transport details?")) return;
 
         try {
             const { error } = await supabase
@@ -351,9 +431,9 @@ function EventDetails() {
 
             // Refresh the guest list
             await fetchEventData();
-            alert("Departure details deleted successfully.");
+            alert("Transport details deleted successfully.");
         } catch (error: any) {
-            alert("Error deleting departure details: " + error.message);
+            alert("Error deleting transport details: " + error.message);
         }
     };
 
@@ -427,6 +507,9 @@ function EventDetails() {
                         <Button variant="outline" onClick={() => setShowHotelModal(true)} className="text-xs sm:text-sm">
                             Hotel Access
                         </Button>
+                        <Button variant="outline" onClick={() => setShowDropLocationsModal(true)} className="text-xs sm:text-sm">
+                            Drop Locations
+                        </Button>
                         <Button variant="outline" onClick={handleExport} className="gap-1 sm:gap-2 text-xs sm:text-sm">
                             <Download className="h-3 w-3 sm:h-4 sm:w-4" />
                             <span className="hidden sm:inline">Export CSV</span>
@@ -455,7 +538,6 @@ function EventDetails() {
                     ))}
                 </div>
 
-                {/* Tab Toggle */}
                 <div className="flex gap-2 bg-white dark:bg-zinc-900 p-1.5 sm:p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm w-full sm:w-fit">
                     <button
                         onClick={() => setActiveTab("guests")}
@@ -465,6 +547,15 @@ function EventDetails() {
                             }`}
                     >
                         Guest Details
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("arrival")}
+                        className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 ${activeTab === "arrival"
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            }`}
+                    >
+                        Arrival Details
                     </button>
                     <button
                         onClick={() => setActiveTab("departure")}
@@ -563,6 +654,79 @@ function EventDetails() {
                                                 </td>
                                             </tr>
                                         ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* Arrival Management */}
+                {activeTab === "arrival" && (
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                        <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                            <h2 className="text-lg font-semibold">Arrival Details</h2>
+                            <div className="flex gap-2 w-full sm:w-auto">
+                                <div className="relative flex-1 sm:w-64">
+                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-400" />
+                                    <Input
+                                        placeholder="Search guests..."
+                                        className="pl-9"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                                <Button variant="outline" onClick={handleExportArrival}>
+                                    <Download className="mr-2 h-4 w-4" /> Export CSV
+                                </Button>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="text-zinc-500 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/50">
+                                    <tr>
+                                        <th className="px-6 py-3 font-medium">Guest Name</th>
+                                        <th className="px-6 py-3 font-medium">Arrival Date</th>
+                                        <th className="px-6 py-3 font-medium">Time</th>
+                                        <th className="px-6 py-3 font-medium">Station/Airport</th>
+                                        <th className="px-6 py-3 font-medium">Travel Mode</th>
+                                        <th className="px-6 py-3 font-medium text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                                    {filteredGuests.filter(g => g.departure_details?.arrival?.date).length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-8 text-center text-zinc-500">
+                                                No arrival details found.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        filteredGuests.filter(g => g.departure_details?.arrival?.date).map((guest) => {
+                                            const arrival = guest.departure_details?.arrival;
+                                            return (
+                                                <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                                    <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{guest.name}</td>
+                                                    <td className="px-6 py-4 text-zinc-500">
+                                                        {arrival?.date ? format(new Date(arrival.date), "MMM d, yyyy") : "-"}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-zinc-500">{arrival?.time || "-"}</td>
+                                                    <td className="px-6 py-4 text-zinc-500">
+                                                        {arrival?.travelers?.[0]?.station_airport || "-"}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-zinc-500">
+                                                        {arrival?.travelers?.[0]?.mode_of_travel || "-"}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
+                                                                <Eye className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
                                     )}
                                 </tbody>
                             </table>
@@ -819,6 +983,40 @@ function EventDetails() {
                 </div>
             )}
 
+
+            {showDropLocationsModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 border border-zinc-200 dark:border-zinc-800">
+                        <div className="mb-4">
+                            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Manage Drop Locations</h3>
+                            <p className="text-zinc-500 text-sm">
+                                Provide a comma-separated list of hotels or locations for guests to choose from.
+                            </p>
+                        </div>
+
+                        <div className="space-y-4 mb-6">
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium">Drop Locations (Comma-separated)</Label>
+                                <Textarea
+                                    placeholder="Grand Hyatt Goa, Taj Exotica, The Leela..."
+                                    value={dropLocationsText}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDropLocationsText(e.target.value)}
+                                    rows={4}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <Button variant="ghost" onClick={() => setShowDropLocationsModal(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={handleUpdateDropLocations} disabled={dropLocationsLoading}>
+                                {dropLocationsLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Update Locations"}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {showHotelModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">

@@ -22,6 +22,7 @@ function CreateEvent() {
         location: "",
         description: "",
         slug: "",
+        drop_locations: "",
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -57,6 +58,7 @@ function CreateEvent() {
                 description: formData.description,
                 slug: formData.slug,
                 admin_id: user.id,
+                drop_locations: formData.drop_locations.split(',').map(s => s.trim()).filter(s => s !== ""),
             });
 
             if (error) throw error;
@@ -159,8 +161,21 @@ function CreateEvent() {
                                 placeholder="Join us for a night of celebration..."
                                 value={formData.description}
                                 onChange={handleChange}
-                                rows={4}
+                                rows={3}
                             />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="drop_locations">Drop Locations / Hotels (Comma-separated)</Label>
+                            <Textarea
+                                id="drop_locations"
+                                name="drop_locations"
+                                placeholder="Grand Hyatt Goa, Taj Exotica, The Leela..."
+                                value={formData.drop_locations}
+                                onChange={handleChange}
+                                rows={2}
+                            />
+                            <p className="text-xs text-zinc-500">Provide a list of hotels or locations for guests to choose from in the transport form.</p>
                         </div>
 
                         <Button type="submit" className="w-full" disabled={loading}>
