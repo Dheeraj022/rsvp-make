@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, MapPin, Calendar, Check, Search, ArrowRight, ArrowLeft, Upload, ChevronDown } from "lucide-react";
+import { Loader2, MapPin, Calendar, Check, Search, ArrowRight, ArrowLeft, Upload, ChevronDown, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/useToast";
@@ -141,16 +142,78 @@ export default function PublicEventPage() {
         }
     };
 
+    // Convert ALL pages of a PDF into a single stitched JPEG Blob
+    const convertPdfToImageBlob = async (file: File): Promise<Blob> => {
+        // Dynamically import so pdfjs only loads in the browser (avoids SSR DOMMatrix crash)
+        const pdfjsLib = await import("pdfjs-dist");
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const numPages = pdf.numPages;
+        const scale = 2; // 2× for quality
+        const gap = 20; // px gap between pages
+
+        // Render each page to its own canvas
+        const pageCanvases: HTMLCanvasElement[] = [];
+        for (let i = 1; i <= numPages; i++) {
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement("canvas");
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            await page.render({ canvas, viewport } as any).promise;
+            pageCanvases.push(canvas);
+        }
+
+        // Stitch all pages vertically onto one tall canvas
+        const totalWidth = Math.max(...pageCanvases.map(c => c.width));
+        const totalHeight = pageCanvases.reduce((sum, c) => sum + c.height, 0) + gap * (numPages - 1);
+
+        const stitched = document.createElement("canvas");
+        stitched.width = totalWidth;
+        stitched.height = totalHeight;
+        const ctx = stitched.getContext("2d")!;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, totalWidth, totalHeight);
+
+        let yOffset = 0;
+        for (const pageCanvas of pageCanvases) {
+            // Center narrower pages horizontally
+            const xOffset = Math.floor((totalWidth - pageCanvas.width) / 2);
+            ctx.drawImage(pageCanvas, xOffset, yOffset);
+            yOffset += pageCanvas.height + gap;
+        }
+
+        return new Promise<Blob>((resolve, reject) => {
+            stitched.toBlob(
+                (blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed")),
+                "image/jpeg",
+                0.92
+            );
+        });
+    };
+
     const handleFileUpload = async (file: File, index: number, field: "id_front" | "id_back") => {
         try {
             setUploading(`${index}-${field}`);
-            const fileExt = file.name.split('.').pop();
+
+            let uploadFile: File | Blob = file;
+            let fileExt = file.name.split('.').pop()?.toLowerCase();
+
+            // If it's a PDF, convert the first page to a JPEG before uploading
+            if (file.type === "application/pdf" || fileExt === "pdf") {
+                const jpegBlob = await convertPdfToImageBlob(file);
+                uploadFile = jpegBlob;
+                fileExt = "jpg";
+            }
+
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
             const filePath = `${event?.id}/${selectedGuest?.id}/${fileName}`;
 
             const { error: uploadError } = await supabase.storage
                 .from("guest-ids")
-                .upload(filePath, file);
+                .upload(filePath, uploadFile);
 
             if (uploadError) throw uploadError;
 
@@ -158,9 +221,11 @@ export default function PublicEventPage() {
                 .from("guest-ids")
                 .getPublicUrl(filePath);
 
-            const newAttendees = [...attendees];
-            newAttendees[index] = { ...newAttendees[index], [field]: publicUrl };
-            setAttendees(newAttendees);
+            setAttendees(prev => {
+                const newAttendees = [...prev];
+                newAttendees[index] = { ...newAttendees[index], [field]: publicUrl };
+                return newAttendees;
+            });
 
         } catch (error: any) {
             alert("Upload failed: " + error.message);
@@ -186,8 +251,8 @@ export default function PublicEventPage() {
             if (status === "accepted") {
                 for (let i = 0; i < attendees.length; i++) {
                     const a = attendees[i];
-                    if (!a.name || !a.age || !a.id_front || !a.id_back) {
-                        alert(`Please fill all details for Guest ${i + 1} (Name, Age, and ID images)`);
+                    if (!a.name || !a.age || !a.id_front) {
+                        alert(`Please fill all details for Guest ${i + 1} (Name, Age, and Front ID image)`);
                         setSubmitting(false);
                         return;
                     }
@@ -700,7 +765,7 @@ export default function PublicEventPage() {
                                                                 <div className="relative group">
                                                                     <input
                                                                         type="file"
-                                                                        accept="image/*"
+                                                                        accept="image/*,.pdf,application/pdf"
                                                                         className="hidden"
                                                                         id={`file-${idx}-front`}
                                                                         onChange={(e) => {
@@ -716,16 +781,28 @@ export default function PublicEventPage() {
                                                                         {uploading === `${idx}-id_front` ? (
                                                                             <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
                                                                         ) : attendee.id_front ? (
-                                                                            <div className="relative w-full h-full overflow-hidden rounded-xl">
-                                                                                <img src={attendee.id_front} alt="Front ID" className="object-cover w-full h-full" />
-                                                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">Change</div>
-                                                                            </div>
+                                                                            attendee.id_front.toLowerCase().includes('.pdf') ? (
+                                                                                <div className="flex flex-col items-center justify-center space-y-2">
+                                                                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                                                                                        <FileText className="w-4 h-4 text-red-500" />
+                                                                                        <span className="text-xs font-semibold text-red-600 dark:text-red-400">PDF</span>
+                                                                                    </div>
+                                                                                    <a href={attendee.id_front} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 underline" onClick={e => e.stopPropagation()}>View PDF</a>
+                                                                                    <span className="text-xs text-zinc-400">Click to change</span>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="relative w-full h-full overflow-hidden rounded-xl">
+                                                                                    <img src={attendee.id_front} alt="Front ID" className="object-cover w-full h-full" />
+                                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">Change</div>
+                                                                                </div>
+                                                                            )
                                                                         ) : (
                                                                             <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
                                                                                 <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
                                                                                     <Upload className="w-4 h-4" />
                                                                                 </div>
                                                                                 <span className="text-xs font-medium">Upload Front</span>
+                                                                                <span className="text-xs text-zinc-400">Image or PDF</span>
                                                                             </div>
                                                                         )}
                                                                     </label>
@@ -737,7 +814,7 @@ export default function PublicEventPage() {
                                                                 <div className="relative group">
                                                                     <input
                                                                         type="file"
-                                                                        accept="image/*"
+                                                                        accept="image/*,.pdf,application/pdf"
                                                                         className="hidden"
                                                                         id={`file-${idx}-back`}
                                                                         onChange={(e) => {
@@ -753,16 +830,28 @@ export default function PublicEventPage() {
                                                                         {uploading === `${idx}-id_back` ? (
                                                                             <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
                                                                         ) : attendee.id_back ? (
-                                                                            <div className="relative w-full h-full overflow-hidden rounded-xl">
-                                                                                <img src={attendee.id_back} alt="Back ID" className="object-cover w-full h-full" />
-                                                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">Change</div>
-                                                                            </div>
+                                                                            attendee.id_back.toLowerCase().includes('.pdf') ? (
+                                                                                <div className="flex flex-col items-center justify-center space-y-2">
+                                                                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                                                                                        <FileText className="w-4 h-4 text-red-500" />
+                                                                                        <span className="text-xs font-semibold text-red-600 dark:text-red-400">PDF</span>
+                                                                                    </div>
+                                                                                    <a href={attendee.id_back} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 underline" onClick={e => e.stopPropagation()}>View PDF</a>
+                                                                                    <span className="text-xs text-zinc-400">Click to change</span>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="relative w-full h-full overflow-hidden rounded-xl">
+                                                                                    <img src={attendee.id_back} alt="Back ID" className="object-cover w-full h-full" />
+                                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">Change</div>
+                                                                                </div>
+                                                                            )
                                                                         ) : (
                                                                             <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
                                                                                 <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
                                                                                     <Upload className="w-4 h-4" />
                                                                                 </div>
                                                                                 <span className="text-xs font-medium">Upload Back</span>
+                                                                                <span className="text-xs text-zinc-400">Image or PDF</span>
                                                                             </div>
                                                                         )}
                                                                     </label>

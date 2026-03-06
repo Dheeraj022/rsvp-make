@@ -288,9 +288,9 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
 
                             const { base64, width, height, ratio } = await getNormalizedImage(img.url);
 
-                            // Calculate Dimensions
-                            const maxWidth = 100; // mm
-                            const maxHeight = 120; // mm limit
+                            // Calculate Dimensions — use full usable page width (A4 = 210mm, 20mm margins each side)
+                            const maxWidth = 170; // mm
+                            const maxHeight = 240; // mm
 
                             let imgWidth = maxWidth;
                             let imgHeight = maxWidth / ratio;
