@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, MapPin, Calendar, Check, Search, ArrowRight, ArrowLeft, Upload } from "lucide-react";
+import { Loader2, MapPin, Calendar, Check, Search, ArrowRight, ArrowLeft, Upload, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/useToast";
@@ -72,6 +72,7 @@ export default function PublicEventPage() {
     const [departureMessage, setDepartureMessage] = useState("");
     const [uploadingDepartureTicket, setUploadingDepartureTicket] = useState<string | null>(null);
     const [submittingDeparture, setSubmittingDeparture] = useState(false);
+    const [expandedGuest, setExpandedGuest] = useState<number | null>(null); // index of expanded additional guest (null = all collapsed)
 
     useEffect(() => {
         fetchEvent();
@@ -619,173 +620,224 @@ export default function PublicEventPage() {
                                                 </div>
                                             </div>
 
-                                            {attendees.map((attendee, idx) => (
-                                                <div key={idx} className="relative p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 space-y-5">
-                                                    <div className="flex items-center justify-between">
-                                                        <h4 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
-                                                            {idx === 0 ? "Main Guest" : `Guest ${idx + 1}`}
-                                                        </h4>
-                                                        {idx > 0 && (
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 h-8 px-2"
-                                                                onClick={() => {
-                                                                    const newA = attendees.filter((_, i) => i !== idx);
-                                                                    setAttendees(newA);
-                                                                    setAttendingCount(newA.length);
-                                                                }}
-                                                            >
-                                                                Remove
-                                                            </Button>
-                                                        )}
-                                                    </div>
+                                            {attendees.map((attendee, idx) => {
+                                                const isMain = idx === 0;
+                                                const isExpanded = isMain || expandedGuest === idx;
 
-                                                    <div className="space-y-2">
-                                                        <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Full Name</Label>
-                                                        <Input
-                                                            value={attendee.name}
-                                                            onChange={(e) => {
-                                                                const newA = [...attendees];
-                                                                newA[idx].name = e.target.value;
-                                                                setAttendees(newA);
-                                                            }}
-                                                            placeholder="Enter full name"
-                                                            className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 focus:border-zinc-400 dark:focus:border-zinc-500 text-base"
-                                                        />
-                                                    </div>
-
-                                                    {/* Age and Type Fields */}
-                                                    <div className="grid grid-cols-2 gap-4">
+                                                // Shared inner content for any guest
+                                                const guestFormBody = (
+                                                    <div className="space-y-5 pt-4">
                                                         <div className="space-y-2">
-                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Age</Label>
+                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Full Name</Label>
                                                             <Input
-                                                                type="number"
-                                                                value={attendee.age}
+                                                                value={attendee.name}
                                                                 onChange={(e) => {
                                                                     const newA = [...attendees];
-                                                                    newA[idx].age = e.target.value;
+                                                                    newA[idx].name = e.target.value;
                                                                     setAttendees(newA);
                                                                 }}
-                                                                placeholder="Enter age"
+                                                                placeholder="Enter full name"
                                                                 className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 focus:border-zinc-400 dark:focus:border-zinc-500 text-base"
-                                                                min="0"
-                                                                max="120"
                                                             />
                                                         </div>
+
+                                                        {/* Age and Type Fields */}
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="space-y-2">
+                                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Age</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    value={attendee.age}
+                                                                    onChange={(e) => {
+                                                                        const newA = [...attendees];
+                                                                        newA[idx].age = e.target.value;
+                                                                        setAttendees(newA);
+                                                                    }}
+                                                                    placeholder="Enter age"
+                                                                    className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 focus:border-zinc-400 dark:focus:border-zinc-500 text-base"
+                                                                    min="0"
+                                                                    max="120"
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Type</Label>
+                                                                <select
+                                                                    className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition"
+                                                                    value={attendee.guest_type}
+                                                                    onChange={(e) => {
+                                                                        const newA = [...attendees];
+                                                                        newA[idx].guest_type = e.target.value;
+                                                                        setAttendees(newA);
+                                                                    }}
+                                                                >
+                                                                    <option value="Adult">Adult</option>
+                                                                    <option value="Child">Child</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+
                                                         <div className="space-y-2">
-                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Type</Label>
+                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">ID Document Type</Label>
                                                             <select
                                                                 className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition"
-                                                                value={attendee.guest_type}
+                                                                value={attendee.id_type}
                                                                 onChange={(e) => {
                                                                     const newA = [...attendees];
-                                                                    newA[idx].guest_type = e.target.value;
+                                                                    newA[idx].id_type = e.target.value;
                                                                     setAttendees(newA);
                                                                 }}
                                                             >
-                                                                <option value="Adult">Adult</option>
-                                                                <option value="Child">Child</option>
+                                                                <option value="Aadhar Card">Aadhar Card</option>
+                                                                <option value="Passport">Passport</option>
+                                                                <option value="Driving License">Driving License</option>
+                                                                <option value="Voter ID Card">Voter ID Card</option>
                                                             </select>
                                                         </div>
-                                                    </div>
 
-                                                    <div className="space-y-2">
-                                                        <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">ID Document Type</Label>
-                                                        <select
-                                                            className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition"
-                                                            value={attendee.id_type}
-                                                            onChange={(e) => {
-                                                                const newA = [...attendees];
-                                                                newA[idx].id_type = e.target.value;
-                                                                setAttendees(newA);
-                                                            }}
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="space-y-2">
+                                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Front Side</Label>
+                                                                <div className="relative group">
+                                                                    <input
+                                                                        type="file"
+                                                                        accept="image/*"
+                                                                        className="hidden"
+                                                                        id={`file-${idx}-front`}
+                                                                        onChange={(e) => {
+                                                                            const file = e.target.files?.[0];
+                                                                            if (file) handleFileUpload(file, idx, "id_front");
+                                                                        }}
+                                                                    />
+                                                                    <label
+                                                                        htmlFor={`file-${idx}-front`}
+                                                                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
+                                                                        ${attendee.id_front ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800'}`}
+                                                                    >
+                                                                        {uploading === `${idx}-id_front` ? (
+                                                                            <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+                                                                        ) : attendee.id_front ? (
+                                                                            <div className="relative w-full h-full overflow-hidden rounded-xl">
+                                                                                <img src={attendee.id_front} alt="Front ID" className="object-cover w-full h-full" />
+                                                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">Change</div>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
+                                                                                <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
+                                                                                    <Upload className="w-4 h-4" />
+                                                                                </div>
+                                                                                <span className="text-xs font-medium">Upload Front</span>
+                                                                            </div>
+                                                                        )}
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="space-y-2">
+                                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Back Side</Label>
+                                                                <div className="relative group">
+                                                                    <input
+                                                                        type="file"
+                                                                        accept="image/*"
+                                                                        className="hidden"
+                                                                        id={`file-${idx}-back`}
+                                                                        onChange={(e) => {
+                                                                            const file = e.target.files?.[0];
+                                                                            if (file) handleFileUpload(file, idx, "id_back");
+                                                                        }}
+                                                                    />
+                                                                    <label
+                                                                        htmlFor={`file-${idx}-back`}
+                                                                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
+                                                                        ${attendee.id_back ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800'}`}
+                                                                    >
+                                                                        {uploading === `${idx}-id_back` ? (
+                                                                            <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+                                                                        ) : attendee.id_back ? (
+                                                                            <div className="relative w-full h-full overflow-hidden rounded-xl">
+                                                                                <img src={attendee.id_back} alt="Back ID" className="object-cover w-full h-full" />
+                                                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">Change</div>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
+                                                                                <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
+                                                                                    <Upload className="w-4 h-4" />
+                                                                                </div>
+                                                                                <span className="text-xs font-medium">Upload Back</span>
+                                                                            </div>
+                                                                        )}
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+
+                                                if (isMain) {
+                                                    // Main Guest — always visible, never collapsible
+                                                    return (
+                                                        <div key={idx} className="relative p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800">
+                                                            <h4 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">Main Guest</h4>
+                                                            {guestFormBody}
+                                                        </div>
+                                                    );
+                                                }
+
+                                                // Additional guests — accordion style
+                                                return (
+                                                    <div key={idx} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+                                                        {/* Clickable header */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setExpandedGuest(expandedGuest === idx ? null : idx)}
+                                                            className="w-full flex items-center justify-between px-6 py-4 bg-zinc-50 dark:bg-zinc-800/30 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
                                                         >
-                                                            <option value="Aadhar Card">Aadhar Card</option>
-                                                            <option value="Passport">Passport</option>
-                                                            <option value="Driving License">Driving License</option>
-                                                            <option value="Voter ID Card">Voter ID Card</option>
-                                                        </select>
-                                                    </div>
+                                                            <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                                                                Show Guest {idx + 1}
+                                                            </span>
+                                                            <motion.div
+                                                                animate={{ rotate: isExpanded ? 180 : 0 }}
+                                                                transition={{ duration: 0.25 }}
+                                                            >
+                                                                <ChevronDown className="w-4 h-4 text-zinc-500" />
+                                                            </motion.div>
+                                                        </button>
 
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <div className="space-y-2">
-                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Front Side</Label>
-                                                            <div className="relative group">
-                                                                <input
-                                                                    type="file"
-                                                                    accept="image/*"
-                                                                    className="hidden"
-                                                                    id={`file-${idx}-front`}
-                                                                    onChange={(e) => {
-                                                                        const file = e.target.files?.[0];
-                                                                        if (file) handleFileUpload(file, idx, "id_front");
-                                                                    }}
-                                                                />
-                                                                <label
-                                                                    htmlFor={`file-${idx}-front`}
-                                                                    className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
-                                                                    ${attendee.id_front ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800'}`}
+                                                        {/* Animated body */}
+                                                        <AnimatePresence initial={false}>
+                                                            {isExpanded && (
+                                                                <motion.div
+                                                                    key="body"
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: "auto", opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                                    style={{ overflow: "hidden" }}
                                                                 >
-                                                                    {uploading === `${idx}-id_front` ? (
-                                                                        <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
-                                                                    ) : attendee.id_front ? (
-                                                                        <div className="relative w-full h-full overflow-hidden rounded-xl">
-                                                                            <img src={attendee.id_front} alt="Front ID" className="object-cover w-full h-full" />
-                                                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">Change</div>
+                                                                    <div className="px-6 pb-6 bg-zinc-50 dark:bg-zinc-800/30 space-y-0">
+                                                                        <div className="flex justify-end pt-2">
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 h-8 px-2"
+                                                                                onClick={() => {
+                                                                                    const newA = attendees.filter((_, i) => i !== idx);
+                                                                                    setAttendees(newA);
+                                                                                    setAttendingCount(newA.length);
+                                                                                    setExpandedGuest(null);
+                                                                                }}
+                                                                            >
+                                                                                Remove
+                                                                            </Button>
                                                                         </div>
-                                                                    ) : (
-                                                                        <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
-                                                                            <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
-                                                                                <Upload className="w-4 h-4" />
-                                                                            </div>
-                                                                            <span className="text-xs font-medium">Upload Front</span>
-                                                                        </div>
-                                                                    )}
-                                                                </label>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="space-y-2">
-                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Back Side</Label>
-                                                            <div className="relative group">
-                                                                <input
-                                                                    type="file"
-                                                                    accept="image/*"
-                                                                    className="hidden"
-                                                                    id={`file-${idx}-back`}
-                                                                    onChange={(e) => {
-                                                                        const file = e.target.files?.[0];
-                                                                        if (file) handleFileUpload(file, idx, "id_back");
-                                                                    }}
-                                                                />
-                                                                <label
-                                                                    htmlFor={`file-${idx}-back`}
-                                                                    className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
-                                                                    ${attendee.id_back ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800'}`}
-                                                                >
-                                                                    {uploading === `${idx}-id_back` ? (
-                                                                        <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
-                                                                    ) : attendee.id_back ? (
-                                                                        <div className="relative w-full h-full overflow-hidden rounded-xl">
-                                                                            <img src={attendee.id_back} alt="Back ID" className="object-cover w-full h-full" />
-                                                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">Change</div>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
-                                                                            <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
-                                                                                <Upload className="w-4 h-4" />
-                                                                            </div>
-                                                                            <span className="text-xs font-medium">Upload Back</span>
-                                                                        </div>
-                                                                    )}
-                                                                </label>
-                                                            </div>
-                                                        </div>
+                                                                        {guestFormBody}
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
 
                                             <Button
                                                 type="button"
