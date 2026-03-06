@@ -358,6 +358,7 @@ export default function PublicEventPage() {
             // Check if departure details are already filled or marked as not applicable
             const hasDepartureDetails = updatedGuest?.departure_details &&
                 (updatedGuest.departure_details.applicable === false ||
+                    (updatedGuest.departure_details.departure?.travelers && updatedGuest.departure_details.departure.travelers.length > 0) ||
                     (updatedGuest.departure_details.travelers && updatedGuest.departure_details.travelers.length > 0));
 
             if (status === 'accepted') {

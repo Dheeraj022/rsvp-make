@@ -71,6 +71,16 @@ type Guest = {
             }>;
         };
         message?: string;
+        // Legacy fields for backward compatibility
+        arrival_date?: string;
+        arrival_time?: string;
+        arrival_location?: string;
+        arrival_mode?: string;
+        departure_date?: string;
+        departure_time?: string;
+        departure_location?: string;
+        departure_mode?: string;
+        travelers?: any[];
     };
 };
 
@@ -695,27 +705,28 @@ function EventDetails() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                                    {filteredGuests.filter(g => g.departure_details?.arrival?.date).length === 0 ? (
+                                    {filteredGuests.filter(g => g.departure_details?.arrival?.date || g.departure_details?.arrival_date).length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="px-6 py-8 text-center text-zinc-500">
                                                 No arrival details found.
                                             </td>
                                         </tr>
                                     ) : (
-                                        filteredGuests.filter(g => g.departure_details?.arrival?.date).map((guest) => {
+                                        filteredGuests.filter(g => g.departure_details?.arrival?.date || g.departure_details?.arrival_date).map((guest) => {
                                             const arrival = guest.departure_details?.arrival;
                                             return (
                                                 <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                                                     <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{guest.name}</td>
                                                     <td className="px-6 py-4 text-zinc-500">
-                                                        {arrival?.date ? format(new Date(arrival.date), "MMM d, yyyy") : "-"}
+                                                        {arrival?.date ? format(new Date(arrival.date), "MMM d, yyyy") :
+                                                            guest.departure_details?.arrival_date ? format(new Date(guest.departure_details.arrival_date), "MMM d, yyyy") : "-"}
                                                     </td>
-                                                    <td className="px-6 py-4 text-zinc-500">{arrival?.time || "-"}</td>
+                                                    <td className="px-6 py-4 text-zinc-500">{arrival?.time || guest.departure_details?.arrival_time || "-"}</td>
                                                     <td className="px-6 py-4 text-zinc-500">
-                                                        {arrival?.travelers?.[0]?.station_airport || "-"}
+                                                        {arrival?.travelers?.[0]?.station_airport || guest.departure_details?.arrival_location || "-"}
                                                     </td>
                                                     <td className="px-6 py-4 text-zinc-500">
-                                                        {arrival?.travelers?.[0]?.mode_of_travel || "-"}
+                                                        {arrival?.travelers?.[0]?.mode_of_travel || guest.departure_details?.arrival_mode || "-"}
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
                                                         <div className="flex items-center justify-end gap-2">
@@ -770,7 +781,7 @@ function EventDetails() {
                                 </thead>
                                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                                     {(() => {
-                                        const guestsWithDeparture = filteredGuests.filter(g => g.departure_details);
+                                        const guestsWithDeparture = filteredGuests.filter(g => g.departure_details && (g.departure_details.applicable === false || g.departure_details.departure?.date || g.departure_details.departure_date));
 
                                         if (guestsWithDeparture.length === 0) {
                                             return (
@@ -784,7 +795,8 @@ function EventDetails() {
 
                                         return guestsWithDeparture.flatMap((guest: any) => {
                                             const departureData = guest.departure_details;
-                                            const travelers = departureData?.travelers || [];
+                                            const departure = departureData?.departure;
+                                            const travelers = departure?.travelers || departureData?.travelers || [];
 
                                             // Check if departure is not applicable
                                             if (departureData?.applicable === false) {
@@ -817,13 +829,14 @@ function EventDetails() {
                                                     <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                                                         <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{guest.name}</td>
                                                         <td className="px-6 py-4 text-zinc-500">
-                                                            {departureData?.departure_date ? format(new Date(departureData.departure_date), "MMM d, yyyy") : "-"}
+                                                            {departure?.date ? format(new Date(departure.date), "MMM d, yyyy") :
+                                                                departureData?.departure_date ? format(new Date(departureData.departure_date), "MMM d, yyyy") : "-"}
                                                         </td>
                                                         <td className="px-6 py-4 text-zinc-500">
-                                                            {departureData?.departure_time || "-"}
+                                                            {departure?.time || departureData?.departure_time || "-"}
                                                         </td>
-                                                        <td className="px-6 py-4 text-zinc-500">-</td>
-                                                        <td className="px-6 py-4 text-zinc-500">-</td>
+                                                        <td className="px-6 py-4 text-zinc-500">{departureData?.departure_location || "-"}</td>
+                                                        <td className="px-6 py-4 text-zinc-500">{departureData?.departure_mode || "-"}</td>
                                                         <td className="px-6 py-4 text-right">
                                                             <div className="flex items-center justify-end gap-2">
                                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
@@ -845,10 +858,11 @@ function EventDetails() {
                                                         <span className="ml-2 text-xs text-zinc-500">({guest.name})</span>
                                                     </td>
                                                     <td className="px-6 py-4 text-zinc-500">
-                                                        {departureData?.departure_date ? format(new Date(departureData.departure_date), "MMM d, yyyy") : "-"}
+                                                        {departure?.date ? format(new Date(departure.date), "MMM d, yyyy") :
+                                                            departureData?.departure_date ? format(new Date(departureData.departure_date), "MMM d, yyyy") : "-"}
                                                     </td>
                                                     <td className="px-6 py-4 text-zinc-500">
-                                                        {departureData?.departure_time || "-"}
+                                                        {departure?.time || departureData?.departure_time || "-"}
                                                     </td>
                                                     <td className="px-6 py-4 text-zinc-500">
                                                         {traveler.station_airport || "-"}
