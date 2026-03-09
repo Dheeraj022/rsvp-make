@@ -12,7 +12,8 @@ import {
     X,
     Mail,
     User,
-    Trash2
+    Trash2,
+    Pencil
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -22,7 +23,16 @@ type Coordinator = {
     name: string;
     username: string;
     email?: string;
+    event_id?: string;
     created_at: string;
+    events?: {
+        name: string;
+    };
+};
+
+type Event = {
+    id: string;
+    name: string;
 };
 
 function CoordinatorsPage() {
@@ -30,6 +40,7 @@ function CoordinatorsPage() {
     const [filteredCoordinators, setFilteredCoordinators] = useState<Coordinator[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(true);
+    const [events, setEvents] = useState<Event[]>([]);
 
     // Create Modal State
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -37,10 +48,18 @@ function CoordinatorsPage() {
     const [newUsername, setNewUsername] = useState("");
     const [newEmail, setNewEmail] = useState("");
     const [newPassword, setNewPassword] = useState("");
+    const [selectedEventId, setSelectedEventId] = useState<string>("");
     const [isCreating, setIsCreating] = useState(false);
+
+    // Edit Modal State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingCoordinator, setEditingCoordinator] = useState<Coordinator | null>(null);
+    const [editEventId, setEditEventId] = useState<string>("");
+    const [isUpdating, setIsUpdating] = useState(false);
 
     useEffect(() => {
         fetchCoordinators();
+        fetchEvents();
     }, []);
 
     useEffect(() => {
@@ -58,7 +77,12 @@ function CoordinatorsPage() {
 
             const { data, error } = await supabase
                 .from("coordinators")
-                .select("*")
+                .select(`
+                    *,
+                    events (
+                        name
+                    )
+                `)
                 .order("created_at", { ascending: false });
 
             if (error) throw error;
@@ -67,6 +91,20 @@ function CoordinatorsPage() {
             console.error("Error fetching coordinators:", error.message || error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchEvents = async () => {
+        try {
+            const { data, error } = await supabase
+                .from("events")
+                .select("id, name")
+                .order("name");
+
+            if (error) throw error;
+            setEvents(data || []);
+        } catch (error: any) {
+            console.error("Error fetching events:", error.message);
         }
     };
 
@@ -82,20 +120,20 @@ function CoordinatorsPage() {
                 password: newPassword,
             });
 
-            if (authError) throw authError;
+            if (authError || !authData.user) throw authError || new Error("Failed to create auth user");
 
             // 2. Insert Metadata
-            const { error } = await supabase
-                .from("coordinators")
-                .insert({
+            const { error: dbError } = await supabase.from("coordinators").insert([
+                {
                     name: newName,
                     username: newUsername,
                     email: newEmail,
+                    user_id: authData.user.id,
+                    event_id: selectedEventId || null,
                     admin_id: user.id,
-                    user_id: authData.user?.id
-                });
-
-            if (error) throw error;
+                },
+            ]);
+            if (dbError) throw dbError;
 
             await fetchCoordinators();
             setIsCreateModalOpen(false);
@@ -103,6 +141,7 @@ function CoordinatorsPage() {
             setNewUsername("");
             setNewEmail("");
             setNewPassword("");
+            setSelectedEventId("");
             alert("Coordinator created successfully! If you were logged out, please log back in.");
         } catch (error: any) {
             alert("Failed to create coordinator: " + error.message);
@@ -129,6 +168,28 @@ function CoordinatorsPage() {
         } catch (error: any) {
             console.error("Error deleting coordinator:", error.message || error);
             alert("Failed to delete coordinator: " + error.message);
+        }
+    };
+
+    const handleUpdateEvent = async () => {
+        if (!editingCoordinator) return;
+        setIsUpdating(true);
+
+        try {
+            const { error } = await supabase
+                .from("coordinators")
+                .update({ event_id: editEventId || null })
+                .eq("id", editingCoordinator.id);
+
+            if (error) throw error;
+
+            await fetchCoordinators();
+            setIsEditModalOpen(false);
+            alert("Event assigned successfully!");
+        } catch (error: any) {
+            alert("Failed to assign event: " + error.message);
+        } finally {
+            setIsUpdating(false);
         }
     };
 
@@ -168,14 +229,19 @@ function CoordinatorsPage() {
                             <tr className="bg-[#f8f9fa] text-zinc-700 text-[15px] font-semibold border-b border-zinc-100">
                                 <th className="px-6 py-4">Coordinator Info</th>
                                 <th className="px-6 py-4">Credentials</th>
-                                <th className="px-6 py-4">Created Date</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                    Assigned Event
+                                </th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                    Created Date
+                                </th>
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={4} className="p-20 text-center">
+                                    <td colSpan={5} className="p-20 text-center">
                                         <div className="flex flex-col items-center gap-3">
                                             <Loader2 size={24} className="animate-spin text-zinc-400" />
                                             <span className="text-zinc-500 font-medium">Loading...</span>
@@ -184,7 +250,7 @@ function CoordinatorsPage() {
                                 </tr>
                             ) : filteredCoordinators.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="p-20 text-center">
+                                    <td colSpan={5} className="p-20 text-center">
                                         <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-300">
                                             <UserCog size={32} />
                                         </div>
@@ -215,11 +281,28 @@ function CoordinatorsPage() {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5 text-sm text-zinc-500">
+                                        <td className="px-6 py-5">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                                {c.events?.name || "No event"}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-5 text-sm text-zinc-600">
                                             {new Date(c.created_at).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-5 text-right">
                                             <div className="flex items-center justify-end gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-zinc-400 hover:text-zinc-900 transition-colors"
+                                                    onClick={() => {
+                                                        setEditingCoordinator(c);
+                                                        setEditEventId(c.event_id || "");
+                                                        setIsEditModalOpen(true);
+                                                    }}
+                                                >
+                                                    <Pencil size={16} />
+                                                </Button>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
@@ -292,7 +375,25 @@ function CoordinatorsPage() {
                                 />
                             </div>
 
-                            <div className="flex justify-end gap-3 pt-2">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-zinc-700 flex items-center gap-2">
+                                    Assigned Event
+                                </label>
+                                <select
+                                    value={selectedEventId}
+                                    onChange={(e) => setSelectedEventId(e.target.value)}
+                                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:ring-2 focus:ring-zinc-900 focus:border-transparent outline-none transition-all text-sm"
+                                >
+                                    <option value="">Select an event (Optional)</option>
+                                    {events.map((event) => (
+                                        <option key={event.id} value={event.id}>
+                                            {event.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-zinc-100">
                                 <Button type="button" variant="ghost" onClick={() => setIsCreateModalOpen(false)}>
                                     Cancel
                                 </Button>
@@ -301,6 +402,62 @@ function CoordinatorsPage() {
                                 </Button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* Edit/Assign Event Modal */}
+            {isEditModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+                            <h3 className="text-lg font-semibold text-zinc-900">Assign Event</h3>
+                            <button onClick={() => setIsEditModalOpen(false)} className="text-zinc-400 hover:text-zinc-600 transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-zinc-600 mb-4">
+                                Assign an event to <span className="font-semibold text-zinc-900">{editingCoordinator?.name}</span>.
+                                This will grant them access to all guests of that event.
+                            </p>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-zinc-700">Select Event</label>
+                                <select
+                                    value={editEventId}
+                                    onChange={(e) => setEditEventId(e.target.value)}
+                                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:ring-2 focus:ring-zinc-900 focus:border-transparent outline-none transition-all text-sm"
+                                >
+                                    <option value="">No Event Assigned</option>
+                                    {events.map((event) => (
+                                        <option key={event.id} value={event.id}>
+                                            {event.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-zinc-100">
+                                <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)}>
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleUpdateEvent}
+                                    disabled={isUpdating}
+                                    className="bg-zinc-900 text-white hover:bg-zinc-800"
+                                >
+                                    {isUpdating ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Updating...
+                                        </>
+                                    ) : (
+                                        "Save Changes"
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

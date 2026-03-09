@@ -71,16 +71,23 @@ export default function CoordinatorDashboard() {
             if (coordError || !coordData) throw new Error("Coordinator not found");
             setCoordinator(coordData);
 
-            // Fetch guests assigned to this coordinator
-            // We join with events to get the event date
-            const { data: guestsData, error: guestsError } = await supabase
+            // Fetch guests assigned to this coordinator or their assigned event
+            let guestsQuery = supabase
                 .from("guests")
                 .select(`
                     id, name, check_in_status, seat_number, assignment_label, event_id,
                     events ( name, date )
-                `)
-                .eq("coordinator_id", coordData.id)
-                .order("name", { ascending: true });
+                `);
+
+            if (coordData.event_id) {
+                // If the coordinator is assigned to an event, show all guests for that event
+                guestsQuery = guestsQuery.eq("event_id", coordData.event_id);
+            } else {
+                // Otherwise only guests directly assigned to the coordinator
+                guestsQuery = guestsQuery.eq("coordinator_id", coordData.id);
+            }
+
+            const { data: guestsData, error: guestsError } = await guestsQuery.order("name", { ascending: true });
 
             if (guestsError) throw guestsError;
 
