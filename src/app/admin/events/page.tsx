@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import withAuth from "@/components/admin/withAuth";
 import { Button } from "@/components/ui/button";
@@ -11,15 +10,12 @@ import {
     Users,
     MapPin,
     Hotel,
-    UserCog,
     Search,
     ChevronRight,
     MoreVertical,
-    ArrowUpRight,
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 
 // Types
@@ -34,29 +30,14 @@ type Event = {
     hotel_count?: number;
 };
 
-type Stats = {
-    totalEvents: number;
-    upcomingEvents: number;
-    totalHotels: number;
-    totalGuests: number;
-    coordinators: number;
-};
-
-function AdminDashboard() {
+function EventsPage() {
     const [events, setEvents] = useState<Event[]>([]);
     const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(true);
-    const [stats, setStats] = useState<Stats>({
-        totalEvents: 0,
-        upcomingEvents: 0,
-        totalHotels: 0,
-        totalGuests: 0,
-        coordinators: 0,
-    });
 
     useEffect(() => {
-        fetchDashboardData();
+        fetchEvents();
     }, []);
 
     useEffect(() => {
@@ -67,12 +48,11 @@ function AdminDashboard() {
         setFilteredEvents(filtered);
     }, [searchQuery, events]);
 
-    const fetchDashboardData = async () => {
+    const fetchEvents = async () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            // 1. Fetch Events
             const { data: eventsData, error: eventsError } = await supabase
                 .from("events")
                 .select("*")
@@ -81,9 +61,6 @@ function AdminDashboard() {
 
             if (eventsError) throw eventsError;
 
-            // 2. Fetch Guest counts for these events
-            // For simplicity in this demo/migration, we'll fetch them per event or assume schema has it
-            // In a real scenario, we'd do a joined query or multiple counts.
             const eventsWithStats = await Promise.all((eventsData || []).map(async (event) => {
                 const { count: guestCount } = await supabase
                     .from("guests")
@@ -93,113 +70,49 @@ function AdminDashboard() {
                 return {
                     ...event,
                     guest_count: guestCount || 0,
-                    hotel_count: 0, // Placeholder for now
                 };
             }));
 
             setEvents(eventsWithStats);
-
-            // 3. Fetch Hotels count
-            const { count: hotelCount } = await supabase
-                .from("hotels")
-                .select("*", { count: 'exact', head: true })
-                .eq("admin_id", user.id);
-
-            // 4. Fetch Coordinators count
-            const { count: coordCount } = await supabase
-                .from("coordinators")
-                .select("*", { count: 'exact', head: true })
-                .eq("admin_id", user.id);
-
-            // 5. Compute overall stats
-            const totalGuests = eventsWithStats.reduce((sum, e) => sum + (e.guest_count || 0), 0);
-            const upcoming = eventsWithStats.filter(e => new Date(e.date) >= new Date()).length;
-
-            setStats({
-                totalEvents: eventsWithStats.length,
-                upcomingEvents: upcoming,
-                totalHotels: hotelCount || 0,
-                totalGuests: totalGuests,
-                coordinators: coordCount || 0,
-            });
-
         } catch (error) {
-            console.error("Error fetching dashboard data:", error);
+            console.error("Error fetching events:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    const statCards = [
-        { label: "Total Events", value: stats.totalEvents, icon: Calendar, color: "bg-blue-50 text-blue-600", border: "border-blue-100" },
-        { label: "Upcoming Events", value: stats.upcomingEvents, icon: Calendar, color: "bg-cyan-50 text-cyan-600", border: "border-cyan-100" },
-        { label: "Total Hotels", value: stats.totalHotels, icon: Hotel, color: "bg-emerald-50 text-emerald-600", border: "border-emerald-100" },
-        { label: "Coordinators", value: stats.coordinators, icon: UserCog, color: "bg-purple-50 text-purple-600", border: "border-purple-100" },
-    ];
-
     return (
-        <div className="space-y-10 pb-20 animate-in fade-in duration-500">
-            {/* Introduction */}
+        <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <p className="text-zinc-500 mt-1">Manage your events and guest lists efficiently.</p>
+                    <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">Events Management</h2>
+                    <p className="text-zinc-500 mt-1">View and manage all your event details and guest lists.</p>
                 </div>
+                <Link href="/admin/events/new">
+                    <Button className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-full px-6 py-6 shadow-lg shadow-zinc-200 transition-all hover:scale-105 active:scale-95">
+                        <Plus className="mr-2" size={20} />
+                        Create New Event
+                    </Button>
+                </Link>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-                {statCards.map((stat, i) => (
-                    <div
-                        key={i}
-                        className={cn(
-                            "p-6 rounded-3xl border bg-white shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden",
-                            stat.border
-                        )}
-                    >
-                        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110", stat.color)}>
-                            <stat.icon size={24} />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-bold text-zinc-900">{stat.value}</span>
-                            <span className="text-sm font-medium text-zinc-500 mt-1 uppercase tracking-wider">{stat.label}</span>
-                        </div>
-                        {/* Subtle background decorative element */}
-                        <div className={cn("absolute -bottom-4 -right-4 w-20 h-20 rounded-full opacity-[0.03]", stat.color)} />
-                    </div>
-                ))}
-            </div>
-
-            {/* Main Events Section */}
             <div className="bg-white rounded-[2rem] border border-zinc-200 shadow-sm overflow-hidden">
                 <div className="p-8 border-b border-zinc-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div className="space-y-1">
-                        <h3 className="text-2xl font-bold text-zinc-900">Your Events</h3>
-                        <p className="text-sm text-zinc-500">View and manage all your active event details.</p>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                        <div className="relative group flex-1 sm:w-80">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-blue-500 transition-colors" size={18} />
-                            <Input
-                                placeholder="Search events..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-12 bg-zinc-50 border-none rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all"
-                            />
-                        </div>
-                        <Link href="/admin/events/new">
-                            <Button variant="outline" className="rounded-2xl h-12 px-6 border-zinc-200 hover:bg-zinc-50 gap-2">
-                                <Plus size={18} />
-                                Create Events
-                            </Button>
-                        </Link>
+                    <div className="relative group flex-1 w-full md:max-w-md">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-blue-500 transition-colors" size={18} />
+                        <Input
+                            placeholder="Search events by name or location..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-12 bg-zinc-50 border-none rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all"
+                        />
                     </div>
                 </div>
 
                 {loading ? (
                     <div className="p-20 text-center flex flex-col items-center gap-4">
                         <div className="w-10 h-10 border-4 border-zinc-200 border-t-blue-600 rounded-full animate-spin" />
-                        <span className="text-zinc-500 font-medium">Fetching events...</span>
+                        <span className="text-zinc-500 font-medium">Loading events...</span>
                     </div>
                 ) : filteredEvents.length === 0 ? (
                     <div className="p-20 text-center">
@@ -207,10 +120,7 @@ function AdminDashboard() {
                             <Calendar size={40} />
                         </div>
                         <h4 className="text-lg font-semibold text-zinc-900">No events found</h4>
-                        <p className="text-zinc-500 mt-2 max-w-sm mx-auto">Try adjusting your search or create a new event to get started.</p>
-                        <Link href="/admin/events/new" className="mt-8 inline-block">
-                            <Button className="rounded-full bg-zinc-900 px-8">Create your first event</Button>
-                        </Link>
+                        <p className="text-zinc-500 mt-2 max-w-sm mx-auto">Try adjusting your search or create a new event.</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
@@ -260,7 +170,7 @@ function AdminDashboard() {
                                             <div className="flex items-center justify-end gap-2">
                                                 <Link href={`/admin/events/${event.id}`}>
                                                     <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700 rounded-xl px-4 h-9 text-xs font-semibold gap-2 border-none">
-                                                        View Guests
+                                                        View Details
                                                         <ChevronRight size={14} />
                                                     </Button>
                                                 </Link>
@@ -276,9 +186,8 @@ function AdminDashboard() {
                     </div>
                 )}
             </div>
-            {/* Grid for Hotels & Coordinators removed as requested */}
-        </div>
+        </div >
     );
 }
 
-export default withAuth(AdminDashboard);
+export default withAuth(EventsPage);
