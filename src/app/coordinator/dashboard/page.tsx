@@ -15,7 +15,8 @@ import {
     RefreshCw,
     PlaneLanding,
     Menu,
-    X
+    X,
+    Phone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,9 @@ import { format } from "date-fns";
 type Guest = {
     id: string;
     name: string;
+    phone?: string | null;
+    arrival_date?: string | null;
+    arrival_time?: string | null;
     check_in_status: string;
     departure_status?: string;
     seat_number?: string;
@@ -60,6 +64,7 @@ export default function CoordinatorDashboard() {
         const filtered = guests.filter((g) => {
             const matchesPrimary =
                 g.name.toLowerCase().includes(query) ||
+                g.phone?.toLowerCase().includes(query) ||
                 g.seat_number?.toLowerCase().includes(query) ||
                 g.assignment_label?.toLowerCase().includes(query);
 
@@ -94,7 +99,7 @@ export default function CoordinatorDashboard() {
             let guestsQuery = supabase
                 .from("guests")
                 .select(`
-                    id, name, check_in_status, seat_number, assignment_label, event_id, attending_count, attendees_data, departure_details,
+                    id, name, phone, check_in_status, seat_number, assignment_label, event_id, attending_count, attendees_data, departure_details,
                     events ( name, date )
                 `);
 
@@ -434,177 +439,385 @@ export default function CoordinatorDashboard() {
                             </div>
 
                             {/* Dynamic Content View */}
-                            <div className="flex-1 overflow-x-auto">
+                            <div className="flex-1 overflow-x-hidden">
                                 {activeTab === "arrived" ? (
                                     /* ARRIVED LIST */
-                                    <div className="min-w-[800px] md:min-w-0">
-                                        <table className="w-full text-left">
-                                            <thead>
-                                                <tr className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-400 text-[10px] font-black uppercase tracking-widest border-b border-zinc-100">
-                                                    <th className="px-10 py-5">Guest & Companions</th>
-                                                    <th className="px-6 py-5">Event</th>
-                                                    <th className="px-6 py-5 text-center">Current Status</th>
-                                                    <th className="px-10 py-5 text-center">Action</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
-                                                {filteredGuests.length === 0 ? (
-                                                    <tr><td colSpan={4} className="p-32 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No guests found</td></tr>
-                                                ) : (
-                                                    filteredGuests.map((guest) => (
-                                                        <tr key={guest.id} className="group hover:bg-blue-50/30 transition-colors align-top">
-                                                            <td className="px-10 py-8">
-                                                                <div className="flex flex-col gap-6">
-                                                                    <div>
-                                                                        <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{guest.name}</h4>
-                                                                        <div className="flex items-center gap-2 mt-1.5">
-                                                                            <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded">PRIMARY</span>
-                                                                            {guest.seat_number && <span className="text-[10px] font-black text-zinc-400 uppercase">Seat: {guest.seat_number}</span>}
+                                    <div className="w-full overflow-hidden">
+                                        <div className="hidden md:block">
+                                            <table className="w-full text-left">
+                                                <thead>
+                                                    <tr className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-400 text-[10px] font-black uppercase tracking-widest border-b border-zinc-100 dark:border-zinc-800">
+                                                        <th className="px-10 py-5">Guest & Companions</th>
+                                                        <th className="px-6 py-5 text-center">Event</th>
+                                                        <th className="px-6 py-5 text-center">Status</th>
+                                                        <th className="px-10 py-5 text-center">Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
+                                                    {filteredGuests.length === 0 ? (
+                                                        <tr><td colSpan={4} className="p-32 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No guests found</td></tr>
+                                                    ) : (
+                                                        filteredGuests.map((guest) => (
+                                                            <tr key={guest.id} className="group hover:bg-blue-50/30 transition-colors align-top">
+                                                                <td className="px-10 py-8">
+                                                                    <div className="flex flex-col gap-6">
+                                                                        <div>
+                                                                            <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{guest.name}</h4>
+                                                                            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                                                                <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded">PRIMARY</span>
+                                                                                {guest.phone && (
+                                                                                    <span className="text-[10px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 px-2 py-0.5 rounded">
+                                                                                        <Phone size={10} />
+                                                                                        {guest.phone}
+                                                                                    </span>
+                                                                                )}
+                                                                                {guest.seat_number && <span className="text-[10px] font-black text-zinc-400 uppercase">Seat: {guest.seat_number}</span>}
+                                                                            </div>
                                                                         </div>
+                                                                        {guest.attendees_data && guest.attendees_data.length > 0 && (
+                                                                            <div className="grid grid-cols-1 gap-2 pl-4 border-l-2 border-zinc-100">
+                                                                                {guest.attendees_data.map((member: any, i) => (
+                                                                                    <div key={i} className="flex items-center justify-between p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-800">
+                                                                                        <div className="flex flex-col">
+                                                                                            <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{member.name}</span>
+                                                                                            {member.phone && (
+                                                                                                <span className="text-[10px] text-zinc-400 font-medium flex items-center gap-1 mt-0.5">
+                                                                                                    <Phone size={10} />
+                                                                                                    {member.phone}
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </div>
+                                                                                        <Button
+                                                                                            size="sm"
+                                                                                            variant={member.checked_in ? "default" : "outline"}
+                                                                                            onClick={() => handleSubMemberCheckIn(guest.id, i, member.checked_in)}
+                                                                                            className={cn("h-8 rounded-xl px-4 text-[10px] font-black", member.checked_in ? "bg-emerald-500 shadow-lg shadow-emerald-500/20" : "")}
+                                                                                        >
+                                                                                            {member.checked_in ? "ARRIVED" : "CHECK-IN"}
+                                                                                        </Button>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
                                                                     </div>
+                                                                </td>
+                                                                <td className="px-6 py-10 text-center">
+                                                                    <div className="text-sm font-bold text-zinc-600 dark:text-zinc-400 flex items-center justify-center gap-2">
+                                                                        <Calendar size={14} />
+                                                                        {guest.events?.date ? format(new Date(guest.events.date), "MMM d") : "-"}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-10 text-center">
+                                                                    <div className={cn(
+                                                                        "inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest",
+                                                                        guest.check_in_status === "arrived" ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"
+                                                                    )}>
+                                                                        {guest.check_in_status === "arrived" ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+                                                                        {guest.check_in_status === "arrived" ? "Arrived" : "Pending"}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-10 py-10">
+                                                                    <Button
+                                                                        onClick={() => handleCheckIn(guest.id, guest.check_in_status)}
+                                                                        className={cn(
+                                                                            "w-full h-12 rounded-2xl font-black text-xs uppercase tracking-widest transition-all",
+                                                                            guest.check_in_status === "arrived" ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-blue-600 text-white shadow-blue-500/20"
+                                                                        )}
+                                                                    >
+                                                                        {guest.check_in_status === "arrived" ? "Main Arrived" : "Main Check-in"}
+                                                                    </Button>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {/* Mobile View Card Layout */}
+                                        <div className="md:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
+                                            {filteredGuests.length === 0 ? (
+                                                <div className="p-20 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No guests found</div>
+                                            ) : (
+                                                filteredGuests.map((guest) => (
+                                                    <div key={guest.id} className="p-6 space-y-6">
+                                                        <div className="flex flex-col gap-1">
+                                                            <div className="flex items-start justify-between gap-4">
+                                                                <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{guest.name}</h4>
+                                                                <div className="text-[10px] font-bold text-zinc-500 flex items-center gap-1.5 shrink-0">
+                                                                    <Calendar size={12} />
+                                                                    {guest.events?.date ? format(new Date(guest.events.date), "MMM d") : "-"}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <span className="text-[9px] font-black uppercase text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded">PRIMARY</span>
+                                                                {guest.phone && (
+                                                                    <span className="text-[9px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 px-2 py-0.5 rounded">
+                                                                        <Phone size={9} />
+                                                                        {guest.phone}
+                                                                    </span>
+                                                                )}
+                                                                {guest.seat_number && <span className="text-[9px] font-black text-zinc-400 uppercase">Seat: {guest.seat_number}</span>}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Companions on Mobile */}
+                                                        {guest.attendees_data && guest.attendees_data.length > 0 && (
+                                                            <div className="space-y-2 pl-3 border-l-2 border-zinc-100 dark:border-zinc-800">
+                                                                {guest.attendees_data.map((member: any, i) => (
+                                                                    <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800">
+                                                                        <div className="flex flex-col">
+                                                                            <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{member.name}</span>
+                                                                            {member.phone && (
+                                                                                <span className="text-[10px] text-zinc-400 font-medium flex items-center gap-1 mt-0.5">
+                                                                                    <Phone size={10} />
+                                                                                    {member.phone}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant={member.checked_in ? "default" : "outline"}
+                                                                            onClick={() => handleSubMemberCheckIn(guest.id, i, member.checked_in)}
+                                                                            className={cn("h-7 rounded-lg px-3 text-[9px] font-black", member.checked_in ? "bg-emerald-500 shadow-md shadow-emerald-500/10" : "")}
+                                                                        >
+                                                                            {member.checked_in ? "ARRIVED" : "CHECK-IN"}
+                                                                        </Button>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={cn(
+                                                                "flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest",
+                                                                guest.check_in_status === "arrived" ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"
+                                                            )}>
+                                                                {guest.check_in_status === "arrived" ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+                                                                {guest.check_in_status === "arrived" ? "Arrived" : "Pending"}
+                                                            </div>
+                                                            <Button
+                                                                onClick={() => handleCheckIn(guest.id, guest.check_in_status)}
+                                                                className={cn(
+                                                                    "flex-[2] h-11 rounded-xl font-black text-xs uppercase tracking-widest transition-all",
+                                                                    guest.check_in_status === "arrived" ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-blue-600 text-white shadow-blue-500/20"
+                                                                )}
+                                                            >
+                                                                {guest.check_in_status === "arrived" ? "Main Arrived" : "Main Check-in"}
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* DEPARTURE LIST */
+                                    <div className="w-full overflow-hidden">
+                                        <div className="hidden md:block">
+                                            <table className="w-full text-left">
+                                                <thead>
+                                                    <tr className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-400 text-[10px] font-black uppercase tracking-widest border-b border-zinc-100 dark:border-zinc-800">
+                                                        <th className="px-10 py-5">Guest Name</th>
+                                                        <th className="px-6 py-5 text-center">Departure Details</th>
+                                                        <th className="px-6 py-5 text-center">Status</th>
+                                                        <th className="px-10 py-5 text-center">Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
+                                                    {filteredGuests.length === 0 ? (
+                                                        <tr><td colSpan={4} className="p-32 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No departure records</td></tr>
+                                                    ) : (
+                                                        filteredGuests.map((guest) => (
+                                                            <tr key={guest.id} className="group hover:bg-indigo-50/30 transition-colors align-top">
+                                                                <td className="px-10 py-8">
+                                                                    <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{guest.name}</h4>
+                                                                    <div className="flex items-center gap-2 mt-1">
+                                                                        <span className="text-[10px] font-black uppercase text-indigo-400">Guest</span>
+                                                                        {guest.phone && (
+                                                                            <span className="text-[10px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 px-2 py-0.5 rounded">
+                                                                                <Phone size={10} />
+                                                                                {guest.phone}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Companions for Departure */}
                                                                     {guest.attendees_data && guest.attendees_data.length > 0 && (
-                                                                        <div className="grid grid-cols-1 gap-2 pl-4 border-l-2 border-zinc-100">
-                                                                            {guest.attendees_data.map((member: any, i) => (
-                                                                                <div key={i} className="flex items-center justify-between p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-800">
-                                                                                    <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{member.name}</span>
-                                                                                    <Button
-                                                                                        size="sm"
-                                                                                        variant={member.checked_in ? "default" : "outline"}
-                                                                                        onClick={() => handleSubMemberCheckIn(guest.id, i, member.checked_in)}
-                                                                                        className={cn("h-8 rounded-xl px-4 text-[10px] font-black", member.checked_in ? "bg-emerald-500 shadow-lg shadow-emerald-500/20" : "")}
-                                                                                    >
-                                                                                        {member.checked_in ? "ARRIVED" : "CHECK-IN"}
-                                                                                    </Button>
+                                                                        <div className="mt-4 pt-4 border-t border-zinc-50 dark:border-zinc-800 space-y-3">
+                                                                            {guest.attendees_data.map((member: any, index: number) => (
+                                                                                <div key={index} className="flex items-center justify-between pl-4 border-l-2 border-zinc-100 dark:border-zinc-800">
+                                                                                    <div className="flex flex-col">
+                                                                                        <span className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{member.name}</span>
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <span className="text-[9px] font-black uppercase text-zinc-400">Companion</span>
+                                                                                            {member.phone && (
+                                                                                                <span className="text-[9px] font-bold text-zinc-500 flex items-center gap-1">
+                                                                                                    <Phone size={9} />
+                                                                                                    {member.phone}
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-4">
+                                                                                        <div className={cn(
+                                                                                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter",
+                                                                                            member.departed ? "bg-indigo-50 text-indigo-600" : "bg-zinc-50 text-zinc-400"
+                                                                                        )}>
+                                                                                            {member.departed ? "Departed" : "Ready"}
+                                                                                        </div>
+                                                                                        <Button
+                                                                                            size="sm"
+                                                                                            variant="ghost"
+                                                                                            onClick={() => handleSubMemberDeparture(guest.id, index, member.departed)}
+                                                                                            className={cn(
+                                                                                                "h-7 px-3 rounded-lg text-[9px] font-black uppercase tracking-widest",
+                                                                                                member.departed ? "text-red-500 hover:text-red-600 hover:bg-red-50" : "text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                                                                                            )}
+                                                                                        >
+                                                                                            {member.departed ? "Undo" : "Mark"}
+                                                                                        </Button>
+                                                                                    </div>
                                                                                 </div>
                                                                             ))}
                                                                         </div>
                                                                     )}
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-10">
-                                                                <div className="text-sm font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-2">
-                                                                    <Calendar size={14} />
-                                                                    {guest.events?.date ? format(new Date(guest.events.date), "MMM d") : "-"}
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-10 text-center">
-                                                                <div className={cn(
-                                                                    "inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest",
-                                                                    guest.check_in_status === "arrived" ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"
-                                                                )}>
-                                                                    {guest.check_in_status === "arrived" ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-                                                                    {guest.check_in_status === "arrived" ? "Arrived" : "Pending"}
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-10 py-10">
-                                                                <Button
-                                                                    onClick={() => handleCheckIn(guest.id, guest.check_in_status)}
-                                                                    className={cn(
-                                                                        "w-full h-12 rounded-2xl font-black text-xs uppercase tracking-widest transition-all",
-                                                                        guest.check_in_status === "arrived" ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-blue-600 text-white shadow-blue-500/20"
-                                                                    )}
-                                                                >
-                                                                    {guest.check_in_status === "arrived" ? "Main Arrived" : "Main Check-in"}
-                                                                </Button>
-                                                            </td>
-                                                        </tr>
-                                                    ))
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                ) : (
-                                    /* DEPARTURE LIST */
-                                    <div className="min-w-[800px] md:min-w-0">
-                                        <table className="w-full text-left">
-                                            <thead>
-                                                <tr className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-400 text-[10px] font-black uppercase tracking-widest border-b border-zinc-100">
-                                                    <th className="px-10 py-5">Guest Name</th>
-                                                    <th className="px-6 py-5">Departure Details</th>
-                                                    <th className="px-6 py-5 text-center">Status</th>
-                                                    <th className="px-10 py-5 text-center">Action</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
-                                                {filteredGuests.length === 0 ? (
-                                                    <tr><td colSpan={4} className="p-32 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No departure records</td></tr>
-                                                ) : (
-                                                    filteredGuests.map((guest) => (
-                                                        <tr key={guest.id} className="group hover:bg-indigo-50/30 transition-colors align-top">
-                                                            <td className="px-10 py-8">
-                                                                <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{guest.name}</h4>
-                                                                <span className="text-[10px] font-black uppercase text-indigo-400 mt-1">Guest</span>
+                                                                </td>
+                                                                <td className="px-6 py-8">
+                                                                    <div className="space-y-1.5 flex flex-col items-center">
+                                                                        <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                                                                            <Calendar size={14} className="text-zinc-400" />
+                                                                            {guest.departure_details?.date || "No date set"}
+                                                                        </div>
+                                                                        <div className="text-[10px] font-bold text-zinc-400 uppercase flex items-center gap-2 italic">
+                                                                            <Bus size={12} />
+                                                                            {guest.departure_details?.transport || "Not specified"}
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-8 text-center">
+                                                                    <div className={cn(
+                                                                        "inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300",
+                                                                        guest.departure_status === "departed" ? "bg-indigo-50 text-indigo-600 scale-105" : "bg-zinc-50 text-zinc-400"
+                                                                    )}>
+                                                                        {guest.departure_status === "departed" ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+                                                                        {guest.departure_status === "departed" ? "Departed" : "Ready"}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-10 py-8 text-center">
+                                                                    <Button
+                                                                        onClick={() => handleDepartureCheckIn(guest.id, guest.departure_status)}
+                                                                        className={cn(
+                                                                            "w-full h-12 rounded-2xl font-black text-xs uppercase tracking-widest transition-all",
+                                                                            guest.departure_status === "departed" ? "bg-indigo-600 text-white shadow-indigo-600/20" : "bg-white text-zinc-900 border-2 border-zinc-100 hover:border-indigo-100 shadow-sm"
+                                                                        )}
+                                                                    >
+                                                                        {guest.departure_status === "departed" ? "Undo Departure" : "Mark Departed"}
+                                                                    </Button>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
 
-                                                                {/* Companions for Departure */}
-                                                                {guest.attendees_data && guest.attendees_data.length > 0 && (
-                                                                    <div className="mt-4 pt-4 border-t border-zinc-50 space-y-3">
-                                                                        {guest.attendees_data.map((member: any, index: number) => (
-                                                                            <div key={index} className="flex items-center justify-between pl-4 border-l-2 border-zinc-100">
-                                                                                <div className="flex flex-col">
-                                                                                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{member.name}</span>
-                                                                                    <span className="text-[9px] font-black uppercase text-zinc-400">Companion</span>
-                                                                                </div>
-                                                                                <div className="flex items-center gap-4">
-                                                                                    <div className={cn(
-                                                                                        "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter",
-                                                                                        member.departed ? "bg-indigo-50 text-indigo-600" : "bg-zinc-50 text-zinc-400"
-                                                                                    )}>
-                                                                                        {member.departed ? "Departed" : "Ready"}
-                                                                                    </div>
-                                                                                    <Button
-                                                                                        size="sm"
-                                                                                        variant="ghost"
-                                                                                        onClick={() => handleSubMemberDeparture(guest.id, index, member.departed)}
-                                                                                        className={cn(
-                                                                                            "h-7 px-3 rounded-lg text-[9px] font-black uppercase tracking-widest",
-                                                                                            member.departed ? "text-red-500 hover:text-red-600 hover:bg-red-50" : "text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
-                                                                                        )}
-                                                                                    >
-                                                                                        {member.departed ? "Undo" : "Mark"}
-                                                                                    </Button>
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
+                                        {/* Mobile View Card Layout for Departure */}
+                                        <div className="md:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
+                                            {filteredGuests.length === 0 ? (
+                                                <div className="p-20 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No departure records</div>
+                                            ) : (
+                                                filteredGuests.map((guest) => (
+                                                    <div key={guest.id} className="p-6 space-y-6">
+                                                        <div className="flex flex-col gap-1">
+                                                            <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{guest.name}</h4>
+                                                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                                <span className="text-[9px] font-black uppercase text-indigo-400">Guest</span>
+                                                                {guest.phone && (
+                                                                    <span className="text-[9px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 px-2 py-0.5 rounded">
+                                                                        <Phone size={9} />
+                                                                        {guest.phone}
+                                                                    </span>
                                                                 )}
-                                                            </td>
-                                                            <td className="px-6 py-8">
-                                                                <div className="space-y-1.5">
-                                                                    <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
-                                                                        <Calendar size={14} className="text-zinc-400" />
-                                                                        {guest.departure_details?.date || "No date set"}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 space-y-2">
+                                                            <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                                                                <Calendar size={14} className="text-zinc-400" />
+                                                                <span className="text-xs uppercase tracking-tighter text-zinc-400 mr-auto">Date:</span>
+                                                                {guest.departure_details?.date || "No date set"}
+                                                            </div>
+                                                            <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                                                                <Bus size={14} className="text-zinc-400" />
+                                                                <span className="text-xs uppercase tracking-tighter text-zinc-400 mr-auto">Transport:</span>
+                                                                {guest.departure_details?.transport || "Not specified"}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Companions for Departure on Mobile */}
+                                                        {guest.attendees_data && guest.attendees_data.length > 0 && (
+                                                            <div className="space-y-3 pl-3 border-l-2 border-zinc-100 dark:border-zinc-800">
+                                                                {guest.attendees_data.map((member: any, index: number) => (
+                                                                    <div key={index} className="flex items-center justify-between gap-3">
+                                                                        <div className="flex flex-col">
+                                                                            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{member.name}</span>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-[9px] font-black uppercase text-zinc-400">Companion</span>
+                                                                                {member.phone && (
+                                                                                    <span className="text-[9px] font-bold text-zinc-500 flex items-center gap-1">
+                                                                                        <Phone size={9} />
+                                                                                        {member.phone}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 shrink-0">
+                                                                            <div className={cn(
+                                                                                "px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter",
+                                                                                member.departed ? "bg-indigo-50 text-indigo-600" : "bg-zinc-50 text-zinc-400"
+                                                                            )}>
+                                                                                {member.departed ? "Done" : "Ready"}
+                                                                            </div>
+                                                                            <Button
+                                                                                size="sm"
+                                                                                variant="ghost"
+                                                                                onClick={() => handleSubMemberDeparture(guest.id, index, member.departed)}
+                                                                                className={cn(
+                                                                                    "h-7 px-2 rounded-lg text-[9px] font-black uppercase",
+                                                                                    member.departed ? "text-red-500 hover:bg-red-50" : "text-indigo-600 hover:bg-indigo-50"
+                                                                                )}
+                                                                            >
+                                                                                {member.departed ? "Undo" : "Mark"}
+                                                                            </Button>
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="text-[10px] font-bold text-zinc-400 uppercase flex items-center gap-2 italic">
-                                                                        <Bus size={12} />
-                                                                        {guest.departure_details?.transport || "Not specified"}
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-8 text-center">
-                                                                <div className={cn(
-                                                                    "inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300",
-                                                                    guest.departure_status === "departed" ? "bg-indigo-50 text-indigo-600 scale-105" : "bg-zinc-50 text-zinc-400"
-                                                                )}>
-                                                                    {guest.departure_status === "departed" ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-                                                                    {guest.departure_status === "departed" ? "Departed" : "Ready"}
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-10 py-8 text-center">
-                                                                <Button
-                                                                    onClick={() => handleDepartureCheckIn(guest.id, guest.departure_status)}
-                                                                    className={cn(
-                                                                        "w-full h-12 rounded-2xl font-black text-xs uppercase tracking-widest transition-all",
-                                                                        guest.departure_status === "departed" ? "bg-indigo-600 text-white shadow-indigo-600/20" : "bg-white text-zinc-900 border-2 border-zinc-100 hover:border-indigo-100 shadow-sm"
-                                                                    )}
-                                                                >
-                                                                    {guest.departure_status === "departed" ? "Undo Departure" : "Mark Departed"}
-                                                                </Button>
-                                                            </td>
-                                                        </tr>
-                                                    ))
-                                                )}
-                                            </tbody>
-                                        </table>
+                                                                ))}
+                                                            </div>
+                                                        )}
+
+                                                        <div className="flex flex-col gap-3">
+                                                            <div className={cn(
+                                                                "w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                                                guest.departure_status === "departed" ? "bg-indigo-50 text-indigo-600" : "bg-zinc-50 text-zinc-400"
+                                                            )}>
+                                                                {guest.departure_status === "departed" ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+                                                                {guest.departure_status === "departed" ? "Departed" : "Ready to Go"}
+                                                            </div>
+                                                            <Button
+                                                                onClick={() => handleDepartureCheckIn(guest.id, guest.departure_status)}
+                                                                className={cn(
+                                                                    "w-full h-12 rounded-xl font-black text-xs uppercase tracking-widest transition-all",
+                                                                    guest.departure_status === "departed" ? "bg-indigo-600 text-white shadow-indigo-600/10" : "bg-white text-zinc-900 border-2 border-zinc-100 shadow-sm"
+                                                                )}
+                                                            >
+                                                                {guest.departure_status === "departed" ? "Undo Departure" : "Mark Departed"}
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>
