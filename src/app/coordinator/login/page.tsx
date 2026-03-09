@@ -8,7 +8,7 @@ import { Loader2, User } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function CoordinatorLogin() {
-    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -20,21 +20,19 @@ export default function CoordinatorLogin() {
         setError(null);
 
         try {
-            // Coordinator dummy email logic: username@rsvp.com
-            const email = `${username.toLowerCase()}@rsvp.com`;
-
-            const { error: loginError } = await supabase.auth.signInWithPassword({
+            const { data: { user }, error: loginError } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
 
             if (loginError) throw loginError;
+            if (!user) throw new Error("Login failed");
 
             // Verify if user is actually a coordinator and is active
             const { data: coordinator, error: coordError } = await supabase
                 .from("coordinators")
                 .select("id, is_active")
-                .eq("username", username)
+                .eq("user_id", user.id)
                 .single();
 
             if (coordError || !coordinator) {
@@ -66,16 +64,17 @@ export default function CoordinatorLogin() {
                         Coordinator Login
                     </h1>
                     <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                        Enter your username to access your dashboard.
+                        Enter your credentials to access your dashboard.
                     </p>
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
                         <Input
-                            placeholder="Username"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            type="email"
+                            placeholder="Email address"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             disabled={loading}
                             required
                             className="bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 h-11"

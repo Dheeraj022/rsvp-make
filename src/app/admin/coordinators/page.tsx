@@ -11,7 +11,8 @@ import {
     Loader2,
     X,
     Mail,
-    User
+    User,
+    Trash2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -20,6 +21,7 @@ type Coordinator = {
     id: string;
     name: string;
     username: string;
+    email?: string;
     created_at: string;
 };
 
@@ -33,6 +35,7 @@ function CoordinatorsPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [newName, setNewName] = useState("");
     const [newUsername, setNewUsername] = useState("");
+    const [newEmail, setNewEmail] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [isCreating, setIsCreating] = useState(false);
 
@@ -74,12 +77,8 @@ function CoordinatorsPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Not authenticated");
 
-            // 1. Create Auth User using a dummy email from username
-            // Supabase Auth requires an email, so we generate a consistent one
-            const dummyEmail = `${newUsername.toLowerCase()}@rsvp.com`;
-
             const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: dummyEmail,
+                email: newEmail,
                 password: newPassword,
             });
 
@@ -91,6 +90,7 @@ function CoordinatorsPage() {
                 .insert({
                     name: newName,
                     username: newUsername,
+                    email: newEmail,
                     admin_id: user.id,
                     user_id: authData.user?.id
                 });
@@ -101,12 +101,34 @@ function CoordinatorsPage() {
             setIsCreateModalOpen(false);
             setNewName("");
             setNewUsername("");
+            setNewEmail("");
             setNewPassword("");
             alert("Coordinator created successfully! If you were logged out, please log back in.");
         } catch (error: any) {
             alert("Failed to create coordinator: " + error.message);
         } finally {
             setIsCreating(false);
+        }
+    };
+
+    const handleDeleteCoordinator = async (id: string, name: string) => {
+        if (!confirm(`Are you sure you want to delete coordinator "${name}"? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from("coordinators")
+                .delete()
+                .eq("id", id);
+
+            if (error) throw error;
+
+            setCoordinators(prev => prev.filter(c => c.id !== id));
+            alert("Coordinator deleted successfully.");
+        } catch (error: any) {
+            console.error("Error deleting coordinator:", error.message || error);
+            alert("Failed to delete coordinator: " + error.message);
         }
     };
 
@@ -145,7 +167,7 @@ function CoordinatorsPage() {
                         <thead>
                             <tr className="bg-[#f8f9fa] text-zinc-700 text-[15px] font-semibold border-b border-zinc-100">
                                 <th className="px-6 py-4">Coordinator Info</th>
-                                <th className="px-6 py-4">Username</th>
+                                <th className="px-6 py-4">Credentials</th>
                                 <th className="px-6 py-4">Created Date</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
@@ -182,18 +204,31 @@ function CoordinatorsPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-5">
-                                            <div className="flex items-center gap-2 text-zinc-600">
-                                                <User size={14} className="text-zinc-400" />
-                                                <span className="text-sm font-medium">{c.username}</span>
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2 text-zinc-600">
+                                                    <User size={14} className="text-zinc-400" />
+                                                    <span className="text-sm font-medium">{c.username}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-zinc-500">
+                                                    <Mail size={14} className="text-zinc-400" />
+                                                    <span className="text-xs">{c.email || "N/A"}</span>
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-5 text-sm text-zinc-500">
                                             {new Date(c.created_at).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-5 text-right">
-                                            <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-zinc-900">
-                                                Manage access
-                                            </Button>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-zinc-400 hover:text-red-600 transition-colors"
+                                                    onClick={() => handleDeleteCoordinator(c.id, c.name)}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </Button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -234,6 +269,16 @@ function CoordinatorsPage() {
                                     placeholder="Enter username"
                                     value={newUsername}
                                     onChange={(e) => setNewUsername(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-zinc-900">Email ID</label>
+                                <Input
+                                    required
+                                    type="email"
+                                    placeholder="Enter email address"
+                                    value={newEmail}
+                                    onChange={(e) => setNewEmail(e.target.value)}
                                 />
                             </div>
                             <div className="space-y-2">
