@@ -16,12 +16,15 @@ import {
     PlaneLanding,
     Menu,
     X,
-    Phone
+    Phone,
+    FileSpreadsheet
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 
 // Types
 type Guest = {
@@ -76,6 +79,73 @@ export default function CoordinatorDashboard() {
         });
         setFilteredGuests(filtered);
     }, [searchQuery, guests]);
+
+    const handleExportExcel = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("Guest Report");
+
+        // Define Columns (Removed Seat)
+        worksheet.columns = [
+            { header: "Type", key: "type", width: 12 },
+            { header: "Name", key: "name", width: 25 },
+            { header: "Phone", key: "phone", width: 15 },
+            { header: "Event", key: "event", width: 20 },
+            { header: "Date", key: "date", width: 12 },
+            { header: "Arrived", key: "arrived", width: 10 },
+            { header: "Departed", key: "departed", width: 10 }
+        ];
+
+        // Format Header
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // Add Data
+        guests.forEach(guest => {
+            // Main Guest
+            const mainRow = worksheet.addRow({
+                type: "Primary",
+                name: guest.name,
+                phone: guest.phone || "-",
+                event: guest.events?.name || "-",
+                date: guest.events?.date ? format(new Date(guest.events.date), "MMM d") : "-",
+                arrived: guest.check_in_status === "arrived" ? "Yes" : "No",
+                departed: guest.departure_status === "departed" ? "Yes" : "No"
+            });
+
+            // Add Companions
+            if (guest.attendees_data && guest.attendees_data.length > 0) {
+                guest.attendees_data.forEach((member: any) => {
+                    worksheet.addRow({
+                        type: "Companion",
+                        name: member.name,
+                        phone: member.phone || "-",
+                        event: guest.events?.name || "-",
+                        date: guest.events?.date ? format(new Date(guest.events.date), "MMM d") : "-",
+                        arrived: member.checked_in ? "Yes" : "No",
+                        departed: member.departed ? "Yes" : "No"
+                    });
+                });
+            }
+        });
+
+        // Apply Conditional Formatting (Yes = Green, No = Red)
+        worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber === 1) return; // Skip header
+
+            row.eachCell((cell) => {
+                if (cell.value === "Yes") {
+                    cell.font = { color: { argb: 'FF10B981' }, bold: true }; // Green
+                } else if (cell.value === "No") {
+                    cell.font = { color: { argb: 'FFEF4444' }, bold: true }; // Red
+                }
+            });
+        });
+
+        // Generate and Save
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        saveAs(blob, `Guest_Report_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+    };
 
     const fetchCoordinatorAndGuests = async () => {
         try {
@@ -348,16 +418,28 @@ export default function CoordinatorDashboard() {
             <main className="flex-1 flex flex-col h-screen overflow-hidden">
 
                 {/* Modern Mobile Header */}
-                <header className="lg:hidden bg-white dark:bg-zinc-900 border-b p-4 flex items-center justify-between sticky top-0 z-40">
-                    <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)} className="rounded-xl bg-zinc-50 shadow-sm">
-                        <Menu size={20} />
-                    </Button>
-                    <h2 className="font-black text-lg tracking-tighter uppercase text-zinc-900 dark:text-zinc-50">
-                        {activeTab === "arrived" ? "Arrived" : "Departure"}
-                    </h2>
-                    <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isRefreshing} className="rounded-xl shadow-sm h-10 w-10">
-                        <RefreshCw size={18} className={cn(isRefreshing && "animate-spin")} />
-                    </Button>
+                <header className="lg:hidden bg-white dark:bg-zinc-900 border-b p-4 flex items-center justify-between sticky top-0 z-40 gap-2">
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)} className="rounded-xl bg-zinc-50 shadow-sm">
+                            <Menu size={20} />
+                        </Button>
+                        <h2 className="font-black text-lg tracking-tighter uppercase text-zinc-900 dark:text-zinc-50">
+                            {activeTab === "arrived" ? "Arrived" : "Departure"}
+                        </h2>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={handleExportExcel}
+                            className="rounded-xl shadow-sm h-10 w-10 border-emerald-100 hover:bg-emerald-50 text-emerald-600"
+                        >
+                            <FileSpreadsheet size={18} />
+                        </Button>
+                        <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isRefreshing} className="rounded-xl shadow-sm h-10 w-10">
+                            <RefreshCw size={18} className={cn(isRefreshing && "animate-spin")} />
+                        </Button>
+                    </div>
                 </header>
 
                 <div className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-12 space-y-8">
@@ -371,14 +453,24 @@ export default function CoordinatorDashboard() {
                                 </h1>
                                 <p className="text-zinc-500 font-medium mt-1">Manage guest schedules and status effectively.</p>
                             </div>
-                            <Button
-                                onClick={handleRefresh}
-                                disabled={isRefreshing}
-                                className="rounded-2xl h-12 px-6 font-bold bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 transition-all shadow-sm gap-2"
-                            >
-                                <RefreshCw size={18} className={cn(isRefreshing && "animate-spin")} />
-                                Refresh Status
-                            </Button>
+                            <div className="flex items-center gap-3">
+                                <Button
+                                    onClick={handleExportExcel}
+                                    variant="outline"
+                                    className="rounded-2xl h-12 px-6 font-bold bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950 transition-all shadow-sm gap-2"
+                                >
+                                    <FileSpreadsheet size={18} className="text-emerald-500" />
+                                    Export Report
+                                </Button>
+                                <Button
+                                    onClick={handleRefresh}
+                                    disabled={isRefreshing}
+                                    className="rounded-2xl h-12 px-6 font-bold bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 transition-all shadow-sm gap-2"
+                                >
+                                    <RefreshCw size={18} className={cn(isRefreshing && "animate-spin")} />
+                                    Refresh Status
+                                </Button>
+                            </div>
                         </div>
 
                         {/* Layout Content */}
@@ -466,10 +558,13 @@ export default function CoordinatorDashboard() {
                                                                             <div className="flex flex-wrap items-center gap-2 mt-1.5">
                                                                                 <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded">PRIMARY</span>
                                                                                 {guest.phone && (
-                                                                                    <span className="text-[10px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 px-2 py-0.5 rounded">
+                                                                                    <a
+                                                                                        href={`tel:${guest.phone}`}
+                                                                                        className="text-[10px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 hover:bg-blue-100 hover:text-blue-600 transition-colors px-2 py-0.5 rounded cursor-pointer"
+                                                                                    >
                                                                                         <Phone size={10} />
                                                                                         {guest.phone}
-                                                                                    </span>
+                                                                                    </a>
                                                                                 )}
                                                                                 {guest.seat_number && <span className="text-[10px] font-black text-zinc-400 uppercase">Seat: {guest.seat_number}</span>}
                                                                             </div>
@@ -481,10 +576,13 @@ export default function CoordinatorDashboard() {
                                                                                         <div className="flex flex-col">
                                                                                             <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{member.name}</span>
                                                                                             {member.phone && (
-                                                                                                <span className="text-[10px] text-zinc-400 font-medium flex items-center gap-1 mt-0.5">
+                                                                                                <a
+                                                                                                    href={`tel:${member.phone}`}
+                                                                                                    className="text-[10px] text-zinc-400 hover:text-blue-600 font-medium flex items-center gap-1 mt-0.5 transition-colors"
+                                                                                                >
                                                                                                     <Phone size={10} />
                                                                                                     {member.phone}
-                                                                                                </span>
+                                                                                                </a>
                                                                                             )}
                                                                                         </div>
                                                                                         <Button
@@ -552,10 +650,13 @@ export default function CoordinatorDashboard() {
                                                             <div className="flex flex-wrap items-center gap-2">
                                                                 <span className="text-[9px] font-black uppercase text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded">PRIMARY</span>
                                                                 {guest.phone && (
-                                                                    <span className="text-[9px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 px-2 py-0.5 rounded">
+                                                                    <a
+                                                                        href={`tel:${guest.phone}`}
+                                                                        className="text-[9px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 hover:bg-blue-100 hover:text-blue-600 transition-colors px-2 py-0.5 rounded"
+                                                                    >
                                                                         <Phone size={9} />
                                                                         {guest.phone}
-                                                                    </span>
+                                                                    </a>
                                                                 )}
                                                                 {guest.seat_number && <span className="text-[9px] font-black text-zinc-400 uppercase">Seat: {guest.seat_number}</span>}
                                                             </div>
@@ -569,10 +670,13 @@ export default function CoordinatorDashboard() {
                                                                         <div className="flex flex-col">
                                                                             <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{member.name}</span>
                                                                             {member.phone && (
-                                                                                <span className="text-[10px] text-zinc-400 font-medium flex items-center gap-1 mt-0.5">
+                                                                                <a
+                                                                                    href={`tel:${member.phone}`}
+                                                                                    className="text-[10px] text-zinc-400 hover:text-blue-600 font-medium flex items-center gap-1 mt-0.5 transition-colors"
+                                                                                >
                                                                                     <Phone size={10} />
                                                                                     {member.phone}
-                                                                                </span>
+                                                                                </a>
                                                                             )}
                                                                         </div>
                                                                         <Button
@@ -635,10 +739,13 @@ export default function CoordinatorDashboard() {
                                                                     <div className="flex items-center gap-2 mt-1">
                                                                         <span className="text-[10px] font-black uppercase text-indigo-400">Guest</span>
                                                                         {guest.phone && (
-                                                                            <span className="text-[10px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 px-2 py-0.5 rounded">
+                                                                            <a
+                                                                                href={`tel:${guest.phone}`}
+                                                                                className="text-[10px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 hover:bg-indigo-100 hover:text-indigo-600 transition-colors px-2 py-0.5 rounded"
+                                                                            >
                                                                                 <Phone size={10} />
                                                                                 {guest.phone}
-                                                                            </span>
+                                                                            </a>
                                                                         )}
                                                                     </div>
 
@@ -652,10 +759,13 @@ export default function CoordinatorDashboard() {
                                                                                         <div className="flex items-center gap-2">
                                                                                             <span className="text-[9px] font-black uppercase text-zinc-400">Companion</span>
                                                                                             {member.phone && (
-                                                                                                <span className="text-[9px] font-bold text-zinc-500 flex items-center gap-1">
+                                                                                                <a
+                                                                                                    href={`tel:${member.phone}`}
+                                                                                                    className="text-[9px] font-bold text-zinc-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
+                                                                                                >
                                                                                                     <Phone size={9} />
                                                                                                     {member.phone}
-                                                                                                </span>
+                                                                                                </a>
                                                                                             )}
                                                                                         </div>
                                                                                     </div>
@@ -734,10 +844,13 @@ export default function CoordinatorDashboard() {
                                                             <div className="flex flex-wrap items-center gap-2 mt-1">
                                                                 <span className="text-[9px] font-black uppercase text-indigo-400">Guest</span>
                                                                 {guest.phone && (
-                                                                    <span className="text-[9px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 px-2 py-0.5 rounded">
+                                                                    <a
+                                                                        href={`tel:${guest.phone}`}
+                                                                        className="text-[9px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 hover:bg-indigo-100 hover:text-indigo-600 transition-colors px-2 py-0.5 rounded"
+                                                                    >
                                                                         <Phone size={9} />
                                                                         {guest.phone}
-                                                                    </span>
+                                                                    </a>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -765,10 +878,13 @@ export default function CoordinatorDashboard() {
                                                                             <div className="flex items-center gap-2">
                                                                                 <span className="text-[9px] font-black uppercase text-zinc-400">Companion</span>
                                                                                 {member.phone && (
-                                                                                    <span className="text-[9px] font-bold text-zinc-500 flex items-center gap-1">
+                                                                                    <a
+                                                                                        href={`tel:${member.phone}`}
+                                                                                        className="text-[9px] font-bold text-zinc-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
+                                                                                    >
                                                                                         <Phone size={9} />
                                                                                         {member.phone}
-                                                                                    </span>
+                                                                                    </a>
                                                                                 )}
                                                                             </div>
                                                                         </div>
