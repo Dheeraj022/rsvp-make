@@ -83,7 +83,13 @@ export default function CoordinatorDashboard() {
                 .order("name", { ascending: true });
 
             if (guestsError) throw guestsError;
-            setGuests(guestsData || []);
+
+            const formattedGuests = (guestsData || []).map((guest: any) => ({
+                ...guest,
+                events: Array.isArray(guest.events) ? guest.events[0] : guest.events
+            }));
+
+            setGuests(formattedGuests);
         } catch (error) {
             console.error("Error fetching dashboard data:", error);
         } finally {
