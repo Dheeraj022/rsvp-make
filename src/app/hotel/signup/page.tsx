@@ -38,16 +38,27 @@ export default function HotelSignup() {
             });
 
             if (authError) throw authError;
+            if (!authData.user) throw new Error("Signup failed");
 
-            // 2. Insert metadata into the hotels table
-            const { error: dbError } = await supabase.from("hotels").insert({
-                name: hotelName,
-                manager_name: managerName,
-                email: email,
-                user_id: authData.user?.id
+            // 2. Call server-side API to insert hotel record (bypasses RLS)
+            const res = await fetch("/api/hotel/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    hotelName,
+                    managerName,
+                    email,
+                    userId: authData.user.id,
+                }),
             });
 
-            if (dbError) throw dbError;
+            let data: any = {};
+            try {
+                data = await res.json();
+            } catch {
+                throw new Error("Server error. Please make sure the SUPABASE_SERVICE_ROLE_KEY is set in .env.local.");
+            }
+            if (!res.ok) throw new Error(data.error || "Failed to complete signup");
 
             setSuccessMessage("Signup successful! Please check your email to confirm your account.");
         } catch (err: any) {

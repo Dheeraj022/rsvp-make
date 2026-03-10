@@ -11,7 +11,8 @@ import {
     Edit2,
     Loader2,
     X,
-    Check
+    Check,
+    Trash2
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -49,6 +50,13 @@ function HotelsPage() {
     const [newHotelEmail, setNewHotelEmail] = useState("");
     const [newHotelPassword, setNewHotelPassword] = useState("");
     const [isCreating, setIsCreating] = useState(false);
+
+    // Delete Verification State
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [hotelToDelete, setHotelToDelete] = useState<{ id: string, name: string } | null>(null);
+    const [adminPassword, setAdminPassword] = useState("");
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [verificationError, setVerificationError] = useState<string | null>(null);
 
     useEffect(() => {
         fetchData();
@@ -188,6 +196,56 @@ function HotelsPage() {
         }
     };
 
+    const handleDeleteHotel = (hotelId: string, hotelName: string) => {
+        setHotelToDelete({ id: hotelId, name: hotelName });
+        setAdminPassword("");
+        setVerificationError(null);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDeletion = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!hotelToDelete) return;
+
+        setIsVerifying(true);
+        setVerificationError(null);
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user || !user.email) throw new Error("Not authenticated");
+
+            // Verify password by attempting to sign in again
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email: user.email,
+                password: adminPassword,
+            });
+
+            if (signInError) throw new Error("Invalid admin password");
+
+            // If password is correct, call the server-side delete API
+            const res = await fetch("/api/hotel/delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    hotelId: hotelToDelete.id,
+                    hotelEmail: hotels.find(h => h.id === hotelToDelete.id)?.email
+                }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Failed to delete hotel");
+
+            setHotels(prev => prev.filter(h => h.id !== hotelToDelete.id));
+            setIsDeleteModalOpen(false);
+            setHotelToDelete(null);
+            setAdminPassword("");
+        } catch (error: any) {
+            setVerificationError(error.message);
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
     const getAssignmentStatus = (hotelEmail: string) => {
         const assignedEvent = events.find(e => e.assigned_hotel_email === hotelEmail);
         return assignedEvent ? { status: "Assigned", event: assignedEvent } : { status: "Unassigned", event: null };
@@ -321,19 +379,29 @@ function HotelsPage() {
                                                         </Button>
                                                     </div>
                                                 ) : (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="h-8 text-zinc-600 border-zinc-200 gap-1.5 hover:bg-zinc-50"
-                                                        onClick={() => {
-                                                            setEditingHotelId(hotel.id);
-                                                            const currentEvent = events.find(e => e.assigned_hotel_email === hotel.email);
-                                                            setTempAssignment({ ...tempAssignment, [hotel.id]: currentEvent?.id || "none" });
-                                                        }}
-                                                    >
-                                                        <Edit2 size={13} />
-                                                        Edit
-                                                    </Button>
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-8 text-zinc-600 border-zinc-200 gap-1.5 hover:bg-zinc-50"
+                                                            onClick={() => {
+                                                                setEditingHotelId(hotel.id);
+                                                                const currentEvent = events.find(e => e.assigned_hotel_email === hotel.email);
+                                                                setTempAssignment({ ...tempAssignment, [hotel.id]: currentEvent?.id || "none" });
+                                                            }}
+                                                        >
+                                                            <Edit2 size={13} />
+                                                            Edit
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-zinc-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                                            onClick={() => handleDeleteHotel(hotel.id, hotel.name)}
+                                                        >
+                                                            <Trash2 size={15} />
+                                                        </Button>
+                                                    </div>
                                                 )}
                                             </td>
                                         </tr>
@@ -422,6 +490,60 @@ function HotelsPage() {
                                 </Button>
                                 <Button type="submit" disabled={isCreating}>
                                     {isCreating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Create Profile"}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {isDeleteModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200 text-left">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 border border-zinc-200">
+                        <div className="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 className="text-lg font-semibold text-red-600 mb-1">Confirm Deletion</h3>
+                                <p className="text-zinc-500 text-sm">
+                                    Are you sure you want to delete <span className="font-bold">"{hotelToDelete?.name}"</span>? This action cannot be undone.
+                                </p>
+                            </div>
+                            <Button variant="ghost" size="icon" onClick={() => setIsDeleteModalOpen(false)} className="h-8 w-8 text-zinc-500 rounded-full shrink-0 -mt-1 -mr-1">
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+
+                        <form onSubmit={confirmDeletion} className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-zinc-900">
+                                    Enter Admin Password to Confirm
+                                </label>
+                                <Input
+                                    required
+                                    type="password"
+                                    placeholder="Enter your admin password"
+                                    value={adminPassword}
+                                    onChange={(e) => setAdminPassword(e.target.value)}
+                                    className={verificationError ? "border-red-500" : ""}
+                                    autoFocus
+                                />
+                                {verificationError && (
+                                    <p className="text-xs text-red-500 font-medium">
+                                        {verificationError}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-2">
+                                <Button type="button" variant="ghost" onClick={() => setIsDeleteModalOpen(false)}>
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                    disabled={isVerifying || !adminPassword}
+                                >
+                                    {isVerifying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Delete Hotel"}
                                 </Button>
                             </div>
                         </form>
