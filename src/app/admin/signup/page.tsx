@@ -9,8 +9,10 @@ import { Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminSignup() {
+    const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [adminCode, setAdminCode] = useState("");
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -22,19 +24,31 @@ export default function AdminSignup() {
         setError(null);
         setMessage(null);
 
+        // Validate Admin Code
+        if (adminCode !== "SHAADI2025") {
+            setError("Invalid Admin Code. Please enter the correct code to create an account.");
+            setLoading(false);
+            return;
+        }
+
         try {
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
+                options: {
+                    data: {
+                        full_name: name,
+                        role: 'admin'
+                    }
+                }
             });
 
             if (error) throw error;
 
             if (data.session) {
-                // If session exists immediately (email confirm off), go to dashboard
                 router.push("/admin/dashboard");
             } else {
-                setMessage("Account created! Please check your email to confirm your account before logging in (if email verification is enabled). Otherwise, try logging in.");
+                setMessage("Account created! Please check your email to confirm your account.");
             }
         } catch (err: any) {
             setError(err.message);
@@ -56,7 +70,15 @@ export default function AdminSignup() {
                 </div>
 
                 <form onSubmit={handleSignup} className="space-y-4">
-                    <div className="space-y-2">
+                    <div className="space-y-4">
+                        <Input
+                            type="text"
+                            placeholder="Full Name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            disabled={loading}
+                            required
+                        />
                         <Input
                             type="email"
                             placeholder="Email"
@@ -73,6 +95,18 @@ export default function AdminSignup() {
                             disabled={loading}
                             required
                         />
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Admin Code</label>
+                            <Input
+                                type="text"
+                                placeholder="Enter admin code"
+                                value={adminCode}
+                                onChange={(e) => setAdminCode(e.target.value)}
+                                disabled={loading}
+                                required
+                                className="border-blue-100 focus:border-blue-500"
+                            />
+                        </div>
                     </div>
 
                     {error && (
