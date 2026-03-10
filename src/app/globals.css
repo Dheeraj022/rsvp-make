@@ -77,6 +77,34 @@
   .text-foreground {
     color: var(--color-foreground);
   }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .dark .glass-card {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .bg-gradient-mesh {
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(211, 100%, 45%, 0.15) 0, transparent 50%),
+      radial-gradient(at 50% 0%, hsla(280, 100%, 50%, 0.1) 0, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(211, 100%, 45%, 0.15) 0, transparent 50%);
+  }
 }
 
 /* Base Reset */
@@ -92,5 +120,6 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden;
   }
 }
