@@ -13,7 +13,9 @@ import {
     Mail,
     User,
     Trash2,
-    Pencil
+    Pencil,
+    UserCheck,
+    CheckCircle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -28,6 +30,7 @@ type Coordinator = {
     events?: {
         name: string;
     };
+    is_active: boolean;
 };
 
 type Event = {
@@ -150,6 +153,23 @@ function CoordinatorsPage() {
         }
     };
 
+    const handleToggleActivation = async (id: string, currentStatus: boolean, name: string) => {
+        try {
+            const { error } = await supabase
+                .from("coordinators")
+                .update({ is_active: !currentStatus })
+                .eq("id", id);
+
+            if (error) throw error;
+
+            setCoordinators(prev => prev.map(c => c.id === id ? { ...c, is_active: !currentStatus } : c));
+            alert(`Coordinator "${name}" ${!currentStatus ? 'activated' : 'deactivated'} successfully.`);
+        } catch (error: any) {
+            console.error("Error toggling activation:", error.message || error);
+            alert("Failed to update activation status: " + error.message);
+        }
+    };
+
     const handleDeleteCoordinator = async (id: string, name: string) => {
         if (!confirm(`Are you sure you want to delete coordinator "${name}"? This action cannot be undone.`)) {
             return;
@@ -233,6 +253,9 @@ function CoordinatorsPage() {
                                     Assigned Event
                                 </th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                    Status
+                                </th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                                     Created Date
                                 </th>
                                 <th className="px-6 py-4 text-right">Actions</th>
@@ -286,11 +309,30 @@ function CoordinatorsPage() {
                                                 {c.events?.name || "No event"}
                                             </span>
                                         </td>
+                                        <td className="px-6 py-5">
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${c.is_active
+                                                    ? "bg-green-50 text-green-700 border-green-100"
+                                                    : "bg-yellow-50 text-yellow-700 border-yellow-100"
+                                                }`}>
+                                                {c.is_active ? "Active" : "Pending"}
+                                            </span>
+                                        </td>
                                         <td className="px-6 py-5 text-sm text-zinc-600">
                                             {new Date(c.created_at).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-5 text-right">
                                             <div className="flex items-center justify-end gap-2">
+                                                {!c.is_active && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 transition-colors"
+                                                        title="Activate Coordinator"
+                                                        onClick={() => handleToggleActivation(c.id, c.is_active, c.name)}
+                                                    >
+                                                        <UserCheck size={18} />
+                                                    </Button>
+                                                )}
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
