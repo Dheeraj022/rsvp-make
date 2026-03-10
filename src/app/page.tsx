@@ -167,14 +167,10 @@ export default function Home() {
             </span>
           </div>
 
-          <div className="flex gap-8 text-sm text-zinc-400 font-medium">
-            <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
-            <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
-            <Link href="#" className="hover:text-white transition-colors">Support</Link>
-          </div>
+
 
           <p className="text-zinc-500 text-sm">
-            © 2026 RSVP INVITE. All rights reserved.
+            © 2026 RSVP INVITE. All rights reserved | Design and Developed by ShaadiPlatform
           </p>
         </div>
       </footer>
