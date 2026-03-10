@@ -81,7 +81,7 @@ export default function Home() {
               title: "Administrators",
               desc: "Full control over event settings, coordinators, and master lists.",
               icon: ShieldCheck,
-              link: "/admin",
+              link: "/admin/login",
               color: "from-zinc-900 to-zinc-700",
               btnText: "Admin Dashboard"
             },

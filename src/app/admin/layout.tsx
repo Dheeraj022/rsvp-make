@@ -26,12 +26,17 @@ export default function AdminLayout({
     }
 
     return (
-        <div className="min-h-screen bg-zinc-50/50">
+        <div className="min-h-screen bg-zinc-50/30 relative overflow-hidden">
+            {/* Mesh Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-mesh opacity-[0.4] pointer-events-none" />
+
             <Sidebar />
-            <div className="lg:pl-64 flex flex-col min-h-screen transition-all duration-300">
+            <div className="lg:pl-64 flex flex-col min-h-screen relative z-10 transition-all duration-300">
                 <AdminHeader title={pageTitle} />
-                <main className="flex-1 p-6 relative">
-                    {children}
+                <main className="flex-1 p-4 md:p-10 relative">
+                    <div className="max-w-7xl mx-auto">
+                        {children}
+                    </div>
                 </main>
             </div>
         </div>

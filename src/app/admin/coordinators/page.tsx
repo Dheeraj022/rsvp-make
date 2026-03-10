@@ -214,19 +214,20 @@ function CoordinatorsPage() {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 max-w-6xl mx-auto">
+        <div className="space-y-6 animate-in fade-in duration-500 max-w-6xl mx-auto px-1 sm:px-0">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-2">
-                <div>
-                    <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">Coordinators</h2>
-                    <p className="text-zinc-500 mt-1">Manage event coordinators and their access.</p>
+            <div className="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-4 py-2">
+                <div className="overflow-hidden">
+                    <h2 className="text-2xl md:text-3xl font-bold text-zinc-900 tracking-tight truncate">Coordinators</h2>
+                    <p className="text-zinc-500 mt-1 text-sm md:text-base truncate">Manage event coordinators and access.</p>
                 </div>
                 <Button
-                    className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-lg px-5 h-10 transition-all font-medium gap-2"
+                    className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-lg px-4 md:px-5 h-10 transition-all font-medium gap-2 shrink-0"
                     onClick={() => setIsCreateModalOpen(true)}
                 >
                     <Plus size={18} />
-                    Create Coordinator
+                    <span className="hidden xs:inline">Create Coordinator</span>
+                    <span className="xs:hidden">Add</span>
                 </Button>
             </div>
 
@@ -246,19 +247,13 @@ function CoordinatorsPage() {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="bg-[#f8f9fa] text-zinc-700 text-[15px] font-semibold border-b border-zinc-100">
-                                <th className="px-6 py-4">Coordinator Info</th>
-                                <th className="px-6 py-4">Credentials</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                                    Assigned Event
-                                </th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                                    Status
-                                </th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                                    Created Date
-                                </th>
-                                <th className="px-6 py-4 text-right">Actions</th>
+                            <tr className="bg-[#f8f9fa] text-zinc-700 text-[10px] md:text-xs font-black uppercase tracking-widest border-b border-zinc-100">
+                                <th className="px-4 md:px-6 py-4">Coordinator Info</th>
+                                <th className="hidden lg:table-cell px-6 py-4">Credentials</th>
+                                <th className="hidden md:table-cell px-6 py-4 text-left">Assigned Event</th>
+                                <th className="hidden sm:table-cell px-6 py-4 text-left">Status</th>
+                                <th className="hidden xl:table-cell px-6 py-4 text-left">Created Date</th>
+                                <th className="px-4 md:px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
@@ -283,16 +278,19 @@ function CoordinatorsPage() {
                                 </tr>
                             ) : (
                                 filteredCoordinators.map((c) => (
-                                    <tr key={c.id} className="hover:bg-zinc-50/50 transition-colors">
-                                        <td className="px-6 py-5">
+                                    <tr key={c.id} className="hover:bg-zinc-50/50 transition-colors group">
+                                        <td className="px-4 md:px-6 py-5">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 border border-zinc-200">
-                                                    <User size={18} />
+                                                <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 border border-zinc-200">
+                                                    <User size={16} />
                                                 </div>
-                                                <span className="font-semibold text-zinc-900">{c.name}</span>
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-zinc-900 text-sm">{c.name}</span>
+                                                    <span className="sm:hidden text-[10px] text-zinc-500 mt-0.5">{c.username}</span>
+                                                </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5">
+                                        <td className="hidden lg:table-cell px-6 py-5">
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-2 text-zinc-600">
                                                     <User size={14} className="text-zinc-400" />
@@ -304,23 +302,23 @@ function CoordinatorsPage() {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5">
+                                        <td className="hidden md:table-cell px-6 py-5">
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
                                                 {c.events?.name || "No event"}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-5">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${c.is_active
-                                                    ? "bg-green-50 text-green-700 border-green-100"
-                                                    : "bg-yellow-50 text-yellow-700 border-yellow-100"
+                                        <td className="hidden sm:table-cell px-6 py-5">
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${c.is_active
+                                                ? "bg-green-50 text-green-700 border-green-100"
+                                                : "bg-yellow-50 text-yellow-700 border-yellow-100"
                                                 }`}>
                                                 {c.is_active ? "Active" : "Pending"}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-5 text-sm text-zinc-600">
+                                        <td className="hidden xl:table-cell px-6 py-5 text-sm text-zinc-600">
                                             {new Date(c.created_at).toLocaleDateString()}
                                         </td>
-                                        <td className="px-6 py-5 text-right">
+                                        <td className="px-4 md:px-6 py-5 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 {!c.is_active && (
                                                     <Button

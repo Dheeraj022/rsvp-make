@@ -19,20 +19,20 @@ export default function AdminHeader({ title }: AdminHeaderProps) {
     };
 
     return (
-        <header className="h-16 border-b border-zinc-200 bg-white/50 backdrop-blur-md sticky top-0 z-30 px-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <header className="h-16 border-b border-white/40 bg-white/30 backdrop-blur-xl sticky top-0 z-30 px-4 md:px-8 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-4 overflow-hidden">
+                <span className="text-[10px] md:text-sm font-black text-zinc-400 uppercase tracking-[0.2em] truncate">{title}</span>
             </div>
 
-            <div className="flex items-center gap-3">
-                <div className="w-px h-6 bg-transparent mx-1" />
+            <div className="flex items-center gap-2 md:gap-3 shrink-0">
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleLogout}
-                    className="text-zinc-500 hover:text-zinc-900 gap-2 h-9 rounded-full px-4 text-xs font-medium"
+                    className="text-zinc-500 hover:text-zinc-900 gap-2 h-9 md:h-10 rounded-2xl px-3 md:px-5 text-[10px] md:text-xs font-bold transition-all hover:bg-white/50 border border-transparent hover:border-white"
                 >
                     <LogOut size={16} />
-                    Sign Out
+                    <span className="hidden sm:inline">Sign Out</span>
                 </Button>
             </div>
         </header>
