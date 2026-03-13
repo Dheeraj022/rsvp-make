@@ -236,6 +236,11 @@ export default function PublicEventPage() {
         e.preventDefault();
         if (!searchQuery.trim() || !event) return;
 
+        if (searchQuery.trim().length < 3) {
+            setSearchResults([]);
+            return;
+        }
+
         setSearching(true);
         try {
             const { data, error } = await supabase
@@ -621,6 +626,9 @@ export default function PublicEventPage() {
                                 </form>
 
                                 <div className="space-y-2">
+                                    {searchQuery.trim().length > 0 && searchQuery.trim().length < 3 && (
+                                        <p className="text-center text-zinc-400 text-sm py-4">Please enter at least 3 characters to search.</p>
+                                    )}
                                     {searchResults.map((guest) => (
                                         <button
                                             key={guest.id}
@@ -631,7 +639,7 @@ export default function PublicEventPage() {
                                             <ArrowRight className="w-4 h-4 text-zinc-300 group-hover:text-zinc-900 dark:text-zinc-600 dark:group-hover:text-zinc-50" />
                                         </button>
                                     ))}
-                                    {searchResults.length === 0 && searchQuery && !searching && (
+                                    {searchResults.length === 0 && searchQuery.trim().length >= 3 && !searching && (
                                         <p className="text-center text-zinc-400 text-sm py-4">No guests found. Please try a different name.</p>
                                     )}
                                 </div>
