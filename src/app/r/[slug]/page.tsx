@@ -35,6 +35,23 @@ type Guest = {
     status: string;
     allowed_guests: number;
     attending_count: number;
+    attendees_data?: any[];
+    departure_details?: {
+        applicable?: boolean;
+        arrival_applicable?: boolean;
+        departure_applicable?: boolean;
+        arrival?: {
+            date?: string;
+            time?: string;
+            travelers?: any[];
+        };
+        departure?: {
+            date?: string;
+            time?: string;
+            travelers?: any[];
+        };
+        message?: string;
+    };
 };
 
 export default function PublicEventPage() {
@@ -47,7 +64,10 @@ export default function PublicEventPage() {
     const [step, setStep] = useState<"landing" | "search" | "form" | "success" | "transport">("landing");
     const [activeSection, setActiveSection] = useState<"rsvp" | "transport">("rsvp");
     const [transportType, setTransportType] = useState<"arrival" | "departure">("arrival");
-    const [isTransportApplicable, setIsTransportApplicable] = useState<boolean | null>(null);
+    const [isArrivalApplicable, setIsArrivalApplicable] = useState<boolean | null>(null);
+    const [isDepartureApplicable, setIsDepartureApplicable] = useState<boolean | null>(null);
+    const [isEditingRSVP, setIsEditingRSVP] = useState(false);
+    const [isEditingTransport, setIsEditingTransport] = useState(false);
 
     // Search State
     const [searchQuery, setSearchQuery] = useState("");
@@ -91,21 +111,42 @@ export default function PublicEventPage() {
         if (selectedGuest) {
             setEmail(selectedGuest.email || "");
             setPhone(selectedGuest.phone || "");
-            setPhone(selectedGuest.phone || "");
 
-            if (status === "accepted") {
-                // Initialize attendees array if empty
-                setAttendees(prev => {
-                    if (prev.length > 0) return prev; // Don't overwrite if already modified
-                    return [{
-                        name: selectedGuest.name,
-                        age: "",
-                        guest_type: "Adult",
-                        id_type: "Aadhar Card",
-                        id_front: "",
-                        id_back: ""
-                    }];
-                });
+            if (selectedGuest.status === "accepted" || selectedGuest.status === "declined") {
+                setStatus(selectedGuest.status as "accepted" | "declined");
+            }
+
+            if (selectedGuest.attendees_data && selectedGuest.attendees_data.length > 0) {
+                setAttendees(selectedGuest.attendees_data);
+                setAttendingCount(selectedGuest.attendees_data.length);
+            } else if (status === "accepted" && (!attendees || attendees.length === 0)) {
+                setAttendees([{
+                    name: selectedGuest.name,
+                    age: "",
+                    guest_type: "Adult",
+                    id_type: "Aadhar Card",
+                    id_front: "",
+                    id_back: ""
+                }]);
+            }
+
+            if (selectedGuest.departure_details) {
+                const dd = selectedGuest.departure_details;
+                setIsArrivalApplicable(dd.arrival_applicable ?? (dd.applicable === false ? false : null));
+                setIsDepartureApplicable(dd.departure_applicable ?? (dd.applicable === false ? false : null));
+                setTransportMessage(dd.message || "");
+
+                if (dd.arrival) {
+                    setArrivalDate(dd.arrival.date || "");
+                    setArrivalTime(dd.arrival.time || "");
+                    if (dd.arrival.travelers) setArrivalTravelers(dd.arrival.travelers);
+                }
+
+                if (dd.departure) {
+                    setDepartureDate(dd.departure.date || "");
+                    setDepartureTime(dd.departure.time || "");
+                    if (dd.departure.travelers) setDepartureTravelers(dd.departure.travelers);
+                }
             }
         }
     }, [selectedGuest, status]);
@@ -344,6 +385,18 @@ export default function PublicEventPage() {
 
             if (error) throw error;
 
+            // Update local state to reflect submission immediately
+            setSelectedGuest(prev => ({
+                ...prev!,
+                status: status,
+                email: email,
+                phone: phone,
+                attending_count: status === 'accepted' ? attendees.length : 0,
+                message: message,
+                dietary_requirements: dietary,
+                attendees_data: status === 'accepted' ? attendees : [],
+            }));
+
             // Refetch guest data to get the latest departure_details
             const { data: updatedGuest } = await supabase
                 .from("guests")
@@ -383,6 +436,7 @@ export default function PublicEventPage() {
 
                 // Switch to transport section
                 setActiveSection("transport");
+                setIsEditingRSVP(false);
                 success("RSVP submitted successfully! Please provide your travel details.");
             } else {
                 // Show success screen if declined
@@ -437,16 +491,20 @@ export default function PublicEventPage() {
         try {
             // Prepare transport details
             const transportDetails: any = {
-                applicable: isTransportApplicable !== false,
+                applicable: isArrivalApplicable !== false || isDepartureApplicable !== false,
+                arrival_applicable: isArrivalApplicable !== false,
+                departure_applicable: isDepartureApplicable !== false,
                 message: transportMessage,
             };
 
-            if (isTransportApplicable !== false) {
+            if (isArrivalApplicable !== false) {
                 transportDetails.arrival = {
                     date: arrivalDate,
                     time: arrivalTime,
                     travelers: arrivalTravelers
                 };
+            }
+            if (isDepartureApplicable !== false) {
                 transportDetails.departure = {
                     date: departureDate,
                     time: departureTime,
@@ -463,11 +521,18 @@ export default function PublicEventPage() {
 
             if (error) throw error;
 
-            if (transportType === "arrival" && isTransportApplicable !== false) {
+            // Update local state to reflect submission
+            setSelectedGuest({
+                ...selectedGuest,
+                departure_details: transportDetails
+            });
+
+            if (transportType === "arrival" && isArrivalApplicable !== false) {
                 setTransportType("departure");
                 success("Arrival details saved! Please add departure details.");
             } else {
                 success("Transport details submitted successfully!");
+                setIsEditingTransport(false);
                 setStep("success");
             }
         } catch (err: any) {
@@ -590,6 +655,34 @@ export default function PublicEventPage() {
                                     <p className="text-zinc-500">Will you be joining us?</p>
                                 </div>
 
+                                {/* Status Message */}
+                                {selectedGuest.status !== 'pending' && (
+                                    <div className={`p-4 rounded-xl mb-6 text-sm border flex items-start gap-3 ${selectedGuest.departure_details?.arrival_applicable !== undefined || selectedGuest.departure_details?.departure_applicable !== undefined
+                                            ? "bg-green-50 border-green-100 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300"
+                                            : "bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300"
+                                        }`}>
+                                        <div className="mt-0.5">
+                                            {selectedGuest.departure_details?.arrival_applicable !== undefined || selectedGuest.departure_details?.departure_applicable !== undefined
+                                                ? <Check className="w-4 h-4" />
+                                                : <Loader2 className="w-4 h-4 animate-spin" />
+                                            }
+                                        </div>
+                                        <div>
+                                            {selectedGuest.departure_details?.arrival_applicable !== undefined || selectedGuest.departure_details?.departure_applicable !== undefined ? (
+                                                <>
+                                                    <p className="font-semibold">Your information is already submitted.</p>
+                                                    <p className="opacity-80">You can edit or add details below if needed.</p>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <p className="font-semibold">Your RSVP is submitted.</p>
+                                                    <p className="opacity-80">Your arrival and departure details are pending.</p>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Toggle Buttons */}
                                 <div className="flex gap-2 bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-xl mb-6">
                                     <button
@@ -618,7 +711,25 @@ export default function PublicEventPage() {
 
                                 {/* RSVP Section */}
                                 {activeSection === "rsvp" && (
-                                    <form onSubmit={handleSubmitRSVP} className="space-y-6">
+                                    selectedGuest.status !== 'pending' && !isEditingRSVP ? (
+                                        <div className="bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 text-center space-y-4">
+                                            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto text-green-600 dark:text-green-400">
+                                                <Check className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-zinc-900 dark:text-zinc-50">RSVP Already Submitted</p>
+                                                <p className="text-sm text-zinc-500">You have already responded to this invitation.</p>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => setIsEditingRSVP(true)}
+                                                className="w-full"
+                                            >
+                                                Edit information or Add members
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <form onSubmit={handleSubmitRSVP} className="space-y-6">
 
                                         {/* Number of Members Selector */}
                                         <div className="space-y-2">
@@ -939,15 +1050,31 @@ export default function PublicEventPage() {
                                             />
                                         </div>
 
-                                        <Button type="submit" className="w-full h-12 text-base rounded-xl" disabled={submitting}>
-                                            {submitting ? <Loader2 className="animate-spin w-4 h-4" /> : "Submit RSVP"}
-                                        </Button>
-                                    </form>
+                                        </form>
+                                    )
                                 )}
 
                                 {/* Transport Section */}
                                 {activeSection === "transport" && (
-                                    <form onSubmit={handleSubmitTransport} className="space-y-6">
+                                    (selectedGuest.departure_details?.arrival_applicable !== undefined || selectedGuest.departure_details?.departure_applicable !== undefined) && !isEditingTransport ? (
+                                        <div className="bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 text-center space-y-4">
+                                            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto text-green-600 dark:text-green-400">
+                                                <Check className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-zinc-900 dark:text-zinc-50">Transport Details Submitted</p>
+                                                <p className="text-sm text-zinc-500">Your travel information has been recorded.</p>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => setIsEditingTransport(true)}
+                                                className="w-full"
+                                            >
+                                                Edit transport information
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <form onSubmit={handleSubmitTransport} className="space-y-6">
 
                                         {/* Transport Selection Table (Arrival / Departure) */}
                                         <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
@@ -973,22 +1100,22 @@ export default function PublicEventPage() {
                                                 <div className="flex gap-2">
                                                     <button
                                                         type="button"
-                                                        onClick={() => setIsTransportApplicable(true)}
-                                                        className={`px-3 py-1 rounded-md text-xs font-medium border ${isTransportApplicable === true ? "bg-blue-600 border-blue-600 text-white" : "border-zinc-300 dark:border-zinc-700 hover:border-blue-400"}`}
+                                                        onClick={() => transportType === "arrival" ? setIsArrivalApplicable(true) : setIsDepartureApplicable(true)}
+                                                        className={`px-3 py-1 rounded-md text-xs font-medium border ${(transportType === "arrival" ? isArrivalApplicable : isDepartureApplicable) === true ? "bg-blue-600 border-blue-600 text-white" : "border-zinc-300 dark:border-zinc-700 hover:border-blue-400"}`}
                                                     >
                                                         Yes
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={() => setIsTransportApplicable(false)}
-                                                        className={`px-3 py-1 rounded-md text-xs font-medium border ${isTransportApplicable === false ? "bg-blue-600 border-blue-600 text-white" : "border-zinc-300 dark:border-zinc-700 hover:border-blue-400"}`}
+                                                        onClick={() => transportType === "arrival" ? setIsArrivalApplicable(false) : setIsDepartureApplicable(false)}
+                                                        className={`px-3 py-1 rounded-md text-xs font-medium border ${(transportType === "arrival" ? isArrivalApplicable : isDepartureApplicable) === false ? "bg-blue-600 border-blue-600 text-white" : "border-zinc-300 dark:border-zinc-700 hover:border-blue-400"}`}
                                                     >
                                                         No
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            {isTransportApplicable !== false && (
+                                            {(transportType === "arrival" ? isArrivalApplicable : isDepartureApplicable) !== false && (
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div className="space-y-2">
                                                         <Label>{transportType === "arrival" ? "Arrival" : "Departure"} Date</Label>
@@ -1012,7 +1139,7 @@ export default function PublicEventPage() {
                                             )}
                                         </div>
 
-                                        {isTransportApplicable !== false && (
+                                        {(transportType === "arrival" ? isArrivalApplicable : isDepartureApplicable) !== false && (
                                             <div className="space-y-4">
                                                 {(transportType === "arrival" ? arrivalTravelers : departureTravelers).map((traveler, idx) => (
                                                     <div key={idx} className="relative p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 space-y-4">
@@ -1274,10 +1401,11 @@ export default function PublicEventPage() {
                                             />
                                         </div>
 
-                                        <Button type="submit" className="w-full h-12 text-base rounded-xl" disabled={submittingTransport}>
-                                            {submittingTransport ? <Loader2 className="animate-spin w-4 h-4" /> : "Submit Transport Details"}
-                                        </Button>
-                                    </form>
+                                            <Button type="submit" className="w-full h-12 text-base rounded-xl" disabled={submittingTransport}>
+                                                {submittingTransport ? <Loader2 className="animate-spin w-4 h-4" /> : "Submit Transport Details"}
+                                            </Button>
+                                        </form>
+                                    )
                                 )}
                             </motion.div>
                         )}
