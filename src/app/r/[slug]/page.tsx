@@ -54,6 +54,76 @@ type Guest = {
     };
 };
 
+const StepWrapper = ({
+    stepNumber,
+    question,
+    children,
+    onNext,
+    onPrev,
+    showPrev = true,
+    isLast = false,
+    isSubmitting = false,
+    activeSection
+}: {
+    stepNumber: number;
+    question: string;
+    children: React.ReactNode;
+    onNext: () => void;
+    onPrev?: () => void;
+    showPrev?: boolean;
+    isLast?: boolean;
+    isSubmitting?: boolean;
+    activeSection: string;
+}) => (
+    <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+        className="space-y-4 py-2 px-4 md:px-0"
+    >
+        <div className="space-y-2">
+            <div className="flex items-center gap-3 text-zinc-400 dark:text-zinc-500 font-medium">
+                <span className="text-blue-500 text-xs">{stepNumber} →</span>
+                <span className="text-xs tracking-wide uppercase">{activeSection === 'rsvp' ? 'RSVP' : 'Transport'}</span>
+            </div>
+            <h2 className="text-xl md:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
+                {question}
+            </h2>
+        </div>
+
+        <div className="py-1">
+            {children}
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+                {!isLast ? (
+                    <Button type="button"
+                        size="lg"
+                        onClick={onNext}
+                        className="rounded-xl px-8 h-11 text-sm font-semibold shadow-md active:scale-95 transition-all"
+                    >
+                        Continue
+                    </Button>
+                ) : (
+                    <Button
+                        size="lg"
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="rounded-xl px-8 h-11 text-sm font-semibold shadow-md active:scale-95 transition-all"
+                    >
+                        {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : 'Complete'}
+                    </Button>
+                )}
+
+                <div className="hidden sm:block text-xs text-zinc-400 font-medium">
+                    press <span className="font-bold border border-zinc-200 dark:border-zinc-800 rounded px-1.5 py-0.5 bg-zinc-50 dark:bg-zinc-900 mx-1">Enter ↵</span>
+                </div>
+            </div>
+        </div>
+    </motion.div>
+);
+
 export default function PublicEventPage() {
     const params = useParams();
     const slug = params.slug as string;
@@ -601,73 +671,7 @@ export default function PublicEventPage() {
         return <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black"><Loader2 className="animate-spin text-zinc-400" /></div>;
     }
 
-    const StepWrapper = ({
-        stepNumber,
-        question,
-        children,
-        onNext,
-        onPrev,
-        showPrev = true,
-        isLast = false,
-        isSubmitting = false
-    }: {
-        stepNumber: number;
-        question: string;
-        children: React.ReactNode;
-        onNext: () => void;
-        onPrev?: () => void;
-        showPrev?: boolean;
-        isLast?: boolean;
-        isSubmitting?: boolean;
-    }) => (
-        <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="space-y-4 py-2 px-4 md:px-0"
-        >
-            <div className="space-y-2">
-                <div className="flex items-center gap-3 text-zinc-400 dark:text-zinc-500 font-medium">
-                    <span className="text-blue-500 text-xs">{stepNumber} →</span>
-                    <span className="text-xs tracking-wide uppercase">{activeSection === 'rsvp' ? 'RSVP' : 'Transport'}</span>
-                </div>
-                <h2 className="text-xl md:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
-                    {question}
-                </h2>
-            </div>
 
-            <div className="py-1">
-                {children}
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                    {!isLast ? (
-                        <Button type="button"
-                            size="lg"
-                            onClick={onNext}
-                            className="rounded-xl px-8 h-11 text-sm font-semibold shadow-md active:scale-95 transition-all"
-                        >
-                            Continue
-                        </Button>
-                    ) : (
-                        <Button
-                            size="lg"
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="rounded-xl px-8 h-11 text-sm font-semibold shadow-md active:scale-95 transition-all"
-                        >
-                            {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : 'Complete'}
-                        </Button>
-                    )}
-
-                    <div className="hidden sm:block text-xs text-zinc-400 font-medium">
-                        press <span className="font-bold border border-zinc-200 dark:border-zinc-800 rounded px-1.5 py-0.5 bg-zinc-50 dark:bg-zinc-900 mx-1">Enter ↵</span>
-                    </div>
-                </div>
-            </div>
-        </motion.div>
-    );
 
     if (!event) {
         return <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black text-zinc-500">Event not found.</div>;
@@ -880,7 +884,7 @@ export default function PublicEventPage() {
                                         <form onSubmit={handleSubmitRSVP} className="space-y-3">
                                             <AnimatePresence mode="wait">
                                                 {rsvpStep === 0 && (
-                                                    <StepWrapper
+                                                    <StepWrapper activeSection={activeSection}
                                                         stepNumber={1}
                                                         question="Will you be joining us?"
                                                         onNext={handleNextRsvp}
@@ -906,7 +910,7 @@ export default function PublicEventPage() {
                                                 )}
 
                                                 {status === 'accepted' && rsvpStep === 1 && (
-                                                    <StepWrapper
+                                                    <StepWrapper activeSection={activeSection}
                                                         stepNumber={2}
                                                         question="How many members are attending?"
                                                         onNext={handleNextRsvp}
@@ -937,7 +941,7 @@ export default function PublicEventPage() {
                                                 )}
 
                                                 {status === 'accepted' && rsvpStep === 2 && (
-                                                    <StepWrapper
+                                                    <StepWrapper activeSection={activeSection}
                                                         stepNumber={3}
                                                         question="What's your email address?"
                                                         onNext={handleNextRsvp}
@@ -955,7 +959,7 @@ export default function PublicEventPage() {
                                                 )}
 
                                                 {status === 'accepted' && rsvpStep === 3 && (
-                                                    <StepWrapper
+                                                    <StepWrapper activeSection={activeSection}
                                                         stepNumber={4}
                                                         question="And your phone number?"
                                                         onNext={handleNextRsvp}
@@ -975,7 +979,7 @@ export default function PublicEventPage() {
 
                                                 {status === 'accepted' && attendees.map((attendee, idx) => 
                                                     rsvpStep === (4 + idx) && (
-                                                        <StepWrapper
+                                                        <StepWrapper activeSection={activeSection}
                                                             key={idx}
                                                             stepNumber={5 + idx}
                                                             question={idx === 0 ? "Tell us about yourself" : `Details for Guest ${idx + 1}`}
@@ -1054,7 +1058,7 @@ export default function PublicEventPage() {
                                                     ))}
 
                                                 {rsvpStep === totalRsvpSteps - 1 && (
-                                                    <StepWrapper
+                                                    <StepWrapper activeSection={activeSection}
                                                         stepNumber={totalRsvpSteps}
                                                         question={status === 'accepted' ? "Any words for the host?" : "We're sorry you can't make it. Any message?"}
                                                         onNext={handleSubmitRSVP as any}
@@ -1100,7 +1104,7 @@ export default function PublicEventPage() {
                                             <AnimatePresence mode="wait">
                                                 {/* ARRIVAL FLOW */}
                                                 {transportStep === 0 && (
-                                                    <StepWrapper
+                                                    <StepWrapper activeSection={activeSection}
                                                         stepNumber={1}
                                                         question="Will you need arrival transport?"
                                                         onNext={handleNextTransport}
@@ -1126,7 +1130,7 @@ export default function PublicEventPage() {
                                                 )}
 
                                                 {isArrivalApplicable && transportStep === 1 && (
-                                                    <StepWrapper
+                                                    <StepWrapper activeSection={activeSection}
                                                         stepNumber={2}
                                                         question="When are you arriving?"
                                                         onNext={handleNextTransport}
@@ -1147,7 +1151,7 @@ export default function PublicEventPage() {
 
                                                 {isArrivalApplicable && arrivalTravelers.map((traveler, idx) => 
                                                     transportStep === (2 + idx) && (
-                                                        <StepWrapper
+                                                        <StepWrapper activeSection={activeSection}
                                                             key={`arrival-${idx}`}
                                                             stepNumber={3 + idx}
                                                             question={idx === 0 ? "Arrival details for you" : `Arrival for ${traveler.name || `Guest ${idx + 1}`}`}
@@ -1218,7 +1222,7 @@ export default function PublicEventPage() {
 
                                                 {/* DEPARTURE FLOW */}
                                                 {transportStep === arrivalSteps && (
-                                                    <StepWrapper
+                                                    <StepWrapper activeSection={activeSection}
                                                         stepNumber={arrivalSteps + 1}
                                                         question="Will you need departure transport?"
                                                         onNext={handleNextTransport}
@@ -1244,7 +1248,7 @@ export default function PublicEventPage() {
                                                 )}
 
                                                 {isDepartureApplicable && transportStep === (arrivalSteps + 1) && (
-                                                    <StepWrapper
+                                                    <StepWrapper activeSection={activeSection}
                                                         stepNumber={arrivalSteps + 2}
                                                         question="When are you departing?"
                                                         onNext={handleNextTransport}
@@ -1265,7 +1269,7 @@ export default function PublicEventPage() {
 
                                                 {isDepartureApplicable && departureTravelers.map((traveler, idx) => 
                                                     transportStep === (arrivalSteps + 2 + idx) && (
-                                                        <StepWrapper
+                                                        <StepWrapper activeSection={activeSection}
                                                             key={`departure-${idx}`}
                                                             stepNumber={arrivalSteps + 3 + idx}
                                                             question={idx === 0 ? "Departure details for you" : `Departure for ${traveler.name || `Guest ${idx + 1}`}`}
@@ -1331,7 +1335,7 @@ export default function PublicEventPage() {
                                                     ))}
 
                                                 {transportStep === (totalTransportSteps - 1) && (
-                                                    <StepWrapper
+                                                    <StepWrapper activeSection={activeSection}
                                                         stepNumber={totalTransportSteps}
                                                         question="Any final message regarding your travel?"
                                                         onNext={handleSubmitTransport as any}
