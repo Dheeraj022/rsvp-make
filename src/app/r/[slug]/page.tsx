@@ -68,6 +68,8 @@ export default function PublicEventPage() {
     const [isDepartureApplicable, setIsDepartureApplicable] = useState<boolean | null>(null);
     const [isEditingRSVP, setIsEditingRSVP] = useState(false);
     const [isEditingTransport, setIsEditingTransport] = useState(false);
+    const [rsvpStep, setRsvpStep] = useState(0);
+    const [transportStep, setTransportStep] = useState(0);
 
     // Search State
     const [searchQuery, setSearchQuery] = useState("");
@@ -214,6 +216,54 @@ export default function PublicEventPage() {
             setDepartureTravelers(prev => syncTravelers(prev));
         }
     }, [attendees, arrivalTravelers[0], departureTravelers[0]]);
+
+    const totalRsvpSteps = status === 'declined' ? 2 : (5 + (attendees?.length || 0));
+
+    const arrivalSteps = isArrivalApplicable !== false ? (2 + arrivalTravelers.length) : 1;
+    const departureSteps = isDepartureApplicable !== false ? (2 + departureTravelers.length) : 1;
+    const totalTransportSteps = arrivalSteps + departureSteps + 1; // +1 for message
+
+    const handleNextRsvp = () => {
+        if (rsvpStep < totalRsvpSteps - 1) {
+            setRsvpStep(rsvpStep + 1);
+        }
+    };
+
+    const handlePrevRsvp = () => {
+        if (rsvpStep > 0) setRsvpStep(rsvpStep - 1);
+    };
+
+    const handleNextTransport = () => {
+        if (transportStep < totalTransportSteps - 1) {
+            setTransportStep(transportStep + 1);
+        }
+    };
+
+    const handlePrevTransport = () => {
+        if (transportStep > 0) setTransportStep(transportStep - 1);
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                // Check if target is not a textarea
+                if ((e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                    if (activeSection === 'rsvp') {
+                        if (rsvpStep < totalRsvpSteps - 1) {
+                            e.preventDefault();
+                            handleNextRsvp();
+                        }
+                    } else {
+                        // Transport logic will go here
+                        handleNextTransport();
+                    }
+                }
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [activeSection, rsvpStep, transportStep, totalRsvpSteps]);
 
     const fetchEvent = async () => {
         try {
@@ -551,6 +601,74 @@ export default function PublicEventPage() {
         return <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black"><Loader2 className="animate-spin text-zinc-400" /></div>;
     }
 
+    const StepWrapper = ({
+        stepNumber,
+        question,
+        children,
+        onNext,
+        onPrev,
+        showPrev = true,
+        isLast = false,
+        isSubmitting = false
+    }: {
+        stepNumber: number;
+        question: string;
+        children: React.ReactNode;
+        onNext: () => void;
+        onPrev?: () => void;
+        showPrev?: boolean;
+        isLast?: boolean;
+        isSubmitting?: boolean;
+    }) => (
+        <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-4 py-2 px-4 md:px-0"
+        >
+            <div className="space-y-2">
+                <div className="flex items-center gap-3 text-zinc-400 dark:text-zinc-500 font-medium">
+                    <span className="text-blue-500 text-xs">{stepNumber} →</span>
+                    <span className="text-xs tracking-wide uppercase">{activeSection === 'rsvp' ? 'RSVP' : 'Transport'}</span>
+                </div>
+                <h2 className="text-xl md:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
+                    {question}
+                </h2>
+            </div>
+
+            <div className="py-1">
+                {children}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                    {!isLast ? (
+                        <Button type="button"
+                            size="lg"
+                            onClick={onNext}
+                            className="rounded-xl px-8 h-11 text-sm font-semibold shadow-md active:scale-95 transition-all"
+                        >
+                            Continue
+                        </Button>
+                    ) : (
+                        <Button
+                            size="lg"
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="rounded-xl px-8 h-11 text-sm font-semibold shadow-md active:scale-95 transition-all"
+                        >
+                            {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : 'Complete'}
+                        </Button>
+                    )}
+
+                    <div className="hidden sm:block text-xs text-zinc-400 font-medium">
+                        press <span className="font-bold border border-zinc-200 dark:border-zinc-800 rounded px-1.5 py-0.5 bg-zinc-50 dark:bg-zinc-900 mx-1">Enter ↵</span>
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+    );
+
     if (!event) {
         return <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black text-zinc-500">Event not found.</div>;
     }
@@ -558,8 +676,8 @@ export default function PublicEventPage() {
     return (
         <>
             <ToastContainer toasts={toasts} onRemove={removeToast} />
-            <div className="min-h-screen bg-zinc-50 dark:bg-black flex flex-col items-center justify-center p-6 font-sans">
-                <div className="w-full max-w-lg my-10">
+            <div className="min-h-screen bg-zinc-50 dark:bg-black flex flex-col items-center justify-center p-2 font-sans">
+                <div className="w-full max-w-lg my-2">
                     <AnimatePresence mode="wait">
 
                         {/* STEP 1: LANDING */}
@@ -569,11 +687,11 @@ export default function PublicEventPage() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
-                                className="text-center space-y-8"
+                                className="text-center space-y-4"
                             >
-                                <div className="space-y-4">
+                                <div className="space-y-2">
                                     <span className="inline-block px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-xs font-medium tracking-wider uppercase text-zinc-500">You are invited</span>
-                                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">{event.name}</h1>
+                                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">{event.name}</h1>
                                     <div className="flex flex-col items-center gap-2 text-zinc-500 dark:text-zinc-400">
                                         <div className="flex items-center gap-2"><Calendar className="w-4 h-4" /> {format(new Date(event.date), "MMMM d, h:mm a")}</div>
                                         <div className="flex items-center gap-2"><MapPin className="w-4 h-4" /> {event.location}</div>
@@ -581,12 +699,15 @@ export default function PublicEventPage() {
                                 </div>
 
                                 {event.description && (
-                                    <p className="text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
+                                    <p className="text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed text-sm">
                                         {event.description}
                                     </p>
                                 )}
 
-                                <Button size="lg" className="rounded-full px-8 h-12 text-base shadow-lg hover:shadow-xl transition-all" onClick={() => setStep("search")}>
+                                <Button
+                                    onClick={() => setStep("search")}
+                                    className="w-full sm:w-auto px-8 h-11 text-sm bg-zinc-900 dark:bg-zinc-50 text-white dark:text-black rounded-full hover:scale-105 transition-transform"
+                                >
                                     Respond to Invite
                                 </Button>
                             </motion.div>
@@ -599,9 +720,9 @@ export default function PublicEventPage() {
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                className="bg-white dark:bg-zinc-900 p-8 rounded-3xl shadow-xl border border-zinc-100 dark:border-zinc-800"
+                                className="bg-white dark:bg-zinc-900 p-5 rounded-3xl shadow-xl border border-zinc-100 dark:border-zinc-800"
                             >
-                                <div className="mb-6">
+                                <div className="mb-3">
                                     <Button variant="ghost" size="sm" className="-ml-2 mb-2 text-zinc-400" onClick={() => setStep("landing")}>
                                         <ArrowLeft className="w-4 h-4 mr-1" /> Back
                                     </Button>
@@ -614,7 +735,7 @@ export default function PublicEventPage() {
                                         <Search className="absolute left-3 top-3 h-5 w-5 text-zinc-400" />
                                         <Input
                                             placeholder="Search by name..."
-                                            className="pl-10 h-11 text-lg"
+                                            className="pl-10 h-10 text-base"
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             autoFocus
@@ -653,14 +774,33 @@ export default function PublicEventPage() {
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
-                                className="bg-white dark:bg-zinc-900 p-8 rounded-3xl shadow-xl border border-zinc-100 dark:border-zinc-800"
+                                className="bg-white dark:bg-zinc-900 p-5 rounded-3xl shadow-xl border border-zinc-100 dark:border-zinc-800 relative overflow-hidden"
                             >
-                                <div className="mb-6">
-                                    <Button variant="ghost" size="sm" className="-ml-2 mb-2 text-zinc-400" onClick={() => setStep("search")}>
+                                {/* Progress Bar */}
+                                <div className="absolute top-0 left-0 w-full h-1 bg-zinc-100 dark:bg-zinc-800">
+                                    <motion.div 
+                                        className="h-full bg-zinc-900 dark:bg-zinc-50"
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${activeSection === 'rsvp' 
+                                            ? ((rsvpStep + 1) / totalRsvpSteps) * 100 
+                                            : ((transportStep + 1) / totalTransportSteps) * 100}%` }}
+                                        transition={{ duration: 0.5, ease: "easeInOut" }}
+                                    />
+                                </div>
+                                <div className="mb-3">
+                                    <Button variant="ghost" size="sm" className="-ml-2 mb-1 text-zinc-400" onClick={() => {
+                                        if (activeSection === 'transport') {
+                                            if (transportStep > 0) handlePrevTransport();
+                                            else setActiveSection('rsvp');
+                                        } else {
+                                            if (rsvpStep > 0) handlePrevRsvp();
+                                            else setStep("search");
+                                        }
+                                    }}>
                                         <ArrowLeft className="w-4 h-4 mr-1" /> Back
                                     </Button>
-                                    <h2 className="text-2xl font-semibold">Hi, {selectedGuest.name}</h2>
-                                    <p className="text-zinc-500">Will you be joining us?</p>
+                                    <h2 className="text-xl font-semibold">Hi, {selectedGuest.name}</h2>
+                                    <p className="text-zinc-500 text-sm">Will you be joining us?</p>
                                 </div>
 
                                 {/* Status Message */}
@@ -692,7 +832,7 @@ export default function PublicEventPage() {
                                 )}
 
                                 {/* Toggle Buttons */}
-                                <div className="flex gap-2 bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-xl mb-6">
+                                <div className="flex gap-2 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl mb-4">
                                     <button
                                         type="button"
                                         onClick={() => setActiveSection("rsvp")}
@@ -735,333 +875,207 @@ export default function PublicEventPage() {
                                             >
                                                 Edit information or Add members
                                             </Button>
-                                        </div>
+                                            </div>
                                     ) : (
-                                        <form onSubmit={handleSubmitRSVP} className="space-y-6">
-
-                                        {/* Number of Members Selector */}
-                                        <div className="space-y-2">
-                                            <Label>No. of Members <span className="text-red-500">*</span></Label>
-                                            <select
-                                                className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition"
-                                                value={attendingCount}
-                                                onChange={(e) => {
-                                                    const count = parseInt(e.target.value);
-                                                    setAttendingCount(count);
-
-                                                    // Adjust attendees array to match the selected count
-                                                    const newAttendees = [...attendees];
-                                                    if (count > attendees.length) {
-                                                        // Add new attendees
-                                                        for (let i = attendees.length; i < count; i++) {
-                                                            newAttendees.push({
-                                                                name: "",
-                                                                age: "",
-                                                                guest_type: "Adult",
-                                                                id_type: "Aadhar Card",
-                                                                id_front: "",
-                                                                id_back: ""
-                                                            });
-                                                        }
-                                                    } else if (count < attendees.length) {
-                                                        // Remove excess attendees
-                                                        newAttendees.splice(count);
-                                                    }
-                                                    setAttendees(newAttendees);
-                                                }}
-                                            >
-                                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                                                    <option key={num} value={num}>{num}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label>Email</Label>
-                                                <Input
-                                                    type="email"
-                                                    placeholder="your@email.com"
-                                                    value={email}
-                                                    onChange={(e) => setEmail(e.target.value)}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Phone <span className="text-red-500">*</span></Label>
-                                                <Input
-                                                    type="tel"
-                                                    placeholder="Your phone number"
-                                                    value={phone}
-                                                    onChange={(e) => setPhone(e.target.value)}
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-6 border-zinc-100 dark:border-zinc-800">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="font-medium text-lg">Guest Details & ID Verification</h3>
-                                                <div className="text-sm text-zinc-500">
-                                                    {attendees.length} Guests Attending
-                                                </div>
-                                            </div>
-
-                                            {attendees.map((attendee, idx) => {
-                                                const isMain = idx === 0;
-                                                const isExpanded = isMain || expandedGuest === idx;
-
-                                                // Shared inner content for any guest
-                                                const guestFormBody = (
-                                                    <div className="space-y-5 pt-4">
-                                                        <div className="space-y-2">
-                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Full Name</Label>
-                                                            <Input
-                                                                value={attendee.name}
-                                                                onChange={(e) => {
-                                                                    const newA = [...attendees];
-                                                                    newA[idx].name = e.target.value;
-                                                                    setAttendees(newA);
-                                                                }}
-                                                                placeholder="Enter full name"
-                                                                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 focus:border-zinc-400 dark:focus:border-zinc-500 text-base"
-                                                            />
-                                                        </div>
-
-                                                        {/* Age Field */}
-                                                        <div className="space-y-2">
-                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Age</Label>
-                                                            <Input
-                                                                type="number"
-                                                                value={attendee.age}
-                                                                onChange={(e) => {
-                                                                    const newA = [...attendees];
-                                                                    newA[idx].age = e.target.value;
-                                                                    setAttendees(newA);
-                                                                }}
-                                                                placeholder="Enter age"
-                                                                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 focus:border-zinc-400 dark:focus:border-zinc-500 text-base"
-                                                                min="0"
-                                                                max="120"
-                                                            />
-                                                        </div>
-
-                                                        <div className="space-y-2">
-                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">ID Document Type</Label>
-                                                            <select
-                                                                className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition"
-                                                                value={attendee.id_type}
-                                                                onChange={(e) => {
-                                                                    const newA = [...attendees];
-                                                                    newA[idx].id_type = e.target.value;
-                                                                    setAttendees(newA);
-                                                                }}
+                                        <form onSubmit={handleSubmitRSVP} className="space-y-3">
+                                            <AnimatePresence mode="wait">
+                                                {rsvpStep === 0 && (
+                                                    <StepWrapper
+                                                        stepNumber={1}
+                                                        question="Will you be joining us?"
+                                                        onNext={handleNextRsvp}
+                                                        showPrev={false}
+                                                    >
+                                                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setStatus("accepted"); handleNextRsvp(); }}
+                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${status === 'accepted' ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 hover:border-zinc-400'}`}
                                                             >
-                                                                <option value="Aadhar Card">Aadhar Card</option>
-                                                                <option value="Passport">Passport</option>
-                                                                <option value="Driving License">Driving License</option>
-                                                                <option value="Voter ID Card">Voter ID Card</option>
-                                                            </select>
+                                                                Yes, I'm coming!
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setStatus("declined"); setRsvpStep(1); }}
+                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${status === 'declined' ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 hover:border-zinc-400'}`}
+                                                            >
+                                                                Regretfully, no
+                                                            </button>
                                                         </div>
+                                                    </StepWrapper>
+                                                )}
 
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            <div className="space-y-2">
-                                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Front Side</Label>
-                                                                <div className="relative group">
-                                                                    <input
-                                                                        type="file"
-                                                                        accept="image/*,.pdf,application/pdf"
-                                                                        className="hidden"
-                                                                        id={`file-${idx}-front`}
-                                                                        onChange={(e) => {
-                                                                            const file = e.target.files?.[0];
-                                                                            if (file) handleFileUpload(file, idx, "id_front");
-                                                                        }}
-                                                                    />
-                                                                    <label
-                                                                        htmlFor={`file-${idx}-front`}
-                                                                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
-                                                                        ${attendee.id_front ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800'}`}
-                                                                    >
-                                                                        {uploading === `${idx}-id_front` ? (
-                                                                            <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
-                                                                        ) : attendee.id_front ? (
-                                                                            attendee.id_front.toLowerCase().includes('.pdf') ? (
-                                                                                <div className="flex flex-col items-center justify-center space-y-2">
-                                                                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                                                                                        <FileText className="w-4 h-4 text-red-500" />
-                                                                                        <span className="text-xs font-semibold text-red-600 dark:text-red-400">PDF</span>
-                                                                                    </div>
-                                                                                    <a href={attendee.id_front} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 underline" onClick={e => e.stopPropagation()}>View PDF</a>
-                                                                                    <span className="text-xs text-zinc-400">Click to change</span>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="relative w-full h-full overflow-hidden rounded-xl">
-                                                                                    <img src={attendee.id_front} alt="Front ID" className="object-cover w-full h-full" />
-                                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">Change</div>
-                                                                                </div>
-                                                                            )
-                                                                        ) : (
-                                                                            <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
-                                                                                <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
-                                                                                    <Upload className="w-4 h-4" />
-                                                                                </div>
-                                                                                <span className="text-xs font-medium">Upload Front</span>
-                                                                                <span className="text-xs text-zinc-400">Image or PDF</span>
-                                                                            </div>
-                                                                        )}
-                                                                    </label>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="space-y-2">
-                                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Back Side</Label>
-                                                                <div className="relative group">
-                                                                    <input
-                                                                        type="file"
-                                                                        accept="image/*,.pdf,application/pdf"
-                                                                        className="hidden"
-                                                                        id={`file-${idx}-back`}
-                                                                        onChange={(e) => {
-                                                                            const file = e.target.files?.[0];
-                                                                            if (file) handleFileUpload(file, idx, "id_back");
-                                                                        }}
-                                                                    />
-                                                                    <label
-                                                                        htmlFor={`file-${idx}-back`}
-                                                                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
-                                                                        ${attendee.id_back ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-800'}`}
-                                                                    >
-                                                                        {uploading === `${idx}-id_back` ? (
-                                                                            <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
-                                                                        ) : attendee.id_back ? (
-                                                                            attendee.id_back.toLowerCase().includes('.pdf') ? (
-                                                                                <div className="flex flex-col items-center justify-center space-y-2">
-                                                                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                                                                                        <FileText className="w-4 h-4 text-red-500" />
-                                                                                        <span className="text-xs font-semibold text-red-600 dark:text-red-400">PDF</span>
-                                                                                    </div>
-                                                                                    <a href={attendee.id_back} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 underline" onClick={e => e.stopPropagation()}>View PDF</a>
-                                                                                    <span className="text-xs text-zinc-400">Click to change</span>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="relative w-full h-full overflow-hidden rounded-xl">
-                                                                                    <img src={attendee.id_back} alt="Back ID" className="object-cover w-full h-full" />
-                                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">Change</div>
-                                                                                </div>
-                                                                            )
-                                                                        ) : (
-                                                                            <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2">
-                                                                                <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
-                                                                                    <Upload className="w-4 h-4" />
-                                                                                </div>
-                                                                                <span className="text-xs font-medium">Upload Back</span>
-                                                                                <span className="text-xs text-zinc-400">Image or PDF</span>
-                                                                            </div>
-                                                                        )}
-                                                                    </label>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-
-                                                if (isMain) {
-                                                    // Main Guest \u2014 always visible, never collapsible
-                                                    return (
-                                                        <div key={idx} className="relative p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800">
-                                                            <h4 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">Main Guest</h4>
-                                                            {guestFormBody}
-                                                        </div>
-                                                    );
-                                                }
-
-                                                // Additional guests \u2014 accordion style
-                                                return (
-                                                    <div key={idx} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-                                                        {/* Clickable header */}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setExpandedGuest(expandedGuest === idx ? null : idx)}
-                                                            className="w-full flex items-center justify-between px-6 py-4 bg-zinc-50 dark:bg-zinc-800/30 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
+                                                {status === 'accepted' && rsvpStep === 1 && (
+                                                    <StepWrapper
+                                                        stepNumber={2}
+                                                        question="How many members are attending?"
+                                                        onNext={handleNextRsvp}
+                                                        onPrev={handlePrevRsvp}
+                                                    >
+                                                        <select
+                                                            className="w-full h-12 px-6 rounded-2xl border-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-zinc-900 transition"
+                                                            value={attendingCount}
+                                                            onChange={(e) => {
+                                                                const count = parseInt(e.target.value);
+                                                                setAttendingCount(count);
+                                                                const newAttendees = [...attendees];
+                                                                if (count > attendees.length) {
+                                                                    for (let i = attendees.length; i < count; i++) {
+                                                                        newAttendees.push({ name: "", age: "", guest_type: "Adult", id_type: "Aadhar Card", id_front: "", id_back: "" });
+                                                                    }
+                                                                } else if (count < attendees.length) {
+                                                                    newAttendees.splice(count);
+                                                                }
+                                                                setAttendees(newAttendees);
+                                                            }}
                                                         >
-                                                            <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
-                                                                Show Guest {idx + 1}
-                                                            </span>
-                                                            <motion.div
-                                                                animate={{ rotate: isExpanded ? 180 : 0 }}
-                                                                transition={{ duration: 0.25 }}
-                                                            >
-                                                                <ChevronDown className="w-4 h-4 text-zinc-500" />
-                                                            </motion.div>
-                                                        </button>
+                                                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                                                                <option key={num} value={num}>{num} Member{num > 1 ? 's' : ''}</option>
+                                                            ))}
+                                                        </select>
+                                                    </StepWrapper>
+                                                )}
 
-                                                        {/* Animated body */}
-                                                        <AnimatePresence initial={false}>
-                                                            {isExpanded && (
-                                                                <motion.div
-                                                                    key="body"
-                                                                    initial={{ height: 0, opacity: 0 }}
-                                                                    animate={{ height: "auto", opacity: 1 }}
-                                                                    exit={{ height: 0, opacity: 0 }}
-                                                                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                                                                    style={{ overflow: "hidden" }}
-                                                                >
-                                                                    <div className="px-6 pb-6 bg-zinc-50 dark:bg-zinc-800/30 space-y-0">
-                                                                        <div className="flex justify-end pt-2">
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 h-8 px-2"
-                                                                                onClick={() => {
-                                                                                    const newA = attendees.filter((_, i) => i !== idx);
-                                                                                    setAttendees(newA);
-                                                                                    setAttendingCount(newA.length);
-                                                                                    setExpandedGuest(null);
-                                                                                }}
-                                                                            >
-                                                                                Remove
-                                                                            </Button>
+                                                {status === 'accepted' && rsvpStep === 2 && (
+                                                    <StepWrapper
+                                                        stepNumber={3}
+                                                        question="What's your email address?"
+                                                        onNext={handleNextRsvp}
+                                                        onPrev={handlePrevRsvp}
+                                                    >
+                                                        <Input
+                                                            type="email"
+                                                            placeholder="your@email.com"
+                                                            value={email}
+                                                            onChange={(e) => setEmail(e.target.value)}
+                                                            className="h-12 text-lg px-6 rounded-2xl border-2"
+                                                            autoFocus
+                                                        />
+                                                    </StepWrapper>
+                                                )}
+
+                                                {status === 'accepted' && rsvpStep === 3 && (
+                                                    <StepWrapper
+                                                        stepNumber={4}
+                                                        question="And your phone number?"
+                                                        onNext={handleNextRsvp}
+                                                        onPrev={handlePrevRsvp}
+                                                    >
+                                                        <Input
+                                                            type="tel"
+                                                            placeholder="Your phone number"
+                                                            value={phone}
+                                                            onChange={(e) => setPhone(e.target.value)}
+                                                            className="h-12 text-lg px-6 rounded-2xl border-2"
+                                                            required
+                                                            autoFocus
+                                                        />
+                                                    </StepWrapper>
+                                                )}
+
+                                                {status === 'accepted' && attendees.map((attendee, idx) => 
+                                                    rsvpStep === (4 + idx) && (
+                                                        <StepWrapper
+                                                            key={idx}
+                                                            stepNumber={5 + idx}
+                                                            question={idx === 0 ? "Tell us about yourself" : `Details for Guest ${idx + 1}`}
+                                                            onNext={handleNextRsvp}
+                                                            onPrev={handlePrevRsvp}
+                                                        >
+                                                            <div className="space-y-6">
+                                                                <div className="space-y-2">
+                                                                    <Label className="text-sm font-medium text-zinc-500 uppercase">Full Name</Label>
+                                                                    <Input
+                                                                        value={attendee.name}
+                                                                        onChange={(e) => {
+                                                                            const newA = [...attendees];
+                                                                            newA[idx].name = e.target.value;
+                                                                            setAttendees(newA);
+                                                                        }}
+                                                                        placeholder="Enter full name"
+                                                                        className="h-11 text-base px-4 rounded-xl border-2"
+                                                                    />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <Label className="text-sm font-medium text-zinc-500 uppercase">Age</Label>
+                                                                    <Input
+                                                                        type="number"
+                                                                        value={attendee.age}
+                                                                        onChange={(e) => {
+                                                                            const newA = [...attendees];
+                                                                            newA[idx].age = e.target.value;
+                                                                            setAttendees(newA);
+                                                                        }}
+                                                                        placeholder="Enter age"
+                                                                        className="h-11 text-base px-4 rounded-xl border-2"
+                                                                    />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <Label className="text-sm font-medium text-zinc-500 uppercase">ID Document Type</Label>
+                                                                    <select
+                                                                        className="w-full h-11 px-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-900 transition"
+                                                                        value={attendee.id_type}
+                                                                        onChange={(e) => {
+                                                                            const newA = [...attendees];
+                                                                            newA[idx].id_type = e.target.value;
+                                                                            setAttendees(newA);
+                                                                        }}
+                                                                    >
+                                                                        <option value="Aadhar Card">Aadhar Card</option>
+                                                                        <option value="Passport">Passport</option>
+                                                                        <option value="Driving License">Driving License</option>
+                                                                        <option value="Voter ID Card">Voter ID Card</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                    <div className="space-y-2">
+                                                                        <Label className="text-sm font-medium text-zinc-500 uppercase">Front ID</Label>
+                                                                        <div className="relative group">
+                                                                            <input type="file" className="hidden" id={`file-${idx}-front`} onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileUpload(file, idx, "id_front"); }} />
+                                                                            <label htmlFor={`file-${idx}-front`} className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all ${attendee.id_front ? 'border-green-500 bg-green-50' : 'border-zinc-300 hover:border-zinc-400'}`}>
+                                                                                {uploading === `${idx}-id_front` ? <Loader2 className="animate-spin" /> : attendee.id_front ? <Check className="text-green-500" /> : <Upload className="text-zinc-400" />}
+                                                                                <span className="text-xs mt-2">{attendee.id_front ? 'Uploaded' : 'Upload Front'}</span>
+                                                                            </label>
                                                                         </div>
-                                                                        {guestFormBody}
                                                                     </div>
-                                                                </motion.div>
-                                                            )}
-                                                        </AnimatePresence>
-                                                    </div>
-                                                );
-                                            })}
+                                                                    <div className="space-y-2">
+                                                                        <Label className="text-sm font-medium text-zinc-500 uppercase">Back ID</Label>
+                                                                        <div className="relative group">
+                                                                            <input type="file" className="hidden" id={`file-${idx}-back`} onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileUpload(file, idx, "id_back"); }} />
+                                                                            <label htmlFor={`file-${idx}-back`} className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all ${attendee.id_back ? 'border-green-500 bg-green-50' : 'border-zinc-300 hover:border-zinc-400'}`}>
+                                                                                {uploading === `${idx}-id_back` ? <Loader2 className="animate-spin" /> : attendee.id_back ? <Check className="text-green-500" /> : <Upload className="text-zinc-400" />}
+                                                                                <span className="text-xs mt-2">{attendee.id_back ? 'Uploaded' : 'Upload Back'}</span>
+                                                                            </label>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </StepWrapper>
+                                                    ))}
 
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className="w-full border-dashed border-2 py-6 text-zinc-500 hover:text-zinc-900 hover:border-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                                                onClick={() => {
-                                                    const newA = [
-                                                        ...attendees,
-                                                        { name: "", age: "", guest_type: "Adult", id_type: "Aadhar Card", id_front: "", id_back: "" }
-                                                    ];
-                                                    setAttendees(newA);
-                                                    setAttendingCount(newA.length);
-                                                }}
-                                            >
-                                                + Add Family Member
-                                            </Button>
-                                        </div>
-
-                                        <div className="space-y-3">
-                                            <Label>Message (Optional)</Label>
-                                            <Textarea
-                                                placeholder="Any words for the host?"
-                                                value={message}
-                                                onChange={(e) => setMessage(e.target.value)}
-                                            />
-                                        </div>
-
+                                                {rsvpStep === totalRsvpSteps - 1 && (
+                                                    <StepWrapper
+                                                        stepNumber={totalRsvpSteps}
+                                                        question={status === 'accepted' ? "Any words for the host?" : "We're sorry you can't make it. Any message?"}
+                                                        onNext={handleSubmitRSVP as any}
+                                                        onPrev={handlePrevRsvp}
+                                                        isLast={true}
+                                                        isSubmitting={submitting}
+                                                    >
+                                                        <Textarea
+                                                            placeholder="Type your message here..."
+                                                            value={message}
+                                                            onChange={(e) => setMessage(e.target.value)}
+                                                            className="min-h-[150px] text-base p-6 rounded-2xl border-2"
+                                                            autoFocus
+                                                        />
+                                                    </StepWrapper>
+                                                )}
+                                            </AnimatePresence>
                                         </form>
                                     )
                                 )}
-
+ 
                                 {/* Transport Section */}
                                 {activeSection === "transport" && (
                                     (selectedGuest.departure_details?.arrival_applicable !== undefined || selectedGuest.departure_details?.departure_applicable !== undefined) && !isEditingTransport ? (
@@ -1082,336 +1096,259 @@ export default function PublicEventPage() {
                                             </Button>
                                         </div>
                                     ) : (
-                                        <form onSubmit={handleSubmitTransport} className="space-y-6">
-
-                                        {/* Transport Selection Table (Arrival / Departure) */}
-                                        <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
-                                            <button
-                                                type="button"
-                                                onClick={() => setTransportType("arrival")}
-                                                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${transportType === "arrival" ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 shadow-sm" : "text-zinc-500"}`}
-                                            >
-                                                Arrival
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setTransportType("departure")}
-                                                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${transportType === "departure" ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 shadow-sm" : "text-zinc-500"}`}
-                                            >
-                                                Departure
-                                            </button>
-                                        </div>
-
-                                        <div className="space-y-4 border rounded-2xl p-6 bg-zinc-50 dark:bg-zinc-800/30">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="font-medium text-lg">{transportType === "arrival" ? "Arrival" : "Departure"} Details</h3>
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => transportType === "arrival" ? setIsArrivalApplicable(true) : setIsDepartureApplicable(true)}
-                                                        className={`px-3 py-1 rounded-md text-xs font-medium border ${(transportType === "arrival" ? isArrivalApplicable : isDepartureApplicable) === true ? "bg-blue-600 border-blue-600 text-white" : "border-zinc-300 dark:border-zinc-700 hover:border-blue-400"}`}
+                                        <form onSubmit={handleSubmitTransport} className="space-y-3">
+                                            <AnimatePresence mode="wait">
+                                                {/* ARRIVAL FLOW */}
+                                                {transportStep === 0 && (
+                                                    <StepWrapper
+                                                        stepNumber={1}
+                                                        question="Will you need arrival transport?"
+                                                        onNext={handleNextTransport}
+                                                        showPrev={false}
                                                     >
-                                                        Yes
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => transportType === "arrival" ? setIsArrivalApplicable(false) : setIsDepartureApplicable(false)}
-                                                        className={`px-3 py-1 rounded-md text-xs font-medium border ${(transportType === "arrival" ? isArrivalApplicable : isDepartureApplicable) === false ? "bg-blue-600 border-blue-600 text-white" : "border-zinc-300 dark:border-zinc-700 hover:border-blue-400"}`}
+                                                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setIsArrivalApplicable(true); handleNextTransport(); }}
+                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${isArrivalApplicable === true ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 hover:border-zinc-400'}`}
+                                                            >
+                                                                Yes, please
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setIsArrivalApplicable(false); setTransportStep(1); }}
+                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${isArrivalApplicable === false ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 hover:border-zinc-400'}`}
+                                                            >
+                                                                No, I'm okay
+                                                            </button>
+                                                        </div>
+                                                    </StepWrapper>
+                                                )}
+
+                                                {isArrivalApplicable && transportStep === 1 && (
+                                                    <StepWrapper
+                                                        stepNumber={2}
+                                                        question="When are you arriving?"
+                                                        onNext={handleNextTransport}
+                                                        onPrev={handlePrevTransport}
                                                     >
-                                                        No
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {(transportType === "arrival" ? isArrivalApplicable : isDepartureApplicable) !== false && (
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <Label>{transportType === "arrival" ? "Arrival" : "Departure"} Date</Label>
-                                                        <Input
-                                                            type="date"
-                                                            value={transportType === "arrival" ? arrivalDate : departureDate}
-                                                            onChange={(e) => transportType === "arrival" ? setArrivalDate(e.target.value) : setDepartureDate(e.target.value)}
-                                                            className="bg-white dark:bg-zinc-900"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label>{transportType === "arrival" ? "Arrival" : "Departure"} Time</Label>
-                                                        <Input
-                                                            type="time"
-                                                            value={transportType === "arrival" ? arrivalTime : departureTime}
-                                                            onChange={(e) => transportType === "arrival" ? setArrivalTime(e.target.value) : setDepartureTime(e.target.value)}
-                                                            className="bg-white dark:bg-zinc-900"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {(transportType === "arrival" ? isArrivalApplicable : isDepartureApplicable) !== false && (
-                                            <div className="space-y-4">
-                                                {(transportType === "arrival" ? arrivalTravelers : departureTravelers).map((traveler, idx) => (
-                                                    <div key={idx} className="relative p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 space-y-4">
-                                                        <div className="flex items-center justify-between">
-                                                            <h4 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
-                                                                {idx === 0 ? "Main Guest" : `Family Member ${idx}`}
-                                                            </h4>
-                                                            {idx > 0 && (
-                                                                <label className="flex items-center gap-2 cursor-pointer">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={!!traveler.same_as_main}
-                                                                        onChange={(e) => {
-                                                                            const val = e.target.checked;
-                                                                            const travelers = transportType === "arrival" ? arrivalTravelers : departureTravelers;
-                                                                            const newTravelers = [...travelers];
-                                                                            newTravelers[idx].same_as_main = val;
-                                                                            if (val) {
-                                                                                const main = newTravelers[0];
-                                                                                newTravelers[idx] = {
-                                                                                    ...newTravelers[idx],
-                                                                                    mode_of_travel: main.mode_of_travel,
-                                                                                    station_airport: main.station_airport,
-                                                                                    transport_number: main.transport_number,
-                                                                                    drop_location: main.drop_location,
-                                                                                    number_of_bags: main.number_of_bags,
-                                                                                    number_of_vehicles: main.number_of_vehicles,
-                                                                                    contact_number: main.contact_number,
-                                                                                    number_of_pax: main.number_of_pax,
-                                                                                    same_as_main: true
-                                                                                };
-                                                                            }
-                                                                            transportType === "arrival" ? setArrivalTravelers(newTravelers) : setDepartureTravelers(newTravelers);
-                                                                        }}
-                                                                        className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900"
-                                                                    />
-                                                                    <span className="text-[10px] text-zinc-500 font-medium whitespace-nowrap">Coming with main guest?</span>
-                                                                </label>
-                                                            )}
-                                                        </div>
-
-                                                        <div className="space-y-2">
-                                                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Full Name</Label>
-                                                            <Input
-                                                                value={traveler.name}
-                                                                onChange={(e) => {
-                                                                    const travelers = transportType === "arrival" ? arrivalTravelers : departureTravelers;
-                                                                    const newTravelers = [...travelers];
-                                                                    newTravelers[idx].name = e.target.value;
-                                                                    transportType === "arrival" ? setArrivalTravelers(newTravelers) : setDepartureTravelers(newTravelers);
-                                                                }}
-                                                                placeholder="Enter full name"
-                                                                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700"
-                                                            />
-                                                        </div>
-
-                                                        {idx > 0 && traveler.same_as_main ? (
-                                                            <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 text-center">
-                                                                <p className="text-xs text-zinc-500 italic">Syncing details from main guest...</p>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div className="space-y-2">
+                                                                <Label className="text-sm font-medium text-zinc-500">Pick-up Date</Label>
+                                                                <Input type="date" value={arrivalDate} onChange={(e) => setArrivalDate(e.target.value)} className="h-11 text-sm rounded-xl border-2" />
                                                             </div>
-                                                        ) : (
-                                                            <div className="space-y-4">
-                                                                <div className="grid grid-cols-2 gap-4">
-                                                                    <div className="space-y-2">
-                                                                        <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Mode</Label>
-                                                                        <select
-                                                                            className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition"
-                                                                            value={traveler.mode_of_travel}
-                                                                            onChange={(e) => {
-                                                                                const newTravelers = [...(transportType === "arrival" ? arrivalTravelers : departureTravelers)];
-                                                                                newTravelers[idx].mode_of_travel = e.target.value;
-                                                                                transportType === "arrival" ? setArrivalTravelers(newTravelers) : setDepartureTravelers(newTravelers);
-                                                                            }}
-                                                                        >
-                                                                            <option value="">Select</option>
-                                                                            <option value="Bus">Bus</option>
-                                                                            <option value="Train">Train</option>
-                                                                            <option value="By Air">By Air</option>
-                                                                        </select>
-                                                                    </div>
-                                                                    <div className="space-y-2">
-                                                                        <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                                                                            {traveler.mode_of_travel === "By Air" ? "Airport" : traveler.mode_of_travel === "Train" ? "Station" : traveler.mode_of_travel === "Bus" ? "Bus Stand" : "Station/Airport"}
-                                                                        </Label>
-                                                                        <Input
-                                                                            placeholder="Name"
-                                                                            value={traveler.station_airport || ""}
-                                                                            onChange={(e) => {
-                                                                                const newTravelers = [...(transportType === "arrival" ? arrivalTravelers : departureTravelers)];
-                                                                                newTravelers[idx].station_airport = e.target.value;
-                                                                                transportType === "arrival" ? setArrivalTravelers(newTravelers) : setDepartureTravelers(newTravelers);
-                                                                            }}
-                                                                        />
-                                                                    </div>
-                                                                </div>
+                                                            <div className="space-y-2">
+                                                                <Label className="text-sm font-medium text-zinc-500">Pick-up Time</Label>
+                                                                <Input type="time" value={arrivalTime} onChange={(e) => setArrivalTime(e.target.value)} className="h-11 text-sm rounded-xl border-2" />
+                                                            </div>
+                                                        </div>
+                                                    </StepWrapper>
+                                                )}
 
-                                                                {transportType === "arrival" && (
-                                                                    <div className="space-y-4 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                                                                        <div className="grid grid-cols-2 gap-4">
-                                                                            <div className="space-y-2">
-                                                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Contact Number</Label>
-                                                                                <Input
-                                                                                    type="tel"
-                                                                                    placeholder="Phone"
-                                                                                    value={traveler.contact_number || ""}
-                                                                                    onChange={(e) => {
-                                                                                        const newT = [...arrivalTravelers];
-                                                                                        newT[idx].contact_number = e.target.value;
-                                                                                        setArrivalTravelers(newT);
-                                                                                    }}
-                                                                                />
-                                                                            </div>
-                                                                            <div className="space-y-2">
-                                                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Number of Pax</Label>
-                                                                                <Input
-                                                                                    type="number"
-                                                                                    value={traveler.number_of_pax || "1"}
-                                                                                    onChange={(e) => {
-                                                                                        const newT = [...arrivalTravelers];
-                                                                                        newT[idx].number_of_pax = e.target.value;
-                                                                                        setArrivalTravelers(newT);
-                                                                                    }}
-                                                                                />
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="grid grid-cols-1 gap-4">
-                                                                            <div className="space-y-2">
-                                                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                                                                                    {traveler.mode_of_travel === "By Air" ? "Flight Number" : traveler.mode_of_travel === "Train" ? "Train Number" : traveler.mode_of_travel === "Bus" ? "Bus Number" : "Transport Number"}
-                                                                                </Label>
-                                                                                <Input
-                                                                                    placeholder="Number"
-                                                                                    value={traveler.transport_number || ""}
-                                                                                    onChange={(e) => {
-                                                                                        const newT = [...arrivalTravelers];
-                                                                                        newT[idx].transport_number = e.target.value;
-                                                                                        setArrivalTravelers(newT);
-                                                                                    }}
-                                                                                />
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="grid grid-cols-1 gap-4">
-                                                                            <div className="space-y-2">
-                                                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Drop Location / Hotel</Label>
-                                                                                <select
-                                                                                    className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition"
-                                                                                    value={event?.drop_locations?.includes(traveler.drop_location) ? traveler.drop_location : (traveler.drop_location ? "Other" : "")}
-                                                                                    onChange={(e) => {
-                                                                                        const val = e.target.value;
-                                                                                        const newT = [...arrivalTravelers];
-                                                                                        if (val === "Other") {
-                                                                                            if (event?.drop_locations?.includes(newT[idx].drop_location)) {
-                                                                                                newT[idx].drop_location = "";
-                                                                                            }
-                                                                                        } else {
-                                                                                            newT[idx].drop_location = val;
-                                                                                        }
-                                                                                        setArrivalTravelers(newT);
-                                                                                    }}
-                                                                                >
-                                                                                    <option value="">Select Location</option>
-                                                                                    {event?.drop_locations?.map((loc) => (
-                                                                                        <option key={loc} value={loc}>{loc}</option>
-                                                                                    ))}
-                                                                                    <option value="Other">Other (Type below)</option>
-                                                                                </select>
-
-                                                                                {((traveler.drop_location !== "" && !event?.drop_locations?.includes(traveler.drop_location)) ||
-                                                                                    (traveler.drop_location === "" && (!event?.drop_locations || event.drop_locations.length === 0))) && (
-                                                                                        <Input
-                                                                                            placeholder="Enter hotel/location name"
-                                                                                            value={traveler.drop_location || ""}
-                                                                                            onChange={(e) => {
-                                                                                                const newT = [...arrivalTravelers];
-                                                                                                newT[idx].drop_location = e.target.value;
-                                                                                                setArrivalTravelers(newT);
-                                                                                            }}
-                                                                                            className="mt-2"
-                                                                                        />
-                                                                                    )}
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="grid grid-cols-2 gap-4">
-                                                                            <div className="space-y-2">
-                                                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Number of Bags</Label>
-                                                                                <Input
-                                                                                    type="number"
-                                                                                    value={traveler.number_of_bags || "0"}
-                                                                                    onChange={(e) => {
-                                                                                        const newT = [...arrivalTravelers];
-                                                                                        newT[idx].number_of_bags = e.target.value;
-                                                                                        setArrivalTravelers(newT);
-                                                                                    }}
-                                                                                />
-                                                                            </div>
-                                                                            <div className="space-y-2">
-                                                                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Number of Vehicles</Label>
-                                                                                <Input
-                                                                                    type="number"
-                                                                                    value={traveler.number_of_vehicles || "1"}
-                                                                                    onChange={(e) => {
-                                                                                        const newT = [...arrivalTravelers];
-                                                                                        newT[idx].number_of_vehicles = e.target.value;
-                                                                                        setArrivalTravelers(newT);
-                                                                                    }}
-                                                                                />
-                                                                            </div>
-                                                                        </div>
+                                                {isArrivalApplicable && arrivalTravelers.map((traveler, idx) => 
+                                                    transportStep === (2 + idx) && (
+                                                        <StepWrapper
+                                                            key={`arrival-${idx}`}
+                                                            stepNumber={3 + idx}
+                                                            question={idx === 0 ? "Arrival details for you" : `Arrival for ${traveler.name || `Guest ${idx + 1}`}`}
+                                                            onNext={handleNextTransport}
+                                                            onPrev={handlePrevTransport}
+                                                        >
+                                                            <div className="space-y-6">
+                                                                {idx > 0 && (
+                                                                    <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 border border-zinc-100">
+                                                                        <input type="checkbox" checked={!!traveler.same_as_main} onChange={(e) => {
+                                                                            const val = e.target.checked;
+                                                                            const newT = [...arrivalTravelers];
+                                                                            newT[idx].same_as_main = val;
+                                                                            if (val) {
+                                                                                const main = newT[0];
+                                                                                newT[idx] = { ...newT[idx], mode_of_travel: main.mode_of_travel, station_airport: main.station_airport, transport_number: main.transport_number, drop_location: main.drop_location, number_of_bags: main.number_of_bags, number_of_vehicles: main.number_of_vehicles, contact_number: main.contact_number, number_of_pax: main.number_of_pax };
+                                                                            }
+                                                                            setArrivalTravelers(newT);
+                                                                        }} id={`same-arrival-${idx}`} className="w-5 h-5" />
+                                                                        <Label htmlFor={`same-arrival-${idx}`} className="text-sm cursor-pointer">Arriving together with main guest?</Label>
                                                                     </div>
                                                                 )}
 
-                                                                <div className="space-y-2">
-                                                                    <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Upload Ticket</Label>
-                                                                    <div className="relative group">
-                                                                        <input
-                                                                            type="file"
-                                                                            accept="image/*,application/pdf"
-                                                                            className="hidden"
-                                                                            id={`ticket-${transportType}-${idx}`}
-                                                                            onChange={(e) => {
-                                                                                const file = e.target.files?.[0];
-                                                                                if (file) handleTicketUpload(file, idx, transportType);
-                                                                            }}
-                                                                        />
-                                                                        <label
-                                                                            htmlFor={`ticket-${transportType}-${idx}`}
-                                                                            className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
-                                                                    ${traveler.ticket_url ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600'}`}
-                                                                        >
-                                                                            {uploadingTicket === `${transportType}-${idx}` ? (
-                                                                                <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
-                                                                            ) : traveler.ticket_url ? (
-                                                                                <span className="text-xs font-medium text-green-600">Uploaded</span>
-                                                                            ) : (
-                                                                                <div className="flex flex-col items-center text-zinc-400">
-                                                                                    <Upload className="w-4 h-4 mb-1" />
-                                                                                    <span className="text-xs">Upload</span>
-                                                                                </div>
-                                                                            )}
-                                                                        </label>
+                                                                {(!traveler.same_as_main || idx === 0) ? (
+                                                                    <div className="space-y-4">
+                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                            <div className="space-y-2">
+                                                                                <Label className="uppercase text-[10px] font-bold text-zinc-400">Mode</Label>
+                                                                                <select className="w-full h-11 px-4 rounded-xl border-2 bg-white text-sm" value={traveler.mode_of_travel} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx].mode_of_travel = e.target.value; setArrivalTravelers(newT); }}>
+                                                                                    <option value="">Select Mode</option>
+                                                                                    <option value="Bus">Bus</option>
+                                                                                    <option value="Train">Train</option>
+                                                                                    <option value="By Air">By Air</option>
+                                                                                </select>
+                                                                            </div>
+                                                                            <div className="space-y-2">
+                                                                                <Label className="uppercase text-[10px] font-bold text-zinc-400">Airport/Station</Label>
+                                                                                <Input placeholder="Enter name" value={traveler.station_airport} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx].station_airport = e.target.value; setArrivalTravelers(newT); }} className="h-11 text-sm rounded-xl" />
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label className="uppercase text-[10px] font-bold text-zinc-400">Flight/Train Number</Label>
+                                                                            <Input placeholder="e.g. AI 101 / 12345" value={traveler.transport_number} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx].transport_number = e.target.value; setArrivalTravelers(newT); }} className="h-12 text-lg rounded-xl" />
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label className="uppercase text-[10px] font-bold text-zinc-400">Drop Location</Label>
+                                                                            <Input placeholder="Hotel or Specific Address" value={traveler.drop_location} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx].drop_location = e.target.value; setArrivalTravelers(newT); }} className="h-12 text-lg rounded-xl" />
+                                                                        </div>
+                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                            <div className="space-y-2">
+                                                                                <Label className="uppercase text-[10px] font-bold text-zinc-400">Bags</Label>
+                                                                                <Input type="number" value={traveler.number_of_bags} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx].number_of_bags = e.target.value; setArrivalTravelers(newT); }} className="h-11 text-sm rounded-xl" />
+                                                                            </div>
+                                                                            <div className="space-y-2">
+                                                                                <Label className="uppercase text-[10px] font-bold text-zinc-400">Vehicles Needed</Label>
+                                                                                <Input type="number" value={traveler.number_of_vehicles} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx].number_of_vehicles = e.target.value; setArrivalTravelers(newT); }} className="h-11 text-sm rounded-xl" />
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
-                                                                </div>
+                                                                ) : (
+                                                                    <div className="p-8 text-center border-2 border-dashed rounded-2xl text-zinc-400 italic">
+                                                                        Linked to main guest details
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
+                                                        </StepWrapper>
+                                                    ))}
 
-                                        <div className="space-y-3">
-                                            <Label>Transport Message (Optional)</Label>
-                                            <Textarea
-                                                placeholder="Any words for the host?"
-                                                value={transportMessage}
-                                                onChange={(e) => setTransportMessage(e.target.value)}
-                                            />
-                                        </div>
+                                                {/* DEPARTURE FLOW */}
+                                                {transportStep === arrivalSteps && (
+                                                    <StepWrapper
+                                                        stepNumber={arrivalSteps + 1}
+                                                        question="Will you need departure transport?"
+                                                        onNext={handleNextTransport}
+                                                        onPrev={handlePrevTransport}
+                                                    >
+                                                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setIsDepartureApplicable(true); handleNextTransport(); }}
+                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${isDepartureApplicable === true ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 hover:border-zinc-400'}`}
+                                                            >
+                                                                Yes, please
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setIsDepartureApplicable(false); setTransportStep(arrivalSteps + 1); }}
+                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${isDepartureApplicable === false ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 hover:border-zinc-400'}`}
+                                                            >
+                                                                No, I'm okay
+                                                            </button>
+                                                        </div>
+                                                    </StepWrapper>
+                                                )}
 
-                                            <Button type="submit" className="w-full h-12 text-base rounded-xl" disabled={submittingTransport}>
-                                                {submittingTransport ? <Loader2 className="animate-spin w-4 h-4" /> : "Submit Transport Details"}
-                                            </Button>
+                                                {isDepartureApplicable && transportStep === (arrivalSteps + 1) && (
+                                                    <StepWrapper
+                                                        stepNumber={arrivalSteps + 2}
+                                                        question="When are you departing?"
+                                                        onNext={handleNextTransport}
+                                                        onPrev={handlePrevTransport}
+                                                    >
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div className="space-y-2">
+                                                                <Label className="text-sm font-medium text-zinc-500">Drop Date</Label>
+                                                                <Input type="date" value={departureDate} onChange={(e) => setDepartureDate(e.target.value)} className="h-11 text-sm rounded-xl border-2" />
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <Label className="text-sm font-medium text-zinc-500">Drop Time</Label>
+                                                                <Input type="time" value={departureTime} onChange={(e) => setDepartureTime(e.target.value)} className="h-11 text-sm rounded-xl border-2" />
+                                                            </div>
+                                                        </div>
+                                                    </StepWrapper>
+                                                )}
+
+                                                {isDepartureApplicable && departureTravelers.map((traveler, idx) => 
+                                                    transportStep === (arrivalSteps + 2 + idx) && (
+                                                        <StepWrapper
+                                                            key={`departure-${idx}`}
+                                                            stepNumber={arrivalSteps + 3 + idx}
+                                                            question={idx === 0 ? "Departure details for you" : `Departure for ${traveler.name || `Guest ${idx + 1}`}`}
+                                                            onNext={handleNextTransport}
+                                                            onPrev={handlePrevTransport}
+                                                        >
+                                                            <div className="space-y-6">
+                                                                {idx > 0 && (
+                                                                    <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 border border-zinc-100">
+                                                                        <input type="checkbox" checked={!!traveler.same_as_main} onChange={(e) => {
+                                                                            const val = e.target.checked;
+                                                                            const newT = [...departureTravelers];
+                                                                            newT[idx].same_as_main = val;
+                                                                            if (val) {
+                                                                                const main = newT[0];
+                                                                                newT[idx] = { ...newT[idx], mode_of_travel: main.mode_of_travel, station_airport: main.station_airport, transport_number: main.transport_number, drop_location: main.drop_location, number_of_bags: main.number_of_bags, number_of_vehicles: main.number_of_vehicles, contact_number: main.contact_number, number_of_pax: main.number_of_pax };
+                                                                            }
+                                                                            setDepartureTravelers(newT);
+                                                                        }} id={`same-departure-${idx}`} className="w-5 h-5" />
+                                                                        <Label htmlFor={`same-departure-${idx}`} className="text-sm cursor-pointer">Departing together with main guest?</Label>
+                                                                    </div>
+                                                                )}
+
+                                                                {(!traveler.same_as_main || idx === 0) ? (
+                                                                    <div className="space-y-4">
+                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                            <div className="space-y-2">
+                                                                                <Label className="uppercase text-[10px] font-bold text-zinc-400">Mode</Label>
+                                                                                <select className="w-full h-11 px-4 rounded-xl border-2 bg-white text-sm" value={traveler.mode_of_travel} onChange={(e) => { const newT = [...departureTravelers]; newT[idx].mode_of_travel = e.target.value; setDepartureTravelers(newT); }}>
+                                                                                    <option value="">Select Mode</option>
+                                                                                    <option value="Bus">Bus</option>
+                                                                                    <option value="Train">Train</option>
+                                                                                    <option value="By Air">By Air</option>
+                                                                                </select>
+                                                                            </div>
+                                                                            <div className="space-y-2">
+                                                                                <Label className="uppercase text-[10px] font-bold text-zinc-400">Airport/Station</Label>
+                                                                                <Input placeholder="Enter name" value={traveler.station_airport} onChange={(e) => { const newT = [...departureTravelers]; newT[idx].station_airport = e.target.value; setDepartureTravelers(newT); }} className="h-11 text-sm rounded-xl" />
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label className="uppercase text-[10px] font-bold text-zinc-400">Flight/Train Number</Label>
+                                                                            <Input placeholder="e.g. AI 101 / 12345" value={traveler.transport_number} onChange={(e) => { const newT = [...departureTravelers]; newT[idx].transport_number = e.target.value; setDepartureTravelers(newT); }} className="h-12 text-lg rounded-xl" />
+                                                                        </div>
+                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                            <div className="space-y-2">
+                                                                                <Label className="uppercase text-[10px] font-bold text-zinc-400">Bags</Label>
+                                                                                <Input type="number" value={traveler.number_of_bags} onChange={(e) => { const newT = [...departureTravelers]; newT[idx].number_of_bags = e.target.value; setDepartureTravelers(newT); }} className="h-11 text-sm rounded-xl" />
+                                                                            </div>
+                                                                            <div className="space-y-2">
+                                                                                <Label className="uppercase text-[10px] font-bold text-zinc-400">Vehicles Needed</Label>
+                                                                                <Input type="number" value={traveler.number_of_vehicles} onChange={(e) => { const newT = [...departureTravelers]; newT[idx].number_of_vehicles = e.target.value; setDepartureTravelers(newT); }} className="h-11 text-sm rounded-xl" />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="p-8 text-center border-2 border-dashed rounded-2xl text-zinc-400 italic">
+                                                                        Linked to main guest details
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </StepWrapper>
+                                                    ))}
+
+                                                {transportStep === (totalTransportSteps - 1) && (
+                                                    <StepWrapper
+                                                        stepNumber={totalTransportSteps}
+                                                        question="Any final message regarding your travel?"
+                                                        onNext={handleSubmitTransport as any}
+                                                        onPrev={handlePrevTransport}
+                                                        isLast={true}
+                                                        isSubmitting={submittingTransport}
+                                                    >
+                                                        <Textarea
+                                                            placeholder="Type your message here..."
+                                                            value={transportMessage}
+                                                            onChange={(e) => setTransportMessage(e.target.value)}
+                                                            className="min-h-[150px] text-base p-6 rounded-2xl border-2"
+                                                            autoFocus
+                                                        />
+                                                    </StepWrapper>
+                                                )}
+                                            </AnimatePresence>
                                         </form>
                                     )
                                 )}
@@ -1424,13 +1361,13 @@ export default function PublicEventPage() {
                                 key="success"
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="text-center space-y-6 bg-white dark:bg-zinc-900 p-12 rounded-3xl shadow-xl border border-zinc-100 dark:border-zinc-800 max-w-md mx-auto"
+                                className="text-center space-y-4 bg-white dark:bg-zinc-900 p-6 rounded-3xl shadow-xl border border-zinc-100 dark:border-zinc-800 max-w-md mx-auto"
                             >
                                 <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto text-green-600 dark:text-green-400">
                                     <Check className="w-10 h-10" />
                                 </div>
-                                <h2 className="text-3xl font-bold">You're all set!</h2>
-                                <p className="text-zinc-500">
+                                <h2 className="text-2xl font-bold">You're all set!</h2>
+                                <p className="text-zinc-500 text-sm">
                                     {status === 'accepted' ? "We can't wait to see you there." : "We're sorry you can't make it."}
                                 </p>
 
