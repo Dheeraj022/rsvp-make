@@ -186,42 +186,7 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                     doc.text(format(new Date(eventDate), "MMMM d, yyyy"), pageWidth - 20, 26, { align: "right" });
                 }
 
-                // Transport Details
-                if (guest.departure_details?.applicable !== false) {
-                    const transport = guest.departure_details;
-                    let rightY = 40;
-                    doc.setFontSize(10);
-                    doc.setTextColor(100);
-                    doc.text("Transport Details", pageWidth - 20, rightY, { align: "right" });
-                    rightY += 6;
-                    doc.setTextColor(0);
-
-                    if (transport?.arrival?.date) {
-                        const arrival = transport.arrival;
-                        doc.text(`Arrival: ${format(new Date(arrival.date), "MMM d")}${arrival.time ? ` @ ${arrival.time}` : ""}`, pageWidth - 20, rightY, { align: "right" });
-                        rightY += 5;
-                        if (arrival.travelers?.[0]?.mode_of_travel) {
-                            const t = arrival.travelers[0];
-                            doc.setFontSize(8);
-                            doc.setTextColor(100);
-                            doc.text(`${t.mode_of_travel}${t.transport_number ? ` (${t.transport_number})` : ""}`, pageWidth - 20, rightY, { align: "right" });
-                            if (t.drop_location) {
-                                doc.text(`Drop: ${t.drop_location}`, pageWidth - 20, rightY, { align: "right" });
-                                rightY += 4;
-                            }
-                            if (t.number_of_vehicles) {
-                                doc.text(`Vehicles: ${t.number_of_vehicles}`, pageWidth - 20, rightY, { align: "right" });
-                                rightY += 4;
-                            }
-                            doc.setFontSize(10);
-                            doc.setTextColor(0);
-                        }
-                    }
-                    if (transport?.departure?.date) {
-                        doc.text(`Departure: ${format(new Date(transport.departure.date), "MMM d")}${transport.departure.time ? ` @ ${transport.departure.time}` : ""}`, pageWidth - 20, rightY, { align: "right" });
-                        rightY += 5;
-                    }
-                }
+                // Transport details removed from PDF layout
                 doc.setTextColor(0);
             }
 
@@ -246,16 +211,7 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
 
             // Travel Details block removed from here as it is now on the right side
 
-            // Message
-            if (guest.message) {
-                doc.text("Message:", 20, yPos);
-                yPos += 7;
-                const splitMessage = doc.splitTextToSize(guest.message, 170);
-                doc.setTextColor(100);
-                doc.text(splitMessage, 20, yPos);
-                yPos += (splitMessage.length * 5) + 10;
-                doc.setTextColor(0);
-            }
+            // Message section removed from PDF layout
 
             // Attendees
             doc.setFontSize(14);
