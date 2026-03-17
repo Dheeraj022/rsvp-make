@@ -1192,13 +1192,28 @@ export default function PublicEventPage() {
                                                                                 <Input placeholder="Enter name" value={traveler.station_airport} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx].station_airport = e.target.value; setArrivalTravelers(newT); }} className="h-11 text-sm rounded-xl" />
                                                                             </div>
                                                                         </div>
-                                                                        <div className="space-y-2">
-                                                                            <Label className="uppercase text-[10px] font-bold text-zinc-400">Flight/Train Number</Label>
-                                                                            <Input placeholder="e.g. AI 101 / 12345" value={traveler.transport_number} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx].transport_number = e.target.value; setArrivalTravelers(newT); }} className="h-12 text-lg rounded-xl" />
+                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                            <div className="space-y-2">
+                                                                                <Label className="uppercase text-[10px] font-bold text-zinc-400">Flight/Train Number</Label>
+                                                                                <Input placeholder="e.g. AI 101 / 12345" value={traveler.transport_number} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx].transport_number = e.target.value; setArrivalTravelers(newT); }} className="h-11 text-sm rounded-xl" />
+                                                                            </div>
+                                                                            <div className="space-y-2">
+                                                                                <Label className="uppercase text-[10px] font-bold text-zinc-400">Contact Number</Label>
+                                                                                <Input type="tel" placeholder="Enter phone number" value={traveler.contact_number || ''} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx].contact_number = e.target.value; setArrivalTravelers(newT); }} className="h-11 text-sm rounded-xl" />
+                                                                            </div>
                                                                         </div>
                                                                         <div className="space-y-2">
                                                                             <Label className="uppercase text-[10px] font-bold text-zinc-400">Drop Location</Label>
-                                                                            <Input placeholder="Hotel or Specific Address" value={traveler.drop_location} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx].drop_location = e.target.value; setArrivalTravelers(newT); }} className="h-12 text-lg rounded-xl" />
+                                                                            {event?.drop_locations && event.drop_locations.length > 0 ? (
+                                                                                <select className="w-full h-11 px-4 rounded-xl border-2 bg-white text-sm" value={traveler.drop_location} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx].drop_location = e.target.value; setArrivalTravelers(newT); }}>
+                                                                                    <option value="">Select Drop Location</option>
+                                                                                    {event.drop_locations.map((loc, i) => (
+                                                                                        <option key={i} value={loc}>{loc}</option>
+                                                                                    ))}
+                                                                                </select>
+                                                                            ) : (
+                                                                                <Input placeholder="Hotel or Specific Address" value={traveler.drop_location} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx].drop_location = e.target.value; setArrivalTravelers(newT); }} className="h-11 text-sm rounded-xl" />
+                                                                            )}
                                                                         </div>
                                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                                             <div className="space-y-2">
@@ -1208,6 +1223,17 @@ export default function PublicEventPage() {
                                                                             <div className="space-y-2">
                                                                                 <Label className="uppercase text-[10px] font-bold text-zinc-400">Vehicles Needed</Label>
                                                                                 <Input type="number" value={traveler.number_of_vehicles} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx].number_of_vehicles = e.target.value; setArrivalTravelers(newT); }} className="h-11 text-sm rounded-xl" />
+                                                                            </div>
+                                                                        </div>
+                                                                        
+                                                                        <div className="space-y-2 border-t border-zinc-100 pt-4 mt-2">
+                                                                            <Label className="uppercase text-[10px] font-bold text-zinc-400">Upload Ticket (Optional)</Label>
+                                                                            <div className="relative group">
+                                                                                <input type="file" className="hidden" id={`file-${idx}-arrival-ticket`} onChange={(e) => { const file = e.target.files?.[0]; if (file) handleTicketUpload(file, idx, "arrival"); }} />
+                                                                                <label htmlFor={`file-${idx}-arrival-ticket`} className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-xl cursor-pointer transition-all ${traveler.ticket_url ? 'border-green-500 bg-green-50' : 'border-zinc-300 hover:border-zinc-400'}`}>
+                                                                                    {uploadingTicket === `arrival-${idx}` ? <Loader2 className="animate-spin text-zinc-400" /> : traveler.ticket_url ? <Check className="text-green-500" /> : <Upload className="text-zinc-400" />}
+                                                                                    <span className="text-xs mt-2 text-zinc-500 font-medium">{traveler.ticket_url ? 'Ticket Uploaded' : 'Tap to upload ticket'}</span>
+                                                                                </label>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -1310,9 +1336,28 @@ export default function PublicEventPage() {
                                                                                 <Input placeholder="Enter name" value={traveler.station_airport} onChange={(e) => { const newT = [...departureTravelers]; newT[idx].station_airport = e.target.value; setDepartureTravelers(newT); }} className="h-11 text-sm rounded-xl" />
                                                                             </div>
                                                                         </div>
+                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                            <div className="space-y-2">
+                                                                                <Label className="uppercase text-[10px] font-bold text-zinc-400">Flight/Train Number</Label>
+                                                                                <Input placeholder="e.g. AI 101 / 12345" value={traveler.transport_number} onChange={(e) => { const newT = [...departureTravelers]; newT[idx].transport_number = e.target.value; setDepartureTravelers(newT); }} className="h-11 text-sm rounded-xl" />
+                                                                            </div>
+                                                                            <div className="space-y-2">
+                                                                                <Label className="uppercase text-[10px] font-bold text-zinc-400">Contact Number</Label>
+                                                                                <Input type="tel" placeholder="Enter phone number" value={traveler.contact_number || ''} onChange={(e) => { const newT = [...departureTravelers]; newT[idx].contact_number = e.target.value; setDepartureTravelers(newT); }} className="h-11 text-sm rounded-xl" />
+                                                                            </div>
+                                                                        </div>
                                                                         <div className="space-y-2">
-                                                                            <Label className="uppercase text-[10px] font-bold text-zinc-400">Flight/Train Number</Label>
-                                                                            <Input placeholder="e.g. AI 101 / 12345" value={traveler.transport_number} onChange={(e) => { const newT = [...departureTravelers]; newT[idx].transport_number = e.target.value; setDepartureTravelers(newT); }} className="h-12 text-lg rounded-xl" />
+                                                                            <Label className="uppercase text-[10px] font-bold text-zinc-400">Drop Location</Label>
+                                                                            {event?.drop_locations && event.drop_locations.length > 0 ? (
+                                                                                <select className="w-full h-11 px-4 rounded-xl border-2 bg-white text-sm" value={traveler.drop_location} onChange={(e) => { const newT = [...departureTravelers]; newT[idx].drop_location = e.target.value; setDepartureTravelers(newT); }}>
+                                                                                    <option value="">Select Drop Location</option>
+                                                                                    {event.drop_locations.map((loc, i) => (
+                                                                                        <option key={i} value={loc}>{loc}</option>
+                                                                                    ))}
+                                                                                </select>
+                                                                            ) : (
+                                                                                <Input placeholder="Hotel or Specific Address" value={traveler.drop_location} onChange={(e) => { const newT = [...departureTravelers]; newT[idx].drop_location = e.target.value; setDepartureTravelers(newT); }} className="h-11 text-sm rounded-xl" />
+                                                                            )}
                                                                         </div>
                                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                                             <div className="space-y-2">
@@ -1322,6 +1367,17 @@ export default function PublicEventPage() {
                                                                             <div className="space-y-2">
                                                                                 <Label className="uppercase text-[10px] font-bold text-zinc-400">Vehicles Needed</Label>
                                                                                 <Input type="number" value={traveler.number_of_vehicles} onChange={(e) => { const newT = [...departureTravelers]; newT[idx].number_of_vehicles = e.target.value; setDepartureTravelers(newT); }} className="h-11 text-sm rounded-xl" />
+                                                                            </div>
+                                                                        </div>
+                                                                        
+                                                                        <div className="space-y-2 border-t border-zinc-100 pt-4 mt-2">
+                                                                            <Label className="uppercase text-[10px] font-bold text-zinc-400">Upload Ticket (Optional)</Label>
+                                                                            <div className="relative group">
+                                                                                <input type="file" className="hidden" id={`file-${idx}-departure-ticket`} onChange={(e) => { const file = e.target.files?.[0]; if (file) handleTicketUpload(file, idx, "departure"); }} />
+                                                                                <label htmlFor={`file-${idx}-departure-ticket`} className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-xl cursor-pointer transition-all ${traveler.ticket_url ? 'border-green-500 bg-green-50' : 'border-zinc-300 hover:border-zinc-400'}`}>
+                                                                                    {uploadingTicket === `departure-${idx}` ? <Loader2 className="animate-spin text-zinc-400" /> : traveler.ticket_url ? <Check className="text-green-500" /> : <Upload className="text-zinc-400" />}
+                                                                                    <span className="text-xs mt-2 text-zinc-500 font-medium">{traveler.ticket_url ? 'Ticket Uploaded' : 'Tap to upload ticket'}</span>
+                                                                                </label>
                                                                             </div>
                                                                         </div>
                                                                     </div>
