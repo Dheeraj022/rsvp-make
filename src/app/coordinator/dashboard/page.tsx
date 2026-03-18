@@ -29,6 +29,8 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
+import { useToast } from "@/hooks/useToast";
+import { ToastContainer } from "@/components/ui/toast";
 
 // Types
 type Guest = {
@@ -57,10 +59,21 @@ export default function CoordinatorDashboard() {
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+
+    // Driver Modal State
+    const [isDriverModalOpen, setIsDriverModalOpen] = useState(false);
+    const [selectedGuestForDriver, setSelectedGuestForDriver] = useState<Guest | null>(null);
+    const [driverName, setDriverName] = useState("");
+    const [driverPhone, setDriverPhone] = useState("");
+    const [driverType, setDriverType] = useState<'arrival' | 'departure'>('arrival');
+    const [isUpdatingDriver, setIsUpdatingDriver] = useState(false);
     const [coordinator, setCoordinator] = useState<any>(null);
     const [activeTab, setActiveTab] = useState<"arrived" | "departure">("arrived");
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const router = useRouter();
+
+    // Toast Hook
+    const { toasts, removeToast, success: toastSuccess, error: toastError } = useToast();
 
     useEffect(() => {
         fetchCoordinatorAndGuests();
@@ -104,7 +117,11 @@ export default function CoordinatorDashboard() {
             { header: "Departure Date", key: "depDate", width: 15 },
             { header: "Departure Time", key: "depTime", width: 12 },
             { header: "Departure Mode", key: "depMode", width: 12 },
-            { header: "Departure Ref.", key: "depTransport", width: 15 }
+            { header: "Departure Ref.", key: "depTransport", width: 15 },
+            { header: "Arrival Driver Name", key: "arrDriverName", width: 20 },
+            { header: "Arrival Driver Phone", key: "arrDriverPhone", width: 15 },
+            { header: "Departure Driver Name", key: "depDriverName", width: 20 },
+            { header: "Departure Driver Phone", key: "depDriverPhone", width: 15 }
         ];
 
         // Format Header
@@ -130,11 +147,14 @@ export default function CoordinatorDashboard() {
                 arrivalDate: arrival?.date ? format(new Date(arrival.date), "MMM d, yyyy") : "-",
                 arrivalTime: arrival?.time || "-",
                 arrivalTransport: arrTraveler ? `${arrTraveler.mode_of_travel || ""}${arrTraveler.transport_number ? ` (${arrTraveler.transport_number})` : ""}` : "-",
-                dropLocation: arrTraveler?.drop_location || "-",
                 depDate: departure?.date ? format(new Date(departure.date), "MMM d, yyyy") : "-",
                 depTime: departure?.time || "-",
                 depMode: depTraveler?.mode_of_travel || "-",
-                depTransport: depTraveler?.transport_number || "-"
+                depTransport: depTraveler?.transport_number || "-",
+                arrDriverName: arrival?.driver?.name || "-",
+                arrDriverPhone: arrival?.driver?.phone || "-",
+                depDriverName: departure?.driver?.name || "-",
+                depDriverPhone: departure?.driver?.phone || "-"
             });
 
             // Add Companions
@@ -235,6 +255,61 @@ export default function CoordinatorDashboard() {
         }
     };
 
+    const handleUpdateDriver = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedGuestForDriver) return;
+
+        setIsUpdatingDriver(true);
+        try {
+            const currentDetails = selectedGuestForDriver.departure_details || {};
+            const updatedDetails = { ...currentDetails };
+            
+            if (driverType === 'arrival') {
+                updatedDetails.arrival = {
+                    ...(updatedDetails.arrival || {}),
+                    driver: { name: driverName, phone: driverPhone }
+                };
+            } else {
+                updatedDetails.departure = {
+                    ...(updatedDetails.departure || {}),
+                    driver: { name: driverName, phone: driverPhone }
+                };
+            }
+
+            console.log(`Updating ${driverType} driver details with:`, updatedDetails);
+
+            const { error } = await supabase
+                .from("guests")
+                .update({ departure_details: updatedDetails })
+                .eq("id", selectedGuestForDriver.id);
+
+            if (error) {
+                console.error("Supabase update error:", error);
+                throw error;
+            }
+
+            toastSuccess("Driver assigned successfully");
+            setIsDriverModalOpen(false);
+            fetchCoordinatorAndGuests(); // Refresh data
+        } catch (error: any) {
+            console.error("Detailed error updating driver:", error);
+            toastError(`Failed to assign driver: ${error.message || "Unknown error"}`);
+        } finally {
+            setIsUpdatingDriver(false);
+        }
+    };
+
+    const openDriverModal = (guest: Guest, type: 'arrival' | 'departure') => {
+        setSelectedGuestForDriver(guest);
+        setDriverType(type);
+        const driver = type === 'arrival' 
+            ? guest.departure_details?.arrival?.driver 
+            : guest.departure_details?.departure?.driver;
+        setDriverName(driver?.name || "");
+        setDriverPhone(driver?.phone || "");
+        setIsDriverModalOpen(true);
+    };
+
     const handleRefresh = () => {
         setIsRefreshing(true);
         fetchCoordinatorAndGuests();
@@ -253,9 +328,9 @@ export default function CoordinatorDashboard() {
             setGuests(prev =>
                 prev.map(g => g.id === guestId ? { ...g, check_in_status: newStatus } : g)
             );
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error updating check-in status:", error);
-            alert("Failed to update status. Please try again.");
+            toastError(`Failed to update status: ${error.message || "Please try again."}`);
         }
     };
 
@@ -272,9 +347,9 @@ export default function CoordinatorDashboard() {
             setGuests(prev =>
                 prev.map(g => g.id === guestId ? { ...g, departure_status: newStatus } : g)
             );
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error updating departure status:", error);
-            alert("Failed to update status. Please try again.");
+            toastError(`Failed to update status: ${error.message || "Please try again."}`);
         }
     };
 
@@ -302,6 +377,7 @@ export default function CoordinatorDashboard() {
             ));
         } catch (error: any) {
             console.error("Error updating sub-member check-in:", error.message);
+            toastError(`Failed to update companion: ${error.message || "Please try again."}`);
         }
     };
 
@@ -329,6 +405,7 @@ export default function CoordinatorDashboard() {
             ));
         } catch (error: any) {
             console.error("Error updating sub-member departure:", error.message);
+            toastError(`Failed to update companion: ${error.message || "Please try again."}`);
         }
     };
 
@@ -682,6 +759,28 @@ export default function CoordinatorDashboard() {
                                                                                     )}
                                                                                 </>
                                                                             )}
+                                                                            {/* Driver Info in Arrival Details */}
+                                                                            <div className="pt-2 mt-2 border-t border-blue-100/50 dark:border-blue-900/10">
+                                                                                <button 
+                                                                                    onClick={() => openDriverModal(guest, 'arrival')}
+                                                                                    className="flex items-center gap-2 group/driver w-full text-left outline-none"
+                                                                                >
+                                                                                    <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 shrink-0 group-hover/driver:bg-indigo-100 transition-colors">
+                                                                                        <User size={14} />
+                                                                                    </div>
+                                                                                    <div className="flex flex-col">
+                                                                                        <span className="text-[10px] font-black text-indigo-400 dark:text-indigo-500 uppercase tracking-tighter leading-none mb-1">Arrival Driver</span>
+                                                                                        {guest.departure_details?.arrival?.driver?.name ? (
+                                                                                            <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                                                                                                {guest.departure_details.arrival.driver.name}
+                                                                                                <span className="text-[10px] text-zinc-400 font-normal">({guest.departure_details.arrival.driver.phone})</span>
+                                                                                            </span>
+                                                                                        ) : (
+                                                                                            <span className="text-[10px] font-bold text-zinc-400 group-hover/driver:text-indigo-500 transition-colors italic">Assign Arrival Driver +</span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
                                                                     ) : (
                                                                         <div className="text-center py-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700">
@@ -789,6 +888,28 @@ export default function CoordinatorDashboard() {
                                                                         </span>
                                                                     </div>
                                                                 )}
+                                                                {/* Mobile Driver Display */}
+                                                                <div className="mt-3 pt-3 border-t border-blue-100/50 dark:border-blue-900/20">
+                                                                    <button 
+                                                                        onClick={() => openDriverModal(guest, 'arrival')}
+                                                                        className="w-full flex items-center justify-between p-2 rounded-xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-900/20 outline-none"
+                                                                    >
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
+                                                                                <User size={14} />
+                                                                            </div>
+                                                                            <div className="text-left">
+                                                                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest leading-none mb-1">Arrival Driver</p>
+                                                                                <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                                                                                    {guest.departure_details?.arrival?.driver?.name || "No Driver Assigned"}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <p className="text-[10px] font-bold text-indigo-600">
+                                                                            {guest.departure_details?.arrival?.driver?.phone || "Assign +"}
+                                                                        </p>
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         )}
 
@@ -923,7 +1044,7 @@ export default function CoordinatorDashboard() {
                                                                         </div>
                                                                     )}
                                                                 </td>
-                                                                 <td className="px-6 py-8">
+                                                                <td className="px-6 py-8">
                                                                     {guest.departure_details?.departure?.date ? (
                                                                         <div className="flex flex-col gap-3 min-w-[200px]">
                                                                             <div className="flex items-center gap-2">
@@ -967,6 +1088,28 @@ export default function CoordinatorDashboard() {
                                                                                     </div>
                                                                                 </>
                                                                             )}
+                                                                            {/* Driver Info in Departure Details */}
+                                                                            <div className="pt-2 mt-2 border-t border-orange-100/50 dark:border-orange-900/10">
+                                                                                <button 
+                                                                                    onClick={() => openDriverModal(guest)}
+                                                                                    className="flex items-center gap-2 group/driver w-full text-left outline-none"
+                                                                                >
+                                                                                    <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 shrink-0 group-hover/driver:bg-indigo-100 transition-colors">
+                                                                                        <User size={14} />
+                                                                                    </div>
+                                                                                    <div className="flex flex-col">
+                                                                                        <span className="text-[10px] font-black text-indigo-400 dark:text-indigo-500 uppercase tracking-tighter leading-none mb-1">Departure Driver</span>
+                                                                                        {guest.departure_details?.departure?.driver?.name ? (
+                                                                                            <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                                                                                                {guest.departure_details.departure.driver.name}
+                                                                                                <span className="text-[10px] text-zinc-400 font-normal">({guest.departure_details.departure.driver.phone})</span>
+                                                                                            </span>
+                                                                                        ) : (
+                                                                                            <span className="text-[10px] font-bold text-zinc-400 group-hover/driver:text-indigo-500 transition-colors italic">Assign Departure Driver +</span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
                                                                     ) : (
                                                                         /* Legacy Fallback */
@@ -1069,6 +1212,28 @@ export default function CoordinatorDashboard() {
                                                                         </span>
                                                                     </div>
                                                                 )}
+                                                                {/* Mobile Driver Display for Departure */}
+                                                                <div className="mt-3 pt-3 border-t border-orange-100/50 dark:border-orange-900/20">
+                                                                    <button 
+                                                                        onClick={() => openDriverModal(guest, 'departure')}
+                                                                        className="w-full flex items-center justify-between p-2 rounded-xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-900/20 outline-none"
+                                                                    >
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
+                                                                                <User size={14} />
+                                                                            </div>
+                                                                            <div className="text-left">
+                                                                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest leading-none mb-1">Departure Driver</p>
+                                                                                <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                                                                                    {guest.departure_details?.departure?.driver?.name || "No Driver Assigned"}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <p className="text-[10px] font-bold text-indigo-600">
+                                                                            {guest.departure_details?.departure?.driver?.phone || "Assign +"}
+                                                                        </p>
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         ) : (
                                                             /* Legacy Fallback on Mobile */
@@ -1159,6 +1324,83 @@ export default function CoordinatorDashboard() {
                     </div>
                 </div>
             </main>
+
+            <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+            {/* Driver Assignment Modal */}
+            {isDriverModalOpen && selectedGuestForDriver && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-8">
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600">
+                                        <User size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Assign Driver ({driverType === 'arrival' ? 'Arrival' : 'Departure'})</h3>
+                                        <p className="text-sm text-zinc-500 font-medium">{selectedGuestForDriver.name}</p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setIsDriverModalOpen(false)}
+                                    className="w-10 h-10 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center text-zinc-400 transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleUpdateDriver} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Driver Name</label>
+                                    <Input
+                                        placeholder="Enter driver's name"
+                                        value={driverName}
+                                        onChange={(e) => setDriverName(e.target.value)}
+                                        className="h-14 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus-visible:ring-indigo-500/20 font-bold"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Phone Number</label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+                                        <Input
+                                            placeholder="Enter phone number"
+                                            value={driverPhone}
+                                            onChange={(e) => setDriverPhone(e.target.value)}
+                                            className="h-14 pl-12 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus-visible:ring-indigo-500/20 font-bold"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4 pt-4">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setIsDriverModalOpen(false)}
+                                        className="flex-1 h-14 rounded-2xl font-black text-xs uppercase tracking-widest border-2"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={isUpdatingDriver}
+                                        className="flex-1 h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/20"
+                                    >
+                                        {isUpdatingDriver ? (
+                                            <Loader2 size={20} className="animate-spin" />
+                                        ) : (
+                                            "Save Driver"
+                                        )}
+                                    </Button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
