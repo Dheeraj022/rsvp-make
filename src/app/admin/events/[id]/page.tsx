@@ -115,7 +115,6 @@ function EventDetails() {
     const [newGuestName, setNewGuestName] = useState("");
     const [newGuestEmail, setNewGuestEmail] = useState("");
     const [newGuestPhone, setNewGuestPhone] = useState("");
-    const [newGuestAllowed, setNewGuestAllowed] = useState(1);
     const [addGuestLoading, setAddGuestLoading] = useState(false);
 
     const eventId = params.id as string;
@@ -275,7 +274,7 @@ function EventDetails() {
                 name: newGuestName,
                 email: newGuestEmail || null,
                 phone: newGuestPhone || null,
-                allowed_guests: newGuestAllowed,
+                allowed_guests: 1,
                 status: "pending",
             }]);
 
@@ -286,7 +285,6 @@ function EventDetails() {
             setNewGuestName("");
             setNewGuestEmail("");
             setNewGuestPhone("");
-            setNewGuestAllowed(1);
             fetchEventData(); // Refresh list
         } catch (error: any) {
             alert("Error adding guest: " + error.message);
@@ -998,16 +996,6 @@ function EventDetails() {
                                     value={newGuestPhone}
                                     onChange={(e) => setNewGuestPhone(e.target.value)}
                                 />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Allowed Guests</Label>
-                                <Input
-                                    type="number"
-                                    min={1}
-                                    value={newGuestAllowed}
-                                    onChange={(e) => setNewGuestAllowed(parseInt(e.target.value) || 1)}
-                                />
-                                <p className="text-[10px] text-zinc-500">Number of people including the main guest.</p>
                             </div>
                         </div>
 
