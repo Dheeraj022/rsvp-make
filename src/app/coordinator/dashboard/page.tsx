@@ -1091,7 +1091,7 @@ export default function CoordinatorDashboard() {
                                                                             {/* Driver Info in Departure Details */}
                                                                             <div className="pt-2 mt-2 border-t border-orange-100/50 dark:border-orange-900/10">
                                                                                 <button 
-                                                                                    onClick={() => openDriverModal(guest)}
+                                                                                     onClick={() => openDriverModal(guest, 'departure')}
                                                                                     className="flex items-center gap-2 group/driver w-full text-left outline-none"
                                                                                 >
                                                                                     <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 shrink-0 group-hover/driver:bg-indigo-100 transition-colors">
