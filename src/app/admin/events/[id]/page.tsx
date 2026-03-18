@@ -110,6 +110,14 @@ function EventDetails() {
     const [dropLocationsText, setDropLocationsText] = useState("");
     const [dropLocationsLoading, setDropLocationsLoading] = useState(false);
 
+    // Add Guest Modal State
+    const [showAddGuestModal, setShowAddGuestModal] = useState(false);
+    const [newGuestName, setNewGuestName] = useState("");
+    const [newGuestEmail, setNewGuestEmail] = useState("");
+    const [newGuestPhone, setNewGuestPhone] = useState("");
+    const [newGuestAllowed, setNewGuestAllowed] = useState(1);
+    const [addGuestLoading, setAddGuestLoading] = useState(false);
+
     const eventId = params.id as string;
 
     useEffect(() => {
@@ -252,6 +260,39 @@ function EventDetails() {
                 setUploading(false);
             }
         });
+    };
+
+    const handleAddGuest = async () => {
+        if (!newGuestName.trim()) {
+            alert("Please enter a guest name.");
+            return;
+        }
+
+        setAddGuestLoading(true);
+        try {
+            const { error } = await supabase.from("guests").insert([{
+                event_id: eventId,
+                name: newGuestName,
+                email: newGuestEmail || null,
+                phone: newGuestPhone || null,
+                allowed_guests: newGuestAllowed,
+                status: "pending",
+            }]);
+
+            if (error) throw error;
+
+            alert("Guest added successfully!");
+            setShowAddGuestModal(false);
+            setNewGuestName("");
+            setNewGuestEmail("");
+            setNewGuestPhone("");
+            setNewGuestAllowed(1);
+            fetchEventData(); // Refresh list
+        } catch (error: any) {
+            alert("Error adding guest: " + error.message);
+        } finally {
+            setAddGuestLoading(false);
+        }
     };
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -601,9 +642,13 @@ function EventDetails() {
                                         ref={fileInputRef}
                                         onChange={handleFileUpload}
                                     />
-                                    <Button onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                                    <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} variant="outline" className="mr-2">
                                         {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                                         Import CSV
+                                    </Button>
+                                    <Button onClick={() => setShowAddGuestModal(true)}>
+                                        <UserPlus className="mr-2 h-4 w-4" />
+                                        Add Guest
                                     </Button>
                                 </div>
                             </div>
@@ -916,6 +961,68 @@ function EventDetails() {
                 eventName={event?.name}
                 eventDate={event?.date}
             />
+
+            {/* Add Guest Modal */}
+            {showAddGuestModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 border border-zinc-200 dark:border-zinc-800">
+                        <div className="mb-4">
+                            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Add New Guest</h3>
+                            <p className="text-zinc-500 text-sm">
+                                Enter the details of the guest you want to add individually.
+                            </p>
+                        </div>
+
+                        <div className="space-y-4 mb-6">
+                            <div className="space-y-2">
+                                <Label>Guest Name *</Label>
+                                <Input
+                                    placeholder="Enter guest name"
+                                    value={newGuestName}
+                                    onChange={(e) => setNewGuestName(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Email Address (Optional)</Label>
+                                <Input
+                                    type="email"
+                                    placeholder="email@example.com"
+                                    value={newGuestEmail}
+                                    onChange={(e) => setNewGuestEmail(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Phone Number (Optional)</Label>
+                                <Input
+                                    placeholder="e.g. +91 9876543210"
+                                    value={newGuestPhone}
+                                    onChange={(e) => setNewGuestPhone(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Allowed Guests</Label>
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    value={newGuestAllowed}
+                                    onChange={(e) => setNewGuestAllowed(parseInt(e.target.value) || 1)}
+                                />
+                                <p className="text-[10px] text-zinc-500">Number of people including the main guest.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <Button variant="ghost" onClick={() => setShowAddGuestModal(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={handleAddGuest} disabled={addGuestLoading}>
+                                {addGuestLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserPlus className="w-4 h-4 mr-2" />}
+                                Add Guest
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Delete Confirmation Modal */}
             {showDeleteModal && (
