@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
@@ -55,14 +55,13 @@ type Guest = {
 
 export default function CoordinatorDashboard() {
     const [guests, setGuests] = useState<Guest[]>([]);
-    const [filteredGuests, setFilteredGuests] = useState<Guest[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     // Driver Modal State
     const [isDriverModalOpen, setIsDriverModalOpen] = useState(false);
-    const [selectedGuestForDriver, setSelectedGuestForDriver] = useState<Guest | null>(null);
+    const [selectedGuestForDriver, setSelectedGuestForDriver] = useState<any>(null);
     const [driverName, setDriverName] = useState("");
     const [driverPhone, setDriverPhone] = useState("");
     const [driverType, setDriverType] = useState<'arrival' | 'departure'>('arrival');
@@ -79,22 +78,62 @@ export default function CoordinatorDashboard() {
         fetchCoordinatorAndGuests();
     }, []);
 
-    useEffect(() => {
+    // Flattened and Filtered Guests
+    const flattenedGuests = useMemo(() => {
         const query = searchQuery.toLowerCase();
-        const filtered = guests.filter((g) => {
-            const matchesPrimary =
-                g.name.toLowerCase().includes(query) ||
-                g.phone?.toLowerCase().includes(query) ||
-                g.seat_number?.toLowerCase().includes(query) ||
-                g.assignment_label?.toLowerCase().includes(query);
+        const result: any[] = [];
 
-            const matchesSubMember = g.attendees_data?.some((member: any) =>
-                member.name?.toLowerCase().includes(query)
+        guests.forEach(guest => {
+            // 1. Prepare Primary Guest Entry
+            const primaryEntry = {
+                ...guest,
+                isPrimary: true,
+                displayName: guest.name,
+                actualName: guest.name,
+                uniqueKey: `primary-${guest.id}`
+            };
+
+            // 2. Prepare Companion Entries
+            const companionEntries = (guest.attendees_data || []).map((m, i) => ({
+                ...guest, // Inherit all travel/event/driver info
+                ...m,     // Override with member specific data (name, phone, checked_in, departed)
+                isPrimary: false,
+                companionIndex: i,
+                displayName: guest.name, // Per user request: "displayed name should be that of the main guest"
+                actualName: m.name,      // Keep original name for search and reference
+                uniqueKey: `companion-${guest.id}-${i}`
+            }));
+
+            // 3. Filter based on query
+            const matchesPrimary = 
+                primaryEntry.name.toLowerCase().includes(query) ||
+                primaryEntry.phone?.toLowerCase().includes(query) ||
+                primaryEntry.seat_number?.toLowerCase().includes(query);
+
+            const matchingCompanions = companionEntries.filter(c => 
+                c.actualName.toLowerCase().includes(query) ||
+                c.phone?.toLowerCase().includes(query)
             );
 
-            return matchesPrimary || matchesSubMember;
+            // If query matches primary, show primary AND all their companions (group context)
+            // If query matches ONLY a companion, show that companion specifically.
+            // If query is empty, show everything.
+            if (!query) {
+                result.push(primaryEntry);
+                result.push(...companionEntries);
+            } else {
+                if (matchesPrimary) {
+                    result.push(primaryEntry);
+                    // Also show companions if the primary name matches
+                    result.push(...companionEntries);
+                } else if (matchingCompanions.length > 0) {
+                    // Show ONLY matching companions if primary didn't match
+                    result.push(...matchingCompanions);
+                }
+            }
         });
-        setFilteredGuests(filtered);
+
+        return result;
     }, [searchQuery, guests]);
 
     const handleExportExcel = async () => {
@@ -167,7 +206,18 @@ export default function CoordinatorDashboard() {
                         event: guest.events?.name || "-",
                         date: guest.events?.date ? format(new Date(guest.events.date), "MMM d") : "-",
                         arrived: member.checked_in ? "Yes" : "No",
-                        departed: member.departed ? "Yes" : "No"
+                        departed: member.departed ? "Yes" : "No",
+                        arrivalDate: arrival?.date ? format(new Date(arrival.date), "MMM d, yyyy") : "-",
+                        arrivalTime: arrival?.time || "-",
+                        arrivalTransport: arrTraveler ? `${arrTraveler.mode_of_travel || ""}${arrTraveler.transport_number ? ` (${arrTraveler.transport_number})` : ""}` : "-",
+                        depDate: departure?.date ? format(new Date(departure.date), "MMM d, yyyy") : "-",
+                        depTime: departure?.time || "-",
+                        depMode: depTraveler?.mode_of_travel || "-",
+                        depTransport: depTraveler?.transport_number || "-",
+                        arrDriverName: arrival?.driver?.name || "-",
+                        arrDriverPhone: arrival?.driver?.phone || "-",
+                        depDriverName: departure?.driver?.name || "-",
+                        depDriverPhone: departure?.driver?.phone || "-"
                     });
                 });
             }
@@ -660,61 +710,38 @@ export default function CoordinatorDashboard() {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
-                                                    {filteredGuests.length === 0 ? (
+                                                    {flattenedGuests.length === 0 ? (
                                                         <tr><td colSpan={5} className="p-32 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No guests found</td></tr>
                                                     ) : (
-                                                        filteredGuests.map((guest) => (
-                                                            <tr key={guest.id} className="group hover:bg-blue-50/30 transition-colors align-top">
+                                                        flattenedGuests.map((person: any) => (
+                                                            <tr key={person.uniqueKey} className="group hover:bg-blue-50/30 transition-colors align-top">
                                                                 <td className="px-10 py-8">
-                                                                    <div className="flex flex-col gap-6">
-                                                                        <div>
-                                                                            <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{guest.name}</h4>
-                                                                            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                                                    <div className="flex flex-col gap-1">
+                                                                        <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{person.displayName}</h4>
+                                                                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                                            {person.isPrimary ? (
                                                                                 <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded">PRIMARY</span>
-                                                                                {guest.phone && (
-                                                                                    <a
-                                                                                        href={`tel:${guest.phone}`}
-                                                                                        className="text-[10px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 hover:bg-blue-100 hover:text-blue-600 transition-colors px-2 py-0.5 rounded cursor-pointer"
-                                                                                    >
-                                                                                        <Phone size={10} />
-                                                                                        {guest.phone}
-                                                                                    </a>
-                                                                                )}
-                                                                                {guest.seat_number && <span className="text-[10px] font-black text-zinc-400 uppercase">Seat: {guest.seat_number}</span>}
-                                                                            </div>
+                                                                            ) : (
+                                                                                <span className="text-[10px] font-bold text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded flex items-center gap-1">
+                                                                                    <User size={10} />
+                                                                                    {person.actualName}
+                                                                                </span>
+                                                                            )}
+                                                                            {person.phone && (
+                                                                                <a
+                                                                                    href={`tel:${person.phone}`}
+                                                                                    className="text-[10px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 hover:bg-blue-100 hover:text-blue-600 transition-colors px-2 py-0.5 rounded cursor-pointer"
+                                                                                >
+                                                                                    <Phone size={10} />
+                                                                                    {person.phone}
+                                                                                </a>
+                                                                            )}
+                                                                            {person.isPrimary && person.seat_number && <span className="text-[10px] font-black text-zinc-400 uppercase">Seat: {person.seat_number}</span>}
                                                                         </div>
-                                                                        {guest.attendees_data && guest.attendees_data.length > 0 && (
-                                                                            <div className="grid grid-cols-1 gap-2 pl-4 border-l-2 border-zinc-100">
-                                                                                {guest.attendees_data.map((member: any, i) => (
-                                                                                    <div key={i} className="flex items-center justify-between p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-800">
-                                                                                        <div className="flex flex-col">
-                                                                                            <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{member.name}</span>
-                                                                                            {member.phone && (
-                                                                                                <a
-                                                                                                    href={`tel:${member.phone}`}
-                                                                                                    className="text-[10px] text-zinc-400 hover:text-blue-600 font-medium flex items-center gap-1 mt-0.5 transition-colors"
-                                                                                                >
-                                                                                                    <Phone size={10} />
-                                                                                                    {member.phone}
-                                                                                                </a>
-                                                                                            )}
-                                                                                        </div>
-                                                                                        <Button
-                                                                                            size="sm"
-                                                                                            variant={member.checked_in ? "default" : "outline"}
-                                                                                            onClick={() => handleSubMemberCheckIn(guest.id, i, member.checked_in)}
-                                                                                            className={cn("h-8 rounded-xl px-4 text-[10px] font-black", member.checked_in ? "bg-emerald-500 shadow-lg shadow-emerald-500/20" : "")}
-                                                                                        >
-                                                                                            {member.checked_in ? "ARRIVED" : "CHECK-IN"}
-                                                                                        </Button>
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        )}
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-6 py-8">
-                                                                    {guest.departure_details?.arrival?.date ? (
+                                                                    {person.departure_details?.arrival?.date ? (
                                                                         <div className="flex flex-col gap-3 min-w-[200px]">
                                                                             <div className="flex items-center gap-2">
                                                                                 <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 shrink-0">
@@ -723,36 +750,36 @@ export default function CoordinatorDashboard() {
                                                                                 <div className="flex flex-col">
                                                                                     <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter leading-none mb-1">Date & Time</span>
                                                                                     <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                                                                                        {format(new Date(guest.departure_details.arrival.date), "MMM d, yyyy")}
-                                                                                        {guest.departure_details.arrival.time && ` @ ${guest.departure_details.arrival.time}`}
+                                                                                        {format(new Date(person.departure_details.arrival.date), "MMM d, yyyy")}
+                                                                                        {person.departure_details.arrival.time && ` @ ${person.departure_details.arrival.time}`}
                                                                                     </span>
                                                                                 </div>
                                                                             </div>
 
-                                                                            {guest.departure_details.arrival.travelers?.[0] && (
+                                                                            {person.departure_details.arrival.travelers?.[0] && (
                                                                                 <>
                                                                                     <div className="flex items-start gap-2">
                                                                                         <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 shrink-0 mt-0.5">
-                                                                                            {guest.departure_details.arrival.travelers[0].mode_of_travel === "Flight" ? <PlaneLanding size={14} /> : guest.departure_details.arrival.travelers[0].mode_of_travel === "Train" ? <Train size={14} /> : <Bus size={14} />}
+                                                                                            {person.departure_details.arrival.travelers[0].mode_of_travel === "Flight" ? <PlaneLanding size={14} /> : person.departure_details.arrival.travelers[0].mode_of_travel === "Train" ? <Train size={14} /> : <Bus size={14} />}
                                                                                         </div>
                                                                                         <div className="flex flex-col">
                                                                                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter leading-none mb-1">Transport</span>
                                                                                             <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                                                                                                {guest.departure_details.arrival.travelers[0].transport_number || "No Ref."} 
-                                                                                                <span className="text-zinc-400 ml-1">({guest.departure_details.arrival.travelers[0].station_airport || "No Station"})</span>
+                                                                                                {person.departure_details.arrival.travelers[0].transport_number || "No Ref."} 
+                                                                                                <span className="text-zinc-400 ml-1">({person.departure_details.arrival.travelers[0].station_airport || "No Station"})</span>
                                                                                             </span>
                                                                                         </div>
                                                                                     </div>
 
-                                                                                    {guest.departure_details.arrival.travelers[0].drop_location && (
+                                                                                    {person.departure_details.arrival.travelers[0].drop_location && (
                                                                                         <div className="flex items-center gap-2">
                                                                                             <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 shrink-0">
                                                                                                 <MapPin size={14} />
                                                                                             </div>
                                                                                             <div className="flex flex-col">
                                                                                                 <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter leading-none mb-1">Drop</span>
-                                                                                                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate max-w-[150px]" title={guest.departure_details.arrival.travelers[0].drop_location}>
-                                                                                                    {guest.departure_details.arrival.travelers[0].drop_location}
+                                                                                                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate max-w-[150px]" title={person.departure_details.arrival.travelers[0].drop_location}>
+                                                                                                    {person.departure_details.arrival.travelers[0].drop_location}
                                                                                                 </span>
                                                                                             </div>
                                                                                         </div>
@@ -762,7 +789,7 @@ export default function CoordinatorDashboard() {
                                                                             {/* Driver Info in Arrival Details */}
                                                                             <div className="pt-2 mt-2 border-t border-blue-100/50 dark:border-blue-900/10">
                                                                                 <button 
-                                                                                    onClick={() => openDriverModal(guest, 'arrival')}
+                                                                                    onClick={() => openDriverModal(person, 'arrival')}
                                                                                     className="flex items-center gap-2 group/driver w-full text-left outline-none"
                                                                                 >
                                                                                     <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 shrink-0 group-hover/driver:bg-indigo-100 transition-colors">
@@ -770,10 +797,10 @@ export default function CoordinatorDashboard() {
                                                                                     </div>
                                                                                     <div className="flex flex-col">
                                                                                         <span className="text-[10px] font-black text-indigo-400 dark:text-indigo-500 uppercase tracking-tighter leading-none mb-1">Arrival Driver</span>
-                                                                                        {guest.departure_details?.arrival?.driver?.name ? (
+                                                                                        {person.departure_details?.arrival?.driver?.name ? (
                                                                                             <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
-                                                                                                {guest.departure_details.arrival.driver.name}
-                                                                                                <span className="text-[10px] text-zinc-400 font-normal">({guest.departure_details.arrival.driver.phone})</span>
+                                                                                                {person.departure_details.arrival.driver.name}
+                                                                                                <span className="text-[10px] text-zinc-400 font-normal">({person.departure_details.arrival.driver.phone})</span>
                                                                                             </span>
                                                                                         ) : (
                                                                                             <span className="text-[10px] font-bold text-zinc-400 group-hover/driver:text-indigo-500 transition-colors italic">Assign Arrival Driver +</span>
@@ -791,27 +818,30 @@ export default function CoordinatorDashboard() {
                                                                 <td className="px-6 py-10 text-center">
                                                                     <div className="text-sm font-bold text-zinc-600 dark:text-zinc-400 flex items-center justify-center gap-2">
                                                                         <Calendar size={14} />
-                                                                        {guest.events?.date ? format(new Date(guest.events.date), "MMM d") : "-"}
+                                                                        {person.events?.date ? format(new Date(person.events.date), "MMM d") : "-"}
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-6 py-10 text-center">
                                                                     <div className={cn(
                                                                         "inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest",
-                                                                        guest.check_in_status === "arrived" ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"
+                                                                        (person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"
                                                                     )}>
-                                                                        {guest.check_in_status === "arrived" ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-                                                                        {guest.check_in_status === "arrived" ? "Arrived" : "Pending"}
+                                                                        {(person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+                                                                        {(person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? "Arrived" : "Pending"}
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-10 py-10">
                                                                     <Button
-                                                                        onClick={() => handleCheckIn(guest.id, guest.check_in_status)}
+                                                                        onClick={() => person.isPrimary 
+                                                                            ? handleCheckIn(person.id, person.check_in_status) 
+                                                                            : handleSubMemberCheckIn(person.id, person.companionIndex, person.checked_in)
+                                                                        }
                                                                         className={cn(
                                                                             "w-full h-12 rounded-2xl font-black text-xs uppercase tracking-widest transition-all",
-                                                                            guest.check_in_status === "arrived" ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-blue-600 text-white shadow-blue-500/20"
+                                                                            (person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-blue-600 text-white shadow-blue-500/20"
                                                                         )}
                                                                     >
-                                                                        {guest.check_in_status === "arrived" ? "Main Arrived" : "Main Check-in"}
+                                                                        {(person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? "Arrived" : "Check-in"}
                                                                     </Button>
                                                                 </td>
                                                             </tr>
@@ -823,36 +853,42 @@ export default function CoordinatorDashboard() {
 
                                         {/* Mobile View Card Layout */}
                                         <div className="md:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
-                                            {filteredGuests.length === 0 ? (
+                                            {flattenedGuests.length === 0 ? (
                                                 <div className="p-20 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No guests found</div>
                                             ) : (
-                                                filteredGuests.map((guest) => (
-                                                    <div key={guest.id} className="p-6 space-y-6">
+                                                flattenedGuests.map((person) => (
+                                                    <div key={person.uniqueKey} className="p-6 space-y-6">
                                                         <div className="flex flex-col gap-1">
                                                             <div className="flex items-start justify-between gap-4">
-                                                                <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{guest.name}</h4>
-                                                                <div className="text-[10px] font-bold text-zinc-500 flex items-center gap-1.5 shrink-0">
-                                                                    <Calendar size={12} />
-                                                                    {guest.events?.date ? format(new Date(guest.events.date), "MMM d") : "-"}
+                                                                <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{person.displayName}</h4>
+                                                                <div className={cn(
+                                                                    "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shrink-0",
+                                                                    (person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"
+                                                                )}>
+                                                                    {(person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
+                                                                    {(person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? "Arrived" : "Pending"}
                                                                 </div>
                                                             </div>
                                                             <div className="flex flex-wrap items-center gap-2">
-                                                                <span className="text-[9px] font-black uppercase text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded">PRIMARY</span>
-                                                                {guest.phone && (
-                                                                    <a
-                                                                        href={`tel:${guest.phone}`}
-                                                                        className="text-[9px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 hover:bg-blue-100 hover:text-blue-600 transition-colors px-2 py-0.5 rounded"
-                                                                    >
-                                                                        <Phone size={9} />
-                                                                        {guest.phone}
+                                                                {person.isPrimary ? (
+                                                                    <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded">PRIMARY</span>
+                                                                ) : (
+                                                                    <span className="text-[10px] font-bold text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded flex items-center gap-1">
+                                                                        <User size={10} />
+                                                                        {person.actualName}
+                                                                    </span>
+                                                                )}
+                                                                {person.phone && (
+                                                                    <a href={`tel:${person.phone}`} className="text-[10px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 px-2 py-0.5 rounded">
+                                                                        <Phone size={10} />
+                                                                        {person.phone}
                                                                     </a>
                                                                 )}
-                                                                {guest.seat_number && <span className="text-[9px] font-black text-zinc-400 uppercase">Seat: {guest.seat_number}</span>}
                                                             </div>
                                                         </div>
 
                                                         {/* Arrival Details on Mobile */}
-                                                        {guest.departure_details?.arrival?.date && (
+                                                        {person.departure_details?.arrival?.date && (
                                                             <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-900/20 space-y-3">
                                                                 <h5 className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
                                                                     <PlaneLanding size={12} />
@@ -863,35 +899,35 @@ export default function CoordinatorDashboard() {
                                                                         <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter block">Date & Time</span>
                                                                         <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
                                                                             <Calendar size={10} className="text-blue-500" />
-                                                                            {format(new Date(guest.departure_details.arrival.date), "MMM d")}
-                                                                            {guest.departure_details.arrival.time && ` @ ${guest.departure_details.arrival.time}`}
+                                                                            {format(new Date(person.departure_details.arrival.date), "MMM d")}
+                                                                            {person.departure_details.arrival.time && ` @ ${person.departure_details.arrival.time}`}
                                                                         </p>
                                                                     </div>
-                                                                    {guest.departure_details.arrival.travelers?.[0] && (
+                                                                    {person.departure_details.arrival.travelers?.[0] && (
                                                                         <div className="space-y-1">
                                                                             <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter block">
-                                                                                {guest.departure_details.arrival.travelers[0].mode_of_travel || "Transport"}
+                                                                                {person.departure_details.arrival.travelers[0].mode_of_travel || "Transport"}
                                                                             </span>
                                                                             <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
                                                                                 <Navigation size={10} className="text-blue-500" />
-                                                                                {guest.departure_details.arrival.travelers[0].transport_number || "No Ref."}
+                                                                                {person.departure_details.arrival.travelers[0].transport_number || "No Ref."}
                                                                             </p>
                                                                         </div>
                                                                     )}
                                                                 </div>
-                                                                {guest.departure_details.arrival.travelers?.[0]?.drop_location && (
+                                                                {person.departure_details.arrival.travelers?.[0]?.drop_location && (
                                                                     <div className="pt-2 border-t border-blue-100/50 dark:border-blue-900/10 flex items-center gap-2">
                                                                         <MapPin size={10} className="text-emerald-500 shrink-0" />
                                                                         <span className="text-[10px] text-zinc-500 font-bold uppercase shrink-0">Drop:</span>
                                                                         <span className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 truncate">
-                                                                            {guest.departure_details.arrival.travelers[0].drop_location}
+                                                                            {person.departure_details.arrival.travelers[0].drop_location}
                                                                         </span>
                                                                     </div>
                                                                 )}
                                                                 {/* Mobile Driver Display */}
                                                                 <div className="mt-3 pt-3 border-t border-blue-100/50 dark:border-blue-900/20">
                                                                     <button 
-                                                                        onClick={() => openDriverModal(guest, 'arrival')}
+                                                                        onClick={() => openDriverModal(person, 'arrival')}
                                                                         className="w-full flex items-center justify-between p-2 rounded-xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-900/20 outline-none"
                                                                     >
                                                                         <div className="flex items-center gap-3">
@@ -901,64 +937,30 @@ export default function CoordinatorDashboard() {
                                                                             <div className="text-left">
                                                                                 <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest leading-none mb-1">Arrival Driver</p>
                                                                                 <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                                                                                    {guest.departure_details?.arrival?.driver?.name || "No Driver Assigned"}
+                                                                                    {person.departure_details?.arrival?.driver?.name || "No Driver Assigned"}
                                                                                 </p>
                                                                             </div>
                                                                         </div>
                                                                         <p className="text-[10px] font-bold text-indigo-600">
-                                                                            {guest.departure_details?.arrival?.driver?.phone || "Assign +"}
+                                                                            {person.departure_details?.arrival?.driver?.phone || "Assign +"}
                                                                         </p>
                                                                     </button>
                                                                 </div>
                                                             </div>
                                                         )}
 
-                                                        {/* Companions on Mobile */}
-                                                        {guest.attendees_data && guest.attendees_data.length > 0 && (
-                                                            <div className="space-y-2 pl-3 border-l-2 border-zinc-100 dark:border-zinc-800">
-                                                                {guest.attendees_data.map((member: any, i) => (
-                                                                    <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800">
-                                                                        <div className="flex flex-col">
-                                                                            <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{member.name}</span>
-                                                                            {member.phone && (
-                                                                                <a
-                                                                                    href={`tel:${member.phone}`}
-                                                                                    className="text-[10px] text-zinc-400 hover:text-blue-600 font-medium flex items-center gap-1 mt-0.5 transition-colors"
-                                                                                >
-                                                                                    <Phone size={10} />
-                                                                                    {member.phone}
-                                                                                </a>
-                                                                            )}
-                                                                        </div>
-                                                                        <Button
-                                                                            size="sm"
-                                                                            variant={member.checked_in ? "default" : "outline"}
-                                                                            onClick={() => handleSubMemberCheckIn(guest.id, i, member.checked_in)}
-                                                                            className={cn("h-7 rounded-lg px-3 text-[9px] font-black", member.checked_in ? "bg-emerald-500 shadow-md shadow-emerald-500/10" : "")}
-                                                                        >
-                                                                            {member.checked_in ? "ARRIVED" : "CHECK-IN"}
-                                                                        </Button>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
-
                                                         <div className="flex items-center gap-3">
-                                                            <div className={cn(
-                                                                "flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest",
-                                                                guest.check_in_status === "arrived" ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"
-                                                            )}>
-                                                                {guest.check_in_status === "arrived" ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-                                                                {guest.check_in_status === "arrived" ? "Arrived" : "Pending"}
-                                                            </div>
                                                             <Button
-                                                                onClick={() => handleCheckIn(guest.id, guest.check_in_status)}
+                                                                onClick={() => person.isPrimary 
+                                                                    ? handleCheckIn(person.id, person.check_in_status) 
+                                                                    : handleSubMemberCheckIn(person.id, person.companionIndex, person.checked_in)
+                                                                }
                                                                 className={cn(
-                                                                    "flex-[2] h-11 rounded-xl font-black text-xs uppercase tracking-widest transition-all",
-                                                                    guest.check_in_status === "arrived" ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-blue-600 text-white shadow-blue-500/20"
+                                                                    "flex-1 h-12 rounded-2xl font-black text-xs uppercase tracking-widest transition-all",
+                                                                    (person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-blue-600 text-white shadow-blue-500/20"
                                                                 )}
                                                             >
-                                                                {guest.check_in_status === "arrived" ? "Main Arrived" : "Main Check-in"}
+                                                                {(person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? "Arrived" : "Check-in"}
                                                             </Button>
                                                         </div>
                                                     </div>
@@ -980,72 +982,45 @@ export default function CoordinatorDashboard() {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
-                                                    {filteredGuests.length === 0 ? (
-                                                        <tr><td colSpan={4} className="p-32 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No departure records</td></tr>
+                                                    {flattenedGuests.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan={4} className="px-10 py-20 text-center">
+                                                                <div className="flex flex-col items-center gap-2">
+                                                                    <span className="text-zinc-300 dark:text-zinc-700">
+                                                                        <Users size={40} strokeWidth={1} />
+                                                                    </span>
+                                                                    <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-2">No departure records found</p>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
                                                     ) : (
-                                                        filteredGuests.map((guest) => (
-                                                            <tr key={guest.id} className="group hover:bg-indigo-50/30 transition-colors align-top">
+                                                        flattenedGuests.map((person: any) => (
+                                                            <tr key={person.uniqueKey} className="group hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-all border-b border-zinc-50 dark:border-zinc-800/50">
                                                                 <td className="px-10 py-8">
-                                                                    <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{guest.name}</h4>
-                                                                    <div className="flex items-center gap-2 mt-1">
-                                                                        <span className="text-[10px] font-black uppercase text-indigo-400">Guest</span>
-                                                                        {guest.phone && (
-                                                                            <a
-                                                                                href={`tel:${guest.phone}`}
-                                                                                className="text-[10px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 hover:bg-indigo-100 hover:text-indigo-600 transition-colors px-2 py-0.5 rounded"
-                                                                            >
-                                                                                <Phone size={10} />
-                                                                                {guest.phone}
-                                                                            </a>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* Companions for Departure */}
-                                                                    {guest.attendees_data && guest.attendees_data.length > 0 && (
-                                                                        <div className="mt-4 pt-4 border-t border-zinc-50 dark:border-zinc-800 space-y-3">
-                                                                            {guest.attendees_data.map((member: any, index: number) => (
-                                                                                <div key={index} className="flex items-center justify-between pl-4 border-l-2 border-zinc-100 dark:border-zinc-800">
-                                                                                    <div className="flex flex-col">
-                                                                                        <span className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{member.name}</span>
-                                                                                        <div className="flex items-center gap-2">
-                                                                                            <span className="text-[9px] font-black uppercase text-zinc-400">Companion</span>
-                                                                                            {member.phone && (
-                                                                                                <a
-                                                                                                    href={`tel:${member.phone}`}
-                                                                                                    className="text-[9px] font-bold text-zinc-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
-                                                                                                >
-                                                                                                    <Phone size={9} />
-                                                                                                    {member.phone}
-                                                                                                </a>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div className="flex items-center gap-4">
-                                                                                        <div className={cn(
-                                                                                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter",
-                                                                                            member.departed ? "bg-indigo-50 text-indigo-600" : "bg-zinc-50 text-zinc-400"
-                                                                                        )}>
-                                                                                            {member.departed ? "Departed" : "Ready"}
-                                                                                        </div>
-                                                                                        <Button
-                                                                                            size="sm"
-                                                                                            variant="ghost"
-                                                                                            onClick={() => handleSubMemberDeparture(guest.id, index, member.departed)}
-                                                                                            className={cn(
-                                                                                                "h-7 px-3 rounded-lg text-[9px] font-black uppercase tracking-widest",
-                                                                                                member.departed ? "text-red-500 hover:text-red-600 hover:bg-red-50" : "text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
-                                                                                            )}
-                                                                                        >
-                                                                                            {member.departed ? "Undo" : "Mark"}
-                                                                                        </Button>
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))}
+                                                                    <div className="flex flex-col gap-1">
+                                                                        <span className="text-base font-bold text-zinc-900 dark:text-zinc-50 group-hover:text-indigo-600 transition-colors">
+                                                                            {person.displayName}
+                                                                        </span>
+                                                                        <div className="flex items-center gap-2">
+                                                                            {person.isPrimary ? (
+                                                                                <span className="text-[9px] font-black uppercase text-indigo-400 bg-indigo-50/50 px-2 py-0.5 rounded">PRIMARY</span>
+                                                                            ) : (
+                                                                                <span className="text-[9px] font-bold text-zinc-400 bg-zinc-50 px-2 py-0.5 rounded flex items-center gap-1">
+                                                                                    <User size={8} />
+                                                                                    {person.actualName}
+                                                                                </span>
+                                                                            )}
+                                                                            {person.phone && (
+                                                                                <a href={`tel:${person.phone}`} className="text-[9px] font-bold text-zinc-500 hover:text-indigo-600 flex items-center gap-1 transition-colors">
+                                                                                    <Phone size={9} />
+                                                                                    {person.phone}
+                                                                                </a>
+                                                                            )}
                                                                         </div>
-                                                                    )}
+                                                                    </div>
                                                                 </td>
                                                                 <td className="px-6 py-8">
-                                                                    {guest.departure_details?.departure?.date ? (
+                                                                    {person.departure_details?.departure?.date ? (
                                                                         <div className="flex flex-col gap-3 min-w-[200px]">
                                                                             <div className="flex items-center gap-2">
                                                                                 <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-600 shrink-0">
@@ -1054,22 +1029,22 @@ export default function CoordinatorDashboard() {
                                                                                 <div className="flex flex-col">
                                                                                     <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter leading-none mb-1">Date & Time</span>
                                                                                     <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                                                                                        {format(new Date(guest.departure_details.departure.date), "MMM d, yyyy")}
-                                                                                        {guest.departure_details.departure.time && ` @ ${guest.departure_details.departure.time}`}
+                                                                                        {format(new Date(person.departure_details.departure.date), "MMM d, yyyy")}
+                                                                                        {person.departure_details.departure.time && ` @ ${person.departure_details.departure.time}`}
                                                                                     </span>
                                                                                 </div>
                                                                             </div>
 
-                                                                            {guest.departure_details.departure.travelers?.[0] && (
+                                                                            {person.departure_details.departure.travelers?.[0] && (
                                                                                 <>
                                                                                     <div className="flex items-start gap-2">
                                                                                         <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-600 shrink-0 mt-0.5">
-                                                                                            {guest.departure_details.departure.travelers[0].mode_of_travel === "Flight" ? <PlaneLanding size={14} /> : guest.departure_details.departure.travelers[0].mode_of_travel === "Train" ? <Train size={14} /> : <Bus size={14} />}
+                                                                                            {person.departure_details.departure.travelers[0].mode_of_travel === "Flight" ? <PlaneLanding size={14} /> : person.departure_details.departure.travelers[0].mode_of_travel === "Train" ? <Train size={14} /> : <Bus size={14} />}
                                                                                         </div>
                                                                                         <div className="flex flex-col">
                                                                                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter leading-none mb-1">Travel Mode</span>
                                                                                             <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 italic">
-                                                                                                {guest.departure_details.departure.travelers[0].mode_of_travel || "Not Set"}
+                                                                                                {person.departure_details.departure.travelers[0].mode_of_travel || "Not Set"}
                                                                                             </span>
                                                                                         </div>
                                                                                     </div>
@@ -1079,10 +1054,10 @@ export default function CoordinatorDashboard() {
                                                                                             <Navigation size={14} />
                                                                                         </div>
                                                                                         <div className="flex flex-col">
-                                                                                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter leading-none mb-1">Departure Ref.</span>
+                                                                                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter leading-none mb-1">Ref.</span>
                                                                                             <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                                                                                                {guest.departure_details.departure.travelers[0].transport_number || "No Ref."} 
-                                                                                                <span className="text-zinc-400 ml-1">({guest.departure_details.departure.travelers[0].station_airport || "No Station"})</span>
+                                                                                                {person.departure_details.departure.travelers[0].transport_number || "No Ref."} 
+                                                                                                <span className="text-zinc-400 ml-1">({person.departure_details.departure.travelers[0].station_airport || "No Station"})</span>
                                                                                             </span>
                                                                                         </div>
                                                                                     </div>
@@ -1091,7 +1066,7 @@ export default function CoordinatorDashboard() {
                                                                             {/* Driver Info in Departure Details */}
                                                                             <div className="pt-2 mt-2 border-t border-orange-100/50 dark:border-orange-900/10">
                                                                                 <button 
-                                                                                     onClick={() => openDriverModal(guest, 'departure')}
+                                                                                     onClick={() => openDriverModal(person, 'departure')}
                                                                                     className="flex items-center gap-2 group/driver w-full text-left outline-none"
                                                                                 >
                                                                                     <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 shrink-0 group-hover/driver:bg-indigo-100 transition-colors">
@@ -1099,50 +1074,45 @@ export default function CoordinatorDashboard() {
                                                                                     </div>
                                                                                     <div className="flex flex-col">
                                                                                         <span className="text-[10px] font-black text-indigo-400 dark:text-indigo-500 uppercase tracking-tighter leading-none mb-1">Departure Driver</span>
-                                                                                        {guest.departure_details?.departure?.driver?.name ? (
+                                                                                        {person.departure_details?.departure?.driver?.name ? (
                                                                                             <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
-                                                                                                {guest.departure_details.departure.driver.name}
-                                                                                                <span className="text-[10px] text-zinc-400 font-normal">({guest.departure_details.departure.driver.phone})</span>
+                                                                                                {person.departure_details.departure.driver.name}
+                                                                                                <span className="text-[10px] text-zinc-400 font-normal">({person.departure_details.departure.driver.phone})</span>
                                                                                             </span>
                                                                                         ) : (
-                                                                                            <span className="text-[10px] font-bold text-zinc-400 group-hover/driver:text-indigo-500 transition-colors italic">Assign Departure Driver +</span>
+                                                                                            <span className="text-[10px] font-bold text-zinc-400 group-hover/driver:text-indigo-500 transition-colors italic">Assign Driver +</span>
                                                                                         )}
                                                                                     </div>
                                                                                 </button>
                                                                             </div>
                                                                         </div>
                                                                     ) : (
-                                                                        /* Legacy Fallback */
-                                                                        <div className="space-y-1.5 flex flex-col items-center">
-                                                                            <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
-                                                                                <Calendar size={14} className="text-zinc-400" />
-                                                                                {guest.departure_details?.date || "No date set"}
-                                                                            </div>
-                                                                            <div className="text-[10px] font-bold text-zinc-400 uppercase flex items-center gap-2 italic">
-                                                                                <Bus size={12} />
-                                                                                {guest.departure_details?.transport || "Not specified"}
-                                                                            </div>
+                                                                        <div className="text-center py-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700">
+                                                                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">N/A</span>
                                                                         </div>
                                                                     )}
                                                                 </td>
                                                                 <td className="px-6 py-8 text-center">
                                                                     <div className={cn(
                                                                         "inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300",
-                                                                        guest.departure_status === "departed" ? "bg-indigo-50 text-indigo-600 scale-105" : "bg-zinc-50 text-zinc-400"
+                                                                        (person.isPrimary ? person.departure_status === "departed" : person.departed) ? "bg-indigo-50 text-indigo-600 scale-105" : "bg-zinc-50 text-zinc-400"
                                                                     )}>
-                                                                        {guest.departure_status === "departed" ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-                                                                        {guest.departure_status === "departed" ? "Departed" : "Ready"}
+                                                                        {(person.isPrimary ? person.departure_status === "departed" : person.departed) ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+                                                                        {(person.isPrimary ? person.departure_status === "departed" : person.departed) ? "Departed" : "Ready"}
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-10 py-8 text-center">
                                                                     <Button
-                                                                        onClick={() => handleDepartureCheckIn(guest.id, guest.departure_status)}
+                                                                        onClick={() => person.isPrimary 
+                                                                            ? handleDepartureCheckIn(person.id, person.departure_status)
+                                                                            : handleSubMemberDeparture(person.id, person.companionIndex, person.departed)
+                                                                        }
                                                                         className={cn(
                                                                             "w-full h-12 rounded-2xl font-black text-xs uppercase tracking-widest transition-all",
-                                                                            guest.departure_status === "departed" ? "bg-indigo-600 text-white shadow-indigo-600/20" : "bg-white text-zinc-900 border-2 border-zinc-100 hover:border-indigo-100 shadow-sm"
+                                                                            (person.isPrimary ? person.departure_status === "departed" : person.departed) ? "bg-indigo-600 text-white shadow-indigo-600/20" : "bg-white text-zinc-900 border-2 border-zinc-100 hover:border-indigo-100 shadow-sm"
                                                                         )}
                                                                     >
-                                                                        {guest.departure_status === "departed" ? "Undo Departure" : "Mark Departed"}
+                                                                        {(person.isPrimary ? person.departure_status === "departed" : person.departed) ? "Undo Departure" : "Mark Departed"}
                                                                     </Button>
                                                                 </td>
                                                             </tr>
@@ -1154,29 +1124,36 @@ export default function CoordinatorDashboard() {
 
                                         {/* Mobile View Card Layout for Departure */}
                                         <div className="md:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
-                                            {filteredGuests.length === 0 ? (
-                                                <div className="p-20 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No departure records</div>
+                                            {flattenedGuests.length === 0 ? (
+                                                <div className="p-20 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No records found</div>
                                             ) : (
-                                                filteredGuests.map((guest) => (
-                                                    <div key={guest.id} className="p-6 space-y-6">
+                                                flattenedGuests.map((person) => (
+                                                    <div key={person.uniqueKey} className="p-6 space-y-6">
                                                         <div className="flex flex-col gap-1">
-                                                            <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{guest.name}</h4>
-                                                            <div className="flex flex-wrap items-center gap-2 mt-1">
-                                                                <span className="text-[9px] font-black uppercase text-indigo-400">Guest</span>
-                                                                {guest.phone && (
-                                                                    <a
-                                                                        href={`tel:${guest.phone}`}
-                                                                        className="text-[9px] font-bold text-zinc-500 flex items-center gap-1 bg-zinc-100 hover:bg-indigo-100 hover:text-indigo-600 transition-colors px-2 py-0.5 rounded"
-                                                                    >
-                                                                        <Phone size={9} />
-                                                                        {guest.phone}
-                                                                    </a>
+                                                            <div className="flex items-start justify-between gap-4">
+                                                                <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{person.displayName}</h4>
+                                                                <div className={cn(
+                                                                    "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shrink-0",
+                                                                    (person.isPrimary ? person.departure_status === "departed" : person.departed) ? "bg-indigo-50 text-indigo-600" : "bg-zinc-50 text-zinc-400"
+                                                                )}>
+                                                                    {(person.isPrimary ? person.departure_status === "departed" : person.departed) ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
+                                                                    {(person.isPrimary ? person.departure_status === "departed" : person.departed) ? "Departed" : "Ready"}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                {person.isPrimary ? (
+                                                                    <span className="text-[10px] font-black uppercase text-indigo-600 bg-indigo-50/50 px-2 py-0.5 rounded">PRIMARY</span>
+                                                                ) : (
+                                                                    <span className="text-[10px] font-bold text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded flex items-center gap-1">
+                                                                        <User size={10} />
+                                                                        {person.actualName}
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                         </div>
 
-                                                        {/* Departure Details on Mobile */}
-                                                        {guest.departure_details?.departure?.date ? (
+                                                        {/* Departure Information on Mobile */}
+                                                        {person.departure_details?.departure?.date && (
                                                             <div className="p-4 rounded-2xl bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100/50 dark:border-orange-900/20 space-y-3">
                                                                 <h5 className="text-[10px] font-black text-orange-600 uppercase tracking-widest flex items-center gap-2">
                                                                     <PlaneLanding size={12} />
@@ -1187,36 +1164,25 @@ export default function CoordinatorDashboard() {
                                                                         <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter block">Date & Time</span>
                                                                         <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
                                                                             <Calendar size={10} className="text-orange-500" />
-                                                                            {format(new Date(guest.departure_details.departure.date), "MMM d")}
-                                                                            {guest.departure_details.departure.time && ` @ ${guest.departure_details.departure.time}`}
+                                                                            {format(new Date(person.departure_details.departure.date), "MMM d")}
                                                                         </p>
                                                                     </div>
-                                                                    {guest.departure_details.departure.travelers?.[0] && (
+                                                                    {person.departure_details.departure.travelers?.[0] && (
                                                                         <div className="space-y-1">
                                                                             <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter block">
-                                                                                Travel Mode
+                                                                                {person.departure_details.departure.travelers[0].mode_of_travel || "Transport"}
                                                                             </span>
-                                                                            <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
-                                                                                {guest.departure_details.departure.travelers[0].mode_of_travel === "Flight" ? <PlaneLanding size={10} className="text-orange-500" /> : <Bus size={10} className="text-orange-500" />}
-                                                                                {guest.departure_details.departure.travelers[0].mode_of_travel}
+                                                                            <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                                                                                {person.departure_details.departure.travelers[0].transport_number || "No Ref."}
                                                                             </p>
                                                                         </div>
                                                                     )}
                                                                 </div>
-                                                                {guest.departure_details.departure.travelers?.[0] && (
-                                                                    <div className="pt-2 border-t border-orange-100/50 dark:border-orange-900/10 flex items-center gap-2">
-                                                                        <Navigation size={10} className="text-orange-500 shrink-0" />
-                                                                        <span className="text-[10px] text-zinc-500 font-bold uppercase shrink-0">Ref:</span>
-                                                                        <span className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 truncate">
-                                                                            {guest.departure_details.departure.travelers[0].transport_number || "N/A"}
-                                                                        </span>
-                                                                    </div>
-                                                                )}
                                                                 {/* Mobile Driver Display for Departure */}
                                                                 <div className="mt-3 pt-3 border-t border-orange-100/50 dark:border-orange-900/20">
                                                                     <button 
-                                                                        onClick={() => openDriverModal(guest, 'departure')}
-                                                                        className="w-full flex items-center justify-between p-2 rounded-xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-900/20 outline-none"
+                                                                        onClick={() => openDriverModal(person, 'departure')}
+                                                                        className="w-full flex items-center justify-between p-2 rounded-xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-900/20"
                                                                     >
                                                                         <div className="flex items-center gap-3">
                                                                             <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
@@ -1224,95 +1190,29 @@ export default function CoordinatorDashboard() {
                                                                             </div>
                                                                             <div className="text-left">
                                                                                 <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest leading-none mb-1">Departure Driver</p>
-                                                                                <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                                                                                    {guest.departure_details?.departure?.driver?.name || "No Driver Assigned"}
+                                                                                <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate max-w-[100px]">
+                                                                                    {person.departure_details?.departure?.driver?.name || "No Driver"}
                                                                                 </p>
                                                                             </div>
                                                                         </div>
-                                                                        <p className="text-[10px] font-bold text-indigo-600">
-                                                                            {guest.departure_details?.departure?.driver?.phone || "Assign +"}
-                                                                        </p>
+                                                                        <span className="text-[10px] font-bold text-indigo-600">Assign +</span>
                                                                     </button>
                                                                 </div>
                                                             </div>
-                                                        ) : (
-                                                            /* Legacy Fallback on Mobile */
-                                                            <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 space-y-2">
-                                                                <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
-                                                                    <Calendar size={14} className="text-zinc-400" />
-                                                                    <span className="text-xs uppercase tracking-tighter text-zinc-400 mr-auto">Date:</span>
-                                                                    {guest.departure_details?.date || "No date set"}
-                                                                </div>
-                                                                <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
-                                                                    <Bus size={14} className="text-zinc-400" />
-                                                                    <span className="text-xs uppercase tracking-tighter text-zinc-400 mr-auto">Transport:</span>
-                                                                    {guest.departure_details?.transport || "Not specified"}
-                                                                </div>
-                                                            </div>
                                                         )}
 
-                                                        {/* Companions for Departure on Mobile */}
-                                                        {guest.attendees_data && guest.attendees_data.length > 0 && (
-                                                            <div className="space-y-3 pl-3 border-l-2 border-zinc-100 dark:border-zinc-800">
-                                                                {guest.attendees_data.map((member: any, index: number) => (
-                                                                    <div key={index} className="flex items-center justify-between gap-3">
-                                                                        <div className="flex flex-col">
-                                                                            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{member.name}</span>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="text-[9px] font-black uppercase text-zinc-400">Companion</span>
-                                                                                {member.phone && (
-                                                                                    <a
-                                                                                        href={`tel:${member.phone}`}
-                                                                                        className="text-[9px] font-bold text-zinc-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
-                                                                                    >
-                                                                                        <Phone size={9} />
-                                                                                        {member.phone}
-                                                                                    </a>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-2 shrink-0">
-                                                                            <div className={cn(
-                                                                                "px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter",
-                                                                                member.departed ? "bg-indigo-50 text-indigo-600" : "bg-zinc-50 text-zinc-400"
-                                                                            )}>
-                                                                                {member.departed ? "Done" : "Ready"}
-                                                                            </div>
-                                                                            <Button
-                                                                                size="sm"
-                                                                                variant="ghost"
-                                                                                onClick={() => handleSubMemberDeparture(guest.id, index, member.departed)}
-                                                                                className={cn(
-                                                                                    "h-7 px-2 rounded-lg text-[9px] font-black uppercase",
-                                                                                    member.departed ? "text-red-500 hover:bg-red-50" : "text-indigo-600 hover:bg-indigo-50"
-                                                                                )}
-                                                                            >
-                                                                                {member.departed ? "Undo" : "Mark"}
-                                                                            </Button>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
-
-                                                        <div className="flex flex-col gap-3">
-                                                            <div className={cn(
-                                                                "w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                                                guest.departure_status === "departed" ? "bg-indigo-50 text-indigo-600" : "bg-zinc-50 text-zinc-400"
-                                                            )}>
-                                                                {guest.departure_status === "departed" ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-                                                                {guest.departure_status === "departed" ? "Departed" : "Ready to Go"}
-                                                            </div>
-                                                            <Button
-                                                                onClick={() => handleDepartureCheckIn(guest.id, guest.departure_status)}
-                                                                className={cn(
-                                                                    "w-full h-12 rounded-xl font-black text-xs uppercase tracking-widest transition-all",
-                                                                    guest.departure_status === "departed" ? "bg-indigo-600 text-white shadow-indigo-600/10" : "bg-white text-zinc-900 border-2 border-zinc-100 shadow-sm"
-                                                                )}
-                                                            >
-                                                                {guest.departure_status === "departed" ? "Undo Departure" : "Mark Departed"}
-                                                            </Button>
-                                                        </div>
+                                                        <Button
+                                                            onClick={() => person.isPrimary 
+                                                                ? handleDepartureCheckIn(person.id, person.departure_status)
+                                                                : handleSubMemberDeparture(person.id, person.companionIndex, person.departed)
+                                                            }
+                                                            className={cn(
+                                                                "w-full h-12 rounded-2xl font-black text-xs uppercase tracking-widest transition-all",
+                                                                (person.isPrimary ? person.departure_status === "departed" : person.departed) ? "bg-indigo-600 text-white" : "bg-white text-zinc-900 border-2 border-zinc-100 shadow-sm"
+                                                            )}
+                                                        >
+                                                            {(person.isPrimary ? person.departure_status === "departed" : person.departed) ? "Undo Departure" : "Mark Departed"}
+                                                        </Button>
                                                     </div>
                                                 ))
                                             )}
@@ -1339,7 +1239,7 @@ export default function CoordinatorDashboard() {
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Assign Driver ({driverType === 'arrival' ? 'Arrival' : 'Departure'})</h3>
-                                        <p className="text-sm text-zinc-500 font-medium">{selectedGuestForDriver.name}</p>
+                                        <p className="text-sm text-zinc-500 font-medium">{selectedGuestForDriver.actualName || selectedGuestForDriver.name}</p>
                                     </div>
                                 </div>
                                 <button 
