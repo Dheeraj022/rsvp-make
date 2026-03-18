@@ -17,7 +17,11 @@ import {
     Menu,
     X,
     Phone,
-    FileSpreadsheet
+    FileSpreadsheet,
+    MapPin,
+    Train,
+    Clock,
+    Navigation
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,7 +96,15 @@ export default function CoordinatorDashboard() {
             { header: "Event", key: "event", width: 20 },
             { header: "Date", key: "date", width: 12 },
             { header: "Arrived", key: "arrived", width: 10 },
-            { header: "Departed", key: "departed", width: 10 }
+            { header: "Departed", key: "departed", width: 10 },
+            { header: "Arrival Date", key: "arrivalDate", width: 15 },
+            { header: "Arrival Time", key: "arrivalTime", width: 12 },
+            { header: "Arrival Transport", key: "arrivalTransport", width: 15 },
+            { header: "Drop Location", key: "dropLocation", width: 20 },
+            { header: "Departure Date", key: "depDate", width: 15 },
+            { header: "Departure Time", key: "depTime", width: 12 },
+            { header: "Departure Mode", key: "depMode", width: 12 },
+            { header: "Departure Ref.", key: "depTransport", width: 15 }
         ];
 
         // Format Header
@@ -101,6 +113,11 @@ export default function CoordinatorDashboard() {
 
         // Add Data
         guests.forEach(guest => {
+            const arrival = guest.departure_details?.arrival;
+            const arrTraveler = arrival?.travelers?.[0];
+            const departure = guest.departure_details?.departure;
+            const depTraveler = departure?.travelers?.[0];
+
             // Main Guest
             const mainRow = worksheet.addRow({
                 type: "Primary",
@@ -109,7 +126,15 @@ export default function CoordinatorDashboard() {
                 event: guest.events?.name || "-",
                 date: guest.events?.date ? format(new Date(guest.events.date), "MMM d") : "-",
                 arrived: guest.check_in_status === "arrived" ? "Yes" : "No",
-                departed: guest.departure_status === "departed" ? "Yes" : "No"
+                departed: guest.departure_status === "departed" ? "Yes" : "No",
+                arrivalDate: arrival?.date ? format(new Date(arrival.date), "MMM d, yyyy") : "-",
+                arrivalTime: arrival?.time || "-",
+                arrivalTransport: arrTraveler ? `${arrTraveler.mode_of_travel || ""}${arrTraveler.transport_number ? ` (${arrTraveler.transport_number})` : ""}` : "-",
+                dropLocation: arrTraveler?.drop_location || "-",
+                depDate: departure?.date ? format(new Date(departure.date), "MMM d, yyyy") : "-",
+                depTime: departure?.time || "-",
+                depMode: depTraveler?.mode_of_travel || "-",
+                depTransport: depTraveler?.transport_number || "-"
             });
 
             // Add Companions
@@ -162,7 +187,15 @@ export default function CoordinatorDashboard() {
                 .eq("user_id", user.id)
                 .single();
 
-            if (coordError || !coordData) throw new Error("Coordinator not found");
+            if (coordError) {
+                console.error("Auth error or coordinator not found:", coordError);
+                if (coordError.code === "PGRST116" || coordError.message?.includes("Refresh Token")) {
+                    router.push("/coordinator/login");
+                    return;
+                }
+                throw coordError;
+            }
+            if (!coordData) throw new Error("Coordinator not found");
             setCoordinator(coordData);
 
             // Fetch guests assigned to this coordinator or their assigned event
@@ -193,6 +226,9 @@ export default function CoordinatorDashboard() {
             setGuests(formattedGuests);
         } catch (error: any) {
             console.error("Error fetching data:", error.message);
+            if (error.message?.includes("Refresh Token") || error.status === 401 || error.code === "401") {
+                router.push("/coordinator/login");
+            }
         } finally {
             setLoading(false);
             setIsRefreshing(false);
@@ -540,6 +576,7 @@ export default function CoordinatorDashboard() {
                                                 <thead>
                                                     <tr className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-400 text-[10px] font-black uppercase tracking-widest border-b border-zinc-100 dark:border-zinc-800">
                                                         <th className="px-10 py-5">Guest & Companions</th>
+                                                        <th className="px-6 py-5 text-center">Arrival Details</th>
                                                         <th className="px-6 py-5 text-center">Event</th>
                                                         <th className="px-6 py-5 text-center">Status</th>
                                                         <th className="px-10 py-5 text-center">Action</th>
@@ -547,7 +584,7 @@ export default function CoordinatorDashboard() {
                                                 </thead>
                                                 <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
                                                     {filteredGuests.length === 0 ? (
-                                                        <tr><td colSpan={4} className="p-32 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No guests found</td></tr>
+                                                        <tr><td colSpan={5} className="p-32 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No guests found</td></tr>
                                                     ) : (
                                                         filteredGuests.map((guest) => (
                                                             <tr key={guest.id} className="group hover:bg-blue-50/30 transition-colors align-top">
@@ -598,6 +635,59 @@ export default function CoordinatorDashboard() {
                                                                             </div>
                                                                         )}
                                                                     </div>
+                                                                </td>
+                                                                <td className="px-6 py-8">
+                                                                    {guest.departure_details?.arrival?.date ? (
+                                                                        <div className="flex flex-col gap-3 min-w-[200px]">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 shrink-0">
+                                                                                    <Calendar size={14} />
+                                                                                </div>
+                                                                                <div className="flex flex-col">
+                                                                                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter leading-none mb-1">Date & Time</span>
+                                                                                    <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                                                                                        {format(new Date(guest.departure_details.arrival.date), "MMM d, yyyy")}
+                                                                                        {guest.departure_details.arrival.time && ` @ ${guest.departure_details.arrival.time}`}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {guest.departure_details.arrival.travelers?.[0] && (
+                                                                                <>
+                                                                                    <div className="flex items-start gap-2">
+                                                                                        <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 shrink-0 mt-0.5">
+                                                                                            {guest.departure_details.arrival.travelers[0].mode_of_travel === "Flight" ? <PlaneLanding size={14} /> : guest.departure_details.arrival.travelers[0].mode_of_travel === "Train" ? <Train size={14} /> : <Bus size={14} />}
+                                                                                        </div>
+                                                                                        <div className="flex flex-col">
+                                                                                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter leading-none mb-1">Transport</span>
+                                                                                            <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                                                                                                {guest.departure_details.arrival.travelers[0].transport_number || "No Ref."} 
+                                                                                                <span className="text-zinc-400 ml-1">({guest.departure_details.arrival.travelers[0].station_airport || "No Station"})</span>
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    {guest.departure_details.arrival.travelers[0].drop_location && (
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 shrink-0">
+                                                                                                <MapPin size={14} />
+                                                                                            </div>
+                                                                                            <div className="flex flex-col">
+                                                                                                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter leading-none mb-1">Drop</span>
+                                                                                                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate max-w-[150px]" title={guest.departure_details.arrival.travelers[0].drop_location}>
+                                                                                                    {guest.departure_details.arrival.travelers[0].drop_location}
+                                                                                                </span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="text-center py-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700">
+                                                                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">N/A</span>
+                                                                        </div>
+                                                                    )}
                                                                 </td>
                                                                 <td className="px-6 py-10 text-center">
                                                                     <div className="text-sm font-bold text-zinc-600 dark:text-zinc-400 flex items-center justify-center gap-2">
@@ -661,6 +751,46 @@ export default function CoordinatorDashboard() {
                                                                 {guest.seat_number && <span className="text-[9px] font-black text-zinc-400 uppercase">Seat: {guest.seat_number}</span>}
                                                             </div>
                                                         </div>
+
+                                                        {/* Arrival Details on Mobile */}
+                                                        {guest.departure_details?.arrival?.date && (
+                                                            <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-900/20 space-y-3">
+                                                                <h5 className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                                                                    <PlaneLanding size={12} />
+                                                                    Arrival Information
+                                                                </h5>
+                                                                <div className="grid grid-cols-2 gap-4">
+                                                                    <div className="space-y-1">
+                                                                        <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter block">Date & Time</span>
+                                                                        <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                                                                            <Calendar size={10} className="text-blue-500" />
+                                                                            {format(new Date(guest.departure_details.arrival.date), "MMM d")}
+                                                                            {guest.departure_details.arrival.time && ` @ ${guest.departure_details.arrival.time}`}
+                                                                        </p>
+                                                                    </div>
+                                                                    {guest.departure_details.arrival.travelers?.[0] && (
+                                                                        <div className="space-y-1">
+                                                                            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter block">
+                                                                                {guest.departure_details.arrival.travelers[0].mode_of_travel || "Transport"}
+                                                                            </span>
+                                                                            <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                                                                                <Navigation size={10} className="text-blue-500" />
+                                                                                {guest.departure_details.arrival.travelers[0].transport_number || "No Ref."}
+                                                                            </p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                {guest.departure_details.arrival.travelers?.[0]?.drop_location && (
+                                                                    <div className="pt-2 border-t border-blue-100/50 dark:border-blue-900/10 flex items-center gap-2">
+                                                                        <MapPin size={10} className="text-emerald-500 shrink-0" />
+                                                                        <span className="text-[10px] text-zinc-500 font-bold uppercase shrink-0">Drop:</span>
+                                                                        <span className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 truncate">
+                                                                            {guest.departure_details.arrival.travelers[0].drop_location}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
 
                                                         {/* Companions on Mobile */}
                                                         {guest.attendees_data && guest.attendees_data.length > 0 && (
@@ -793,17 +923,64 @@ export default function CoordinatorDashboard() {
                                                                         </div>
                                                                     )}
                                                                 </td>
-                                                                <td className="px-6 py-8">
-                                                                    <div className="space-y-1.5 flex flex-col items-center">
-                                                                        <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
-                                                                            <Calendar size={14} className="text-zinc-400" />
-                                                                            {guest.departure_details?.date || "No date set"}
+                                                                 <td className="px-6 py-8">
+                                                                    {guest.departure_details?.departure?.date ? (
+                                                                        <div className="flex flex-col gap-3 min-w-[200px]">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-600 shrink-0">
+                                                                                    <Calendar size={14} />
+                                                                                </div>
+                                                                                <div className="flex flex-col">
+                                                                                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter leading-none mb-1">Date & Time</span>
+                                                                                    <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                                                                                        {format(new Date(guest.departure_details.departure.date), "MMM d, yyyy")}
+                                                                                        {guest.departure_details.departure.time && ` @ ${guest.departure_details.departure.time}`}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {guest.departure_details.departure.travelers?.[0] && (
+                                                                                <>
+                                                                                    <div className="flex items-start gap-2">
+                                                                                        <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-600 shrink-0 mt-0.5">
+                                                                                            {guest.departure_details.departure.travelers[0].mode_of_travel === "Flight" ? <PlaneLanding size={14} /> : guest.departure_details.departure.travelers[0].mode_of_travel === "Train" ? <Train size={14} /> : <Bus size={14} />}
+                                                                                        </div>
+                                                                                        <div className="flex flex-col">
+                                                                                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter leading-none mb-1">Travel Mode</span>
+                                                                                            <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 italic">
+                                                                                                {guest.departure_details.departure.travelers[0].mode_of_travel || "Not Set"}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    <div className="flex items-start gap-2">
+                                                                                        <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-600 shrink-0 mt-0.5">
+                                                                                            <Navigation size={14} />
+                                                                                        </div>
+                                                                                        <div className="flex flex-col">
+                                                                                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter leading-none mb-1">Departure Ref.</span>
+                                                                                            <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                                                                                                {guest.departure_details.departure.travelers[0].transport_number || "No Ref."} 
+                                                                                                <span className="text-zinc-400 ml-1">({guest.departure_details.departure.travelers[0].station_airport || "No Station"})</span>
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </>
+                                                                            )}
                                                                         </div>
-                                                                        <div className="text-[10px] font-bold text-zinc-400 uppercase flex items-center gap-2 italic">
-                                                                            <Bus size={12} />
-                                                                            {guest.departure_details?.transport || "Not specified"}
+                                                                    ) : (
+                                                                        /* Legacy Fallback */
+                                                                        <div className="space-y-1.5 flex flex-col items-center">
+                                                                            <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                                                                                <Calendar size={14} className="text-zinc-400" />
+                                                                                {guest.departure_details?.date || "No date set"}
+                                                                            </div>
+                                                                            <div className="text-[10px] font-bold text-zinc-400 uppercase flex items-center gap-2 italic">
+                                                                                <Bus size={12} />
+                                                                                {guest.departure_details?.transport || "Not specified"}
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
+                                                                    )}
                                                                 </td>
                                                                 <td className="px-6 py-8 text-center">
                                                                     <div className={cn(
@@ -855,18 +1032,59 @@ export default function CoordinatorDashboard() {
                                                             </div>
                                                         </div>
 
-                                                        <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 space-y-2">
-                                                            <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
-                                                                <Calendar size={14} className="text-zinc-400" />
-                                                                <span className="text-xs uppercase tracking-tighter text-zinc-400 mr-auto">Date:</span>
-                                                                {guest.departure_details?.date || "No date set"}
+                                                        {/* Departure Details on Mobile */}
+                                                        {guest.departure_details?.departure?.date ? (
+                                                            <div className="p-4 rounded-2xl bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100/50 dark:border-orange-900/20 space-y-3">
+                                                                <h5 className="text-[10px] font-black text-orange-600 uppercase tracking-widest flex items-center gap-2">
+                                                                    <PlaneLanding size={12} />
+                                                                    Departure Information
+                                                                </h5>
+                                                                <div className="grid grid-cols-2 gap-4">
+                                                                    <div className="space-y-1">
+                                                                        <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter block">Date & Time</span>
+                                                                        <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                                                                            <Calendar size={10} className="text-orange-500" />
+                                                                            {format(new Date(guest.departure_details.departure.date), "MMM d")}
+                                                                            {guest.departure_details.departure.time && ` @ ${guest.departure_details.departure.time}`}
+                                                                        </p>
+                                                                    </div>
+                                                                    {guest.departure_details.departure.travelers?.[0] && (
+                                                                        <div className="space-y-1">
+                                                                            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter block">
+                                                                                Travel Mode
+                                                                            </span>
+                                                                            <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                                                                                {guest.departure_details.departure.travelers[0].mode_of_travel === "Flight" ? <PlaneLanding size={10} className="text-orange-500" /> : <Bus size={10} className="text-orange-500" />}
+                                                                                {guest.departure_details.departure.travelers[0].mode_of_travel}
+                                                                            </p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                {guest.departure_details.departure.travelers?.[0] && (
+                                                                    <div className="pt-2 border-t border-orange-100/50 dark:border-orange-900/10 flex items-center gap-2">
+                                                                        <Navigation size={10} className="text-orange-500 shrink-0" />
+                                                                        <span className="text-[10px] text-zinc-500 font-bold uppercase shrink-0">Ref:</span>
+                                                                        <span className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 truncate">
+                                                                            {guest.departure_details.departure.travelers[0].transport_number || "N/A"}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                            <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
-                                                                <Bus size={14} className="text-zinc-400" />
-                                                                <span className="text-xs uppercase tracking-tighter text-zinc-400 mr-auto">Transport:</span>
-                                                                {guest.departure_details?.transport || "Not specified"}
+                                                        ) : (
+                                                            /* Legacy Fallback on Mobile */
+                                                            <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 space-y-2">
+                                                                <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                                                                    <Calendar size={14} className="text-zinc-400" />
+                                                                    <span className="text-xs uppercase tracking-tighter text-zinc-400 mr-auto">Date:</span>
+                                                                    {guest.departure_details?.date || "No date set"}
+                                                                </div>
+                                                                <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                                                                    <Bus size={14} className="text-zinc-400" />
+                                                                    <span className="text-xs uppercase tracking-tighter text-zinc-400 mr-auto">Transport:</span>
+                                                                    {guest.departure_details?.transport || "Not specified"}
+                                                                </div>
                                                             </div>
-                                                        </div>
+                                                        )}
 
                                                         {/* Companions for Departure on Mobile */}
                                                         {guest.attendees_data && guest.attendees_data.length > 0 && (
