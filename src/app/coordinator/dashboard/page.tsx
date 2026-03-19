@@ -879,14 +879,13 @@ export default function CoordinatorDashboard() {
                                                     <tr className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-400 text-[10px] font-black uppercase tracking-widest border-b border-zinc-100 dark:border-zinc-800">
                                                         <th className="px-10 py-5">Guest & Companions</th>
                                                         <th className="px-6 py-5 text-center">Arrival Details</th>
-                                                        <th className="px-6 py-5 text-center">Event</th>
                                                         <th className="px-6 py-5 text-center">Status</th>
                                                         <th className="px-10 py-5 text-center">Action</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
                                                     {flattenedGuests.length === 0 ? (
-                                                        <tr><td colSpan={5} className="p-32 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No guests found</td></tr>
+                                                        <tr><td colSpan={4} className="p-32 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No guests found</td></tr>
                                                     ) : (
                                                         flattenedGuests.map((person: any) => (
                                                             <tr key={person.uniqueKey} className="group hover:bg-blue-50/30 transition-colors align-top">
@@ -1000,12 +999,6 @@ export default function CoordinatorDashboard() {
                                                                             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">N/A</span>
                                                                         </div>
                                                                     )}
-                                                                </td>
-                                                                <td className="px-6 py-10 text-center">
-                                                                    <div className="text-sm font-bold text-zinc-600 dark:text-zinc-400 flex items-center justify-center gap-2">
-                                                                        <Calendar size={14} />
-                                                                        {person.events?.date ? format(new Date(person.events.date), "MMM d") : "-"}
-                                                                    </div>
                                                                 </td>
                                                                 <td className="px-6 py-10 text-center">
                                                                     <div className={cn(
