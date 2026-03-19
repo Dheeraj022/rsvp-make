@@ -175,6 +175,87 @@ export default function PublicEventPage() {
     const [expandedGuest, setExpandedGuest] = useState<number | null>(null);
     const [rsvpError, setRsvpError] = useState<string>("");
     const [transportError, setTransportError] = useState<string>("");
+    const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+
+    const DRAFT_KEY = `rsvp_draft_${slug}`;
+
+    // Load draft from localStorage on mount
+    useEffect(() => {
+        const savedDraft = localStorage.getItem(DRAFT_KEY);
+        if (savedDraft) {
+            try {
+                const draft = JSON.parse(savedDraft);
+                if (draft.step) setStep(draft.step);
+                if (draft.activeSection) setActiveSection(draft.activeSection);
+                if (draft.transportType) setTransportType(draft.transportType);
+                if (draft.isArrivalApplicable !== undefined) setIsArrivalApplicable(draft.isArrivalApplicable);
+                if (draft.isDepartureApplicable !== undefined) setIsDepartureApplicable(draft.isDepartureApplicable);
+                if (draft.rsvpStep !== undefined) setRsvpStep(draft.rsvpStep);
+                if (draft.transportStep !== undefined) setTransportStep(draft.transportStep);
+                if (draft.selectedGuest) setSelectedGuest(draft.selectedGuest);
+                if (draft.email) setEmail(draft.email);
+                if (draft.phone) setPhone(draft.phone);
+                if (draft.status) setStatus(draft.status);
+                if (draft.attendingCount !== undefined) setAttendingCount(draft.attendingCount);
+                if (draft.attendees) setAttendees(draft.attendees);
+                if (draft.message) setMessage(draft.message);
+                if (draft.dietary) setDietary(draft.dietary);
+                if (draft.arrivalDate) setArrivalDate(draft.arrivalDate);
+                if (draft.arrivalTime) setArrivalTime(draft.arrivalTime);
+                if (draft.arrivalTravelers) setArrivalTravelers(draft.arrivalTravelers);
+                if (draft.departureDate) setDepartureDate(draft.departureDate);
+                if (draft.departureTime) setDepartureTime(draft.departureTime);
+                if (draft.departureTravelers) setDepartureTravelers(draft.departureTravelers);
+                if (draft.transportMessage) setTransportMessage(draft.transportMessage);
+            } catch (err) {
+                console.error("Error loading draft:", err);
+            }
+        }
+        setIsDraftLoaded(true);
+    }, [slug]);
+
+    // Save draft to localStorage whenever relevant state changes
+    useEffect(() => {
+        if (!isDraftLoaded || step === "success") return;
+
+        const draft = {
+            step,
+            activeSection,
+            transportType,
+            isArrivalApplicable,
+            isDepartureApplicable,
+            rsvpStep,
+            transportStep,
+            selectedGuest,
+            email,
+            phone,
+            status,
+            attendingCount,
+            attendees,
+            message,
+            dietary,
+            arrivalDate,
+            arrivalTime,
+            arrivalTravelers,
+            departureDate,
+            departureTime,
+            departureTravelers,
+            transportMessage
+        };
+
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    }, [
+        step, activeSection, transportType, isArrivalApplicable, isDepartureApplicable,
+        rsvpStep, transportStep, selectedGuest, email, phone, status,
+        attendingCount, attendees, message, dietary, arrivalDate, arrivalTime,
+        arrivalTravelers, departureDate, departureTime, departureTravelers, transportMessage,
+        isDraftLoaded
+    ]);
+
+    const clearDraft = () => {
+        localStorage.removeItem(DRAFT_KEY);
+    };
+
 
     useEffect(() => {
         fetchEvent();
@@ -669,6 +750,7 @@ export default function PublicEventPage() {
                 success("RSVP submitted successfully! Please provide your travel details.");
             } else {
                 // Show success screen if declined
+                clearDraft();
                 setStep("success");
             }
         } catch (error: any) {
@@ -762,6 +844,7 @@ export default function PublicEventPage() {
             } else {
                 success("Transport details submitted successfully!");
                 setIsEditingTransport(false);
+                clearDraft();
                 setStep("success");
             }
         } catch (err: any) {
