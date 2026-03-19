@@ -744,7 +744,7 @@ export default function CoordinatorDashboard() {
                                     <>
                                         <div className="bg-white dark:bg-zinc-900 p-8 sm:p-10 flex flex-col gap-1">
                                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Total Expecting</span>
-                                            <span className="text-4xl font-black text-blue-600">{guests.reduce((acc, g) => acc + (g.attending_count || 1), 0)}</span>
+                                            <span className="text-4xl font-black text-blue-600">{guests.reduce((acc, g) => acc + 1 + (g.attendees_data?.length || 0), 0)}</span>
                                         </div>
                                         <div className="bg-white dark:bg-zinc-900 p-8 sm:p-10 flex flex-col gap-1">
                                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Arrived Now</span>
@@ -761,9 +761,7 @@ export default function CoordinatorDashboard() {
                                     <>
                                         <div className="bg-white dark:bg-zinc-900 p-8 sm:p-10 flex flex-col gap-1">
                                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">To Depart</span>
-                                            <span className="text-4xl font-black text-blue-600">
-                                                {guests.reduce((acc, g) => acc + (g.attending_count || 1), 0)}
-                                            </span>
+                                            <span className="text-4xl font-black text-blue-600">{guests.reduce((acc, g) => acc + 1 + (g.attendees_data?.length || 0), 0)}</span>
                                         </div>
                                         <div className="bg-white dark:bg-zinc-900 p-8 sm:p-10 flex flex-col gap-1">
                                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Already Departed</span>
