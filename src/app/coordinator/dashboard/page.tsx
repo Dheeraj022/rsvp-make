@@ -70,6 +70,11 @@ export default function CoordinatorDashboard() {
     const [coordinator, setCoordinator] = useState<any>(null);
     const [activeTab, setActiveTab] = useState<"arrived" | "departure">("arrived");
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    // New State for Individual Companion Drivers
+    const [assignSameDriver, setAssignSameDriver] = useState(true);
+    const [companionDrivers, setCompanionDrivers] = useState<Record<number, { name: string; phone: string }>>({});
+
     const router = useRouter();
 
     // Toast Hook
@@ -95,15 +100,32 @@ export default function CoordinatorDashboard() {
             };
 
             // 2. Prepare Companion Entries
-            const companionEntries = (guest.attendees_data || []).map((m, i) => ({
-                ...guest, // Inherit all travel/event/driver info
-                ...m,     // Override with member specific data (name, phone, checked_in, departed)
-                isPrimary: false,
-                companionIndex: i,
-                displayName: guest.name, // Per user request: "displayed name should be that of the main guest"
-                actualName: m.name,      // Keep original name for search and reference
-                uniqueKey: `companion-${guest.id}-${i}`
-            }));
+            const companionEntries = (guest.attendees_data || []).map((m: any, i) => {
+                const companionDetails = { ...(guest.departure_details || {}) };
+                if (m.arrival_driver) {
+                    companionDetails.arrival = {
+                        ...(companionDetails.arrival || {}),
+                        driver: m.arrival_driver
+                    };
+                }
+                if (m.departure_driver) {
+                    companionDetails.departure = {
+                        ...(companionDetails.departure || {}),
+                        driver: m.departure_driver
+                    };
+                }
+
+                return {
+                    ...guest, // Inherit all travel/event/driver info
+                    ...m,     // Override with member specific data (name, phone, checked_in, departed)
+                    departure_details: companionDetails, // Use specific driver details if they exist
+                    isPrimary: false,
+                    companionIndex: i,
+                    displayName: guest.name, // Per user request: "displayed name should be that of the main guest"
+                    actualName: m.name,      // Keep original name for search and reference
+                    uniqueKey: `companion-${guest.id}-${i}`
+                };
+            });
 
             // 3. Filter based on query
             const matchesPrimary = 
@@ -136,6 +158,35 @@ export default function CoordinatorDashboard() {
 
         return result;
     }, [searchQuery, guests]);
+
+    // Unique drivers for the dropdown selection
+    const availableDrivers = useMemo(() => {
+        const driversMap = new Map<string, { name: string; phone: string }>();
+        guests.forEach(g => {
+            const arrDriver = g.departure_details?.arrival?.driver;
+            const depDriver = g.departure_details?.departure?.driver;
+            
+            if (arrDriver?.name) {
+                driversMap.set(`${arrDriver.name}-${arrDriver.phone}`, { name: arrDriver.name, phone: arrDriver.phone });
+            }
+            if (depDriver?.name) {
+                driversMap.set(`${depDriver.name}-${depDriver.phone}`, { name: depDriver.name, phone: depDriver.phone });
+            }
+
+            // Also check companions for saved drivers
+            (g.attendees_data || []).forEach((companion: any) => {
+                const companionArrDriver = companion.arrival_driver;
+                const companionDepDriver = companion.departure_driver;
+                if (companionArrDriver?.name) {
+                    driversMap.set(`${companionArrDriver.name}-${companionArrDriver.phone}`, { name: companionArrDriver.name, phone: companionArrDriver.phone });
+                }
+                if (companionDepDriver?.name) {
+                    driversMap.set(`${companionDepDriver.name}-${companionDepDriver.phone}`, { name: companionDepDriver.name, phone: companionDepDriver.phone });
+                }
+            });
+        });
+        return Array.from(driversMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    }, [guests]);
 
     const handleExportExcel = async () => {
         const workbook = new ExcelJS.Workbook();
@@ -200,6 +251,9 @@ export default function CoordinatorDashboard() {
             // Add Companions
             if (guest.attendees_data && guest.attendees_data.length > 0) {
                 guest.attendees_data.forEach((member: any) => {
+                    const cArrDriver = member.arrival_driver || arrival?.driver;
+                    const cDepDriver = member.departure_driver || departure?.driver;
+
                     worksheet.addRow({
                         type: "Companion",
                         name: member.name,
@@ -215,10 +269,10 @@ export default function CoordinatorDashboard() {
                         depTime: departure?.time || "-",
                         depMode: depTraveler?.mode_of_travel || "-",
                         depTransport: depTraveler?.transport_number || "-",
-                        arrDriverName: arrival?.driver?.name || "-",
-                        arrDriverPhone: arrival?.driver?.phone || "-",
-                        depDriverName: departure?.driver?.name || "-",
-                        depDriverPhone: departure?.driver?.phone || "-"
+                        arrDriverName: cArrDriver?.name || "-",
+                        arrDriverPhone: cArrDriver?.phone || "-",
+                        depDriverName: cDepDriver?.name || "-",
+                        depDriverPhone: cDepDriver?.phone || "-"
                     });
                 });
             }
@@ -314,6 +368,7 @@ export default function CoordinatorDashboard() {
         try {
             const currentDetails = selectedGuestForDriver.departure_details || {};
             const updatedDetails = { ...currentDetails };
+            const updatedAttendees = [...(selectedGuestForDriver.attendees_data || [])];
             
             if (driverType === 'arrival') {
                 updatedDetails.arrival = {
@@ -327,17 +382,39 @@ export default function CoordinatorDashboard() {
                 };
             }
 
+            // Handle individual companion drivers
+            if (!assignSameDriver) {
+                updatedAttendees.forEach((m, idx) => {
+                    if (companionDrivers[idx]) {
+                        if (driverType === 'arrival') {
+                            m.arrival_driver = companionDrivers[idx];
+                        } else {
+                            m.departure_driver = companionDrivers[idx];
+                        }
+                    }
+                });
+            } else {
+                // If "Assign same" is selected, clear individual driver overrides for this type
+                updatedAttendees.forEach(m => {
+                    if (driverType === 'arrival') {
+                        delete m.arrival_driver;
+                    } else {
+                        delete m.departure_driver;
+                    }
+                });
+            }
+
             console.log(`Updating ${driverType} driver details with:`, updatedDetails);
 
             const { error } = await supabase
                 .from("guests")
-                .update({ departure_details: updatedDetails })
+                .update({ 
+                    departure_details: updatedDetails,
+                    attendees_data: updatedAttendees
+                })
                 .eq("id", selectedGuestForDriver.id);
 
-            if (error) {
-                console.error("Supabase update error:", error);
-                throw error;
-            }
+            if (error) throw error;
 
             toastSuccess("Driver assigned successfully");
             setIsDriverModalOpen(false);
@@ -353,11 +430,32 @@ export default function CoordinatorDashboard() {
     const openDriverModal = (guest: Guest, type: 'arrival' | 'departure') => {
         setSelectedGuestForDriver(guest);
         setDriverType(type);
+        
         const driver = type === 'arrival' 
             ? guest.departure_details?.arrival?.driver 
             : guest.departure_details?.departure?.driver;
+            
         setDriverName(driver?.name || "");
         setDriverPhone(driver?.phone || "");
+
+        // Determine if same driver is assigned (default to true)
+        let sameDriver = true;
+        const companions = guest.attendees_data || [];
+        const companionDriversMap: Record<number, { name: string; phone: string }> = {};
+
+        companions.forEach((m, idx) => {
+            const cDriver = type === 'arrival' ? m.arrival_driver : m.departure_driver;
+            if (cDriver) {
+                sameDriver = false;
+                companionDriversMap[idx] = { name: cDriver.name, phone: cDriver.phone };
+            } else {
+                // If not assigned, initialize with main driver info (shadowed)
+                companionDriversMap[idx] = { name: driver?.name || "", phone: driver?.phone || "" };
+            }
+        });
+
+        setAssignSameDriver(sameDriver);
+        setCompanionDrivers(companionDriversMap);
         setIsDriverModalOpen(true);
     };
 
@@ -718,14 +816,15 @@ export default function CoordinatorDashboard() {
                                                             <tr key={person.uniqueKey} className="group hover:bg-blue-50/30 transition-colors align-top">
                                                                 <td className="px-10 py-8">
                                                                     <div className="flex flex-col gap-1">
-                                                                        <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{person.displayName}</h4>
+                                                                        <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+                                                                            {person.isPrimary ? person.displayName : person.actualName}
+                                                                        </h4>
                                                                         <div className="flex flex-wrap items-center gap-2 mt-1">
                                                                             {person.isPrimary ? (
                                                                                 <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded">PRIMARY</span>
                                                                             ) : (
-                                                                                <span className="text-[10px] font-bold text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded flex items-center gap-1">
-                                                                                    <User size={10} />
-                                                                                    {person.actualName}
+                                                                                <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 flex items-center gap-1">
+                                                                                    Primary: {person.displayName}
                                                                                 </span>
                                                                             )}
                                                                             {person.phone && (
@@ -861,7 +960,9 @@ export default function CoordinatorDashboard() {
                                                     <div key={person.uniqueKey} className="p-6 space-y-6">
                                                         <div className="flex flex-col gap-1">
                                                             <div className="flex items-start justify-between gap-4">
-                                                                <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{person.displayName}</h4>
+                                                                <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+                                                                    {person.isPrimary ? person.displayName : person.actualName}
+                                                                </h4>
                                                                 <div className={cn(
                                                                     "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shrink-0",
                                                                     (person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"
@@ -874,9 +975,8 @@ export default function CoordinatorDashboard() {
                                                                 {person.isPrimary ? (
                                                                     <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded">PRIMARY</span>
                                                                 ) : (
-                                                                    <span className="text-[10px] font-bold text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded flex items-center gap-1">
-                                                                        <User size={10} />
-                                                                        {person.actualName}
+                                                                    <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 flex items-center gap-1">
+                                                                        Primary: {person.displayName}
                                                                     </span>
                                                                 )}
                                                                 {person.phone && (
@@ -1000,15 +1100,14 @@ export default function CoordinatorDashboard() {
                                                                 <td className="px-10 py-8">
                                                                     <div className="flex flex-col gap-1">
                                                                         <span className="text-base font-bold text-zinc-900 dark:text-zinc-50 group-hover:text-indigo-600 transition-colors">
-                                                                            {person.displayName}
+                                                                            {person.isPrimary ? person.displayName : person.actualName}
                                                                         </span>
                                                                         <div className="flex items-center gap-2">
                                                                             {person.isPrimary ? (
                                                                                 <span className="text-[9px] font-black uppercase text-indigo-400 bg-indigo-50/50 px-2 py-0.5 rounded">PRIMARY</span>
                                                                             ) : (
-                                                                                <span className="text-[9px] font-bold text-zinc-400 bg-zinc-50 px-2 py-0.5 rounded flex items-center gap-1">
-                                                                                    <User size={8} />
-                                                                                    {person.actualName}
+                                                                                <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 flex items-center gap-1">
+                                                                                    Primary: {person.displayName}
                                                                                 </span>
                                                                             )}
                                                                             {person.phone && (
@@ -1132,7 +1231,9 @@ export default function CoordinatorDashboard() {
                                                     <div key={person.uniqueKey} className="p-6 space-y-6">
                                                         <div className="flex flex-col gap-1">
                                                             <div className="flex items-start justify-between gap-4">
-                                                                <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{person.displayName}</h4>
+                                                                <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+                                                                    {person.isPrimary ? person.displayName : person.actualName}
+                                                                </h4>
                                                                 <div className={cn(
                                                                     "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shrink-0",
                                                                     (person.isPrimary ? person.departure_status === "departed" : person.departed) ? "bg-indigo-50 text-indigo-600" : "bg-zinc-50 text-zinc-400"
@@ -1145,9 +1246,8 @@ export default function CoordinatorDashboard() {
                                                                 {person.isPrimary ? (
                                                                     <span className="text-[10px] font-black uppercase text-indigo-600 bg-indigo-50/50 px-2 py-0.5 rounded">PRIMARY</span>
                                                                 ) : (
-                                                                    <span className="text-[10px] font-bold text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded flex items-center gap-1">
-                                                                        <User size={10} />
-                                                                        {person.actualName}
+                                                                    <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 flex items-center gap-1">
+                                                                        Primary: {person.displayName}
                                                                     </span>
                                                                 )}
                                                             </div>
@@ -1251,30 +1351,138 @@ export default function CoordinatorDashboard() {
                                 </button>
                             </div>
 
-                            <form onSubmit={handleUpdateDriver} className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Driver Name</label>
-                                    <Input
-                                        placeholder="Enter driver's name"
-                                        value={driverName}
-                                        onChange={(e) => setDriverName(e.target.value)}
-                                        className="h-14 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus-visible:ring-indigo-500/20 font-bold"
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Phone Number</label>
-                                    <div className="relative">
-                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
-                                        <Input
-                                            placeholder="Enter phone number"
-                                            value={driverPhone}
-                                            onChange={(e) => setDriverPhone(e.target.value)}
-                                            className="h-14 pl-12 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus-visible:ring-indigo-500/20 font-bold"
-                                            required
-                                        />
+                             <form onSubmit={handleUpdateDriver} className="space-y-6">
+                                {/* Assignment Toggle */}
+                                {selectedGuestForDriver.attendees_data && selectedGuestForDriver.attendees_data.length > 0 && (
+                                    <div className="p-4 bg-zinc-50 dark:bg-black/20 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-3">
+                                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Assignment Mode</label>
+                                        <div className="flex p-1 bg-zinc-100 dark:bg-zinc-800 rounded-xl">
+                                            <button
+                                                type="button"
+                                                onClick={() => setAssignSameDriver(true)}
+                                                className={cn(
+                                                    "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                                                    assignSameDriver ? "bg-white dark:bg-zinc-700 text-blue-600 shadow-sm" : "text-zinc-400 hover:text-zinc-600"
+                                                )}
+                                            >
+                                                Same for All
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setAssignSameDriver(false)}
+                                                className={cn(
+                                                    "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                                                    !assignSameDriver ? "bg-white dark:bg-zinc-700 text-blue-600 shadow-sm" : "text-zinc-400 hover:text-zinc-600"
+                                                )}
+                                            >
+                                                Separate Drivers
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Main Driver Section */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between px-1">
+                                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                                            {assignSameDriver ? "Driver Details" : `Driver for ${selectedGuestForDriver.name} (Primary)`}
+                                        </label>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="relative">
+                                            <Input
+                                                list="available-drivers"
+                                                placeholder="Enter driver's name"
+                                                value={driverName}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setDriverName(val);
+                                                    const found = availableDrivers.find(d => d.name === val);
+                                                    if (found) setDriverPhone(found.phone);
+                                                }}
+                                                className="h-14 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus-visible:ring-indigo-500/20 font-bold"
+                                                required
+                                            />
+                                            <datalist id="available-drivers">
+                                                {availableDrivers.map(d => (
+                                                    <option key={`${d.name}-${d.phone}`} value={d.name}>{d.phone}</option>
+                                                ))}
+                                            </datalist>
+                                        </div>
+                                        <div className="relative">
+                                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+                                            <Input
+                                                placeholder="Enter phone number"
+                                                value={driverPhone}
+                                                onChange={(e) => setDriverPhone(e.target.value)}
+                                                className="h-14 pl-12 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus-visible:ring-indigo-500/20 font-bold"
+                                                required
+                                            />
+                                        </div>
                                     </div>
                                 </div>
+
+                                {/* Individual Companion Inputs */}
+                                {!assignSameDriver && selectedGuestForDriver.attendees_data?.map((m: any, idx: number) => (
+                                    <div key={idx} className="space-y-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                                        <div className="flex items-center justify-between px-1">
+                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest italic">Driver for {m.name}</label>
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    setCompanionDrivers(prev => ({
+                                                        ...prev,
+                                                        [idx]: { name: driverName, phone: driverPhone }
+                                                    }));
+                                                }}
+                                                className="text-[9px] font-bold text-blue-500 hover:text-blue-600 transition-colors uppercase tracking-tighter"
+                                            >
+                                                Use Main Driver
+                                            </button>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <Input
+                                                list={`available-drivers-${idx}`}
+                                                placeholder={`Driver for ${m.name}`}
+                                                value={companionDrivers[idx]?.name || ""}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    const found = availableDrivers.find(d => d.name === val);
+                                                    setCompanionDrivers(prev => ({
+                                                        ...prev,
+                                                        [idx]: { 
+                                                            name: val, 
+                                                            phone: found ? found.phone : (prev[idx]?.phone || "") 
+                                                        }
+                                                    }));
+                                                }}
+                                                className="h-12 rounded-xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus-visible:ring-indigo-500/20 font-bold"
+                                                required={!assignSameDriver}
+                                            />
+                                            <datalist id={`available-drivers-${idx}`}>
+                                                {availableDrivers.map(d => (
+                                                    <option key={`${d.name}-${d.phone}-comp-${idx}`} value={d.name}>{d.phone}</option>
+                                                ))}
+                                            </datalist>
+                                            <div className="relative">
+                                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
+                                                <Input
+                                                    placeholder="Phone number"
+                                                    value={companionDrivers[idx]?.phone || ""}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setCompanionDrivers(prev => ({
+                                                            ...prev,
+                                                            [idx]: { ...prev[idx], phone: val }
+                                                        }));
+                                                    }}
+                                                    className="h-12 pl-10 rounded-xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus-visible:ring-indigo-500/20 font-bold text-sm"
+                                                    required={!assignSameDriver}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
 
                                 <div className="flex gap-4 pt-4">
                                     <Button
@@ -1293,7 +1501,7 @@ export default function CoordinatorDashboard() {
                                         {isUpdatingDriver ? (
                                             <Loader2 size={20} className="animate-spin" />
                                         ) : (
-                                            "Save Driver"
+                                            "Save Assignments"
                                         )}
                                     </Button>
                                 </div>
