@@ -77,6 +77,7 @@ export default function CoordinatorDashboard() {
     const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
     const [selectedGuestForNote, setSelectedGuestForNote] = useState<any | null>(null);
     const [noteContent, setNoteContent] = useState("");
+    const [noteType, setNoteType] = useState<'arrival' | 'departure'>('arrival');
     const [isUpdatingNote, setIsUpdatingNote] = useState(false);
 
     // New State for Individual Companion Drivers
@@ -104,7 +105,8 @@ export default function CoordinatorDashboard() {
                 isPrimary: true,
                 displayName: guest.name,
                 actualName: guest.name,
-                notes: guest.departure_details?.notes || "",
+                arrival_notes: guest.departure_details?.arrival?.notes || "",
+                departure_notes: guest.departure_details?.departure?.notes || "",
                 uniqueKey: `primary-${guest.id}`
             };
 
@@ -132,7 +134,8 @@ export default function CoordinatorDashboard() {
                     companionIndex: i,
                     displayName: guest.name, // Per user request: "displayed name should be that of the main guest"
                     actualName: m.name,      // Keep original name for search and reference
-                    notes: m.notes || "",    // Extract notes from attendee object
+                    arrival_notes: m.arrival_notes || "",    // Extract arrival notes from attendee object
+                    departure_notes: m.departure_notes || "", // Extract departure notes from attendee object
                     uniqueKey: `companion-${guest.id}-${i}`
                 };
             });
@@ -437,9 +440,10 @@ export default function CoordinatorDashboard() {
         }
     };
 
-    const openNoteModal = (person: any) => {
+    const openNoteModal = (person: any, type: 'arrival' | 'departure') => {
         setSelectedGuestForNote(person);
-        setNoteContent(person.notes || "");
+        setNoteType(type);
+        setNoteContent(type === 'arrival' ? person.arrival_notes || "" : person.departure_notes || "");
         setIsNoteModalOpen(true);
     };
 
@@ -464,16 +468,21 @@ export default function CoordinatorDashboard() {
             let updatePayload: any = {};
 
             if (isPrimary) {
-                const updatedDetails = { 
-                    ...(currentGuest.departure_details || {}),
-                    notes: noteContent 
-                };
+                const updatedDetails = { ...(currentGuest.departure_details || {}) };
+                if (!updatedDetails[noteType]) {
+                    updatedDetails[noteType] = {};
+                }
+                updatedDetails[noteType].notes = noteContent;
                 updatePayload = { departure_details: updatedDetails };
             } else {
                 const updatedAttendees = [...(currentGuest.attendees_data || [])];
                 const index = selectedGuestForNote.companionIndex;
                 if (updatedAttendees[index]) {
-                    updatedAttendees[index].notes = noteContent;
+                    if (noteType === 'arrival') {
+                        updatedAttendees[index].arrival_notes = noteContent;
+                    } else {
+                        updatedAttendees[index].departure_notes = noteContent;
+                    }
                 }
                 updatePayload = { attendees_data: updatedAttendees };
             }
@@ -905,14 +914,14 @@ export default function CoordinatorDashboard() {
                                                                             )}
                                                                             {person.isPrimary && person.seat_number && <span className="text-[10px] font-black text-zinc-400 uppercase">Seat: {person.seat_number}</span>}
                                                                             <button 
-                                                                                onClick={() => openNoteModal(person)}
+                                                                                onClick={() => openNoteModal(person, 'arrival')}
                                                                                 className={cn(
                                                                                     "text-[10px] font-bold flex items-center gap-1 transition-colors px-2 py-0.5 rounded cursor-pointer ml-auto",
-                                                                                    person.notes ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                                                                                    person.arrival_notes ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
                                                                                 )}
                                                                             >
                                                                                 <FileText size={10} />
-                                                                                {person.notes ? "View/Edit Note" : "Add Note"}
+                                                                                {person.arrival_notes ? "View/Edit Note" : "Add Note"}
                                                                             </button>
                                                                         </div>
                                                                     </div>
@@ -1063,14 +1072,14 @@ export default function CoordinatorDashboard() {
                                                                     </a>
                                                                 )}
                                                                 <button 
-                                                                    onClick={() => openNoteModal(person)}
+                                                                    onClick={() => openNoteModal(person, 'arrival')}
                                                                     className={cn(
                                                                         "text-[10px] font-bold flex items-center gap-1 transition-colors px-2 py-0.5 rounded cursor-pointer",
-                                                                        person.notes ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                                                                        person.arrival_notes ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
                                                                     )}
                                                                 >
                                                                     <FileText size={10} />
-                                                                    {person.notes ? "View/Edit Note" : "Add Note"}
+                                                                    {person.arrival_notes ? "View/Edit Note" : "Add Note"}
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -1204,14 +1213,14 @@ export default function CoordinatorDashboard() {
                                                                                 </a>
                                                                             )}
                                                                             <button 
-                                                                                onClick={() => openNoteModal(person)}
+                                                                                onClick={() => openNoteModal(person, 'departure')}
                                                                                 className={cn(
                                                                                     "text-[10px] font-bold flex items-center gap-1 transition-colors px-2 py-0.5 rounded cursor-pointer ml-auto",
-                                                                                    person.notes ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                                                                                    person.departure_notes ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
                                                                                 )}
                                                                             >
                                                                                 <FileText size={10} />
-                                                                                {person.notes ? "View/Edit Note" : "Add Note"}
+                                                                                {person.departure_notes ? "View/Edit Note" : "Add Note"}
                                                                             </button>
                                                                         </div>
                                                                     </div>
@@ -1348,14 +1357,14 @@ export default function CoordinatorDashboard() {
                                                                     </span>
                                                                 )}
                                                                 <button 
-                                                                    onClick={() => openNoteModal(person)}
+                                                                    onClick={() => openNoteModal(person, 'departure')}
                                                                     className={cn(
                                                                         "text-[10px] font-bold flex items-center gap-1 transition-colors px-2 py-0.5 rounded cursor-pointer",
-                                                                        person.notes ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                                                                        person.departure_notes ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
                                                                     )}
                                                                 >
                                                                     <FileText size={10} />
-                                                                    {person.notes ? "View/Edit Note" : "Add Note"}
+                                                                    {person.departure_notes ? "View/Edit Note" : "Add Note"}
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -1629,7 +1638,7 @@ export default function CoordinatorDashboard() {
                             <div className="flex items-center justify-between mb-8">
                                 <div>
                                     <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight flex items-center gap-3">
-                                        Guest Notes
+                                        {noteType === 'arrival' ? 'Arrival Notes' : 'Departure Notes'}
                                     </h3>
                                     <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">
                                         For {selectedGuestForNote.actualName}
