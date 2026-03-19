@@ -854,6 +854,29 @@ export default function CoordinatorDashboard() {
                                     </>
                                 )}
                             </div>
+                            
+                            {/* Event Information Section */}
+                            <div className="px-8 py-6 bg-white dark:bg-zinc-900 flex flex-wrap items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-800">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none mb-1.5">Scheduled Event</span>
+                                    <h2 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
+                                        {guests[0]?.events?.name || "No Event Assigned"}
+                                    </h2>
+                                </div>
+                                {guests[0]?.events?.date && (
+                                    <div className="flex items-center gap-4 bg-blue-50/50 dark:bg-blue-900/10 px-5 py-3 rounded-2xl border border-blue-100/50 dark:border-blue-900/20">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                                            <Calendar size={20} />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Event Date</span>
+                                            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                                                {format(new Date(guests[0].events.date), "MMMM d, yyyy")}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Dashboard Search */}
                             <div className="p-6 sm:p-8 bg-zinc-50/50 dark:bg-black/10 border-b border-zinc-100 dark:border-zinc-800">
