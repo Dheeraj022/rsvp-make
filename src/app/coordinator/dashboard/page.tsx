@@ -22,7 +22,8 @@ import {
     MapPin,
     Train,
     Clock,
-    Navigation
+    Navigation,
+    FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ type Guest = {
     attending_count: number;
     attendees_data?: any[];
     departure_details?: any;
+    notes?: string;
     events?: {
         name: string;
         date: string;
@@ -70,6 +72,12 @@ export default function CoordinatorDashboard() {
     const [coordinator, setCoordinator] = useState<any>(null);
     const [activeTab, setActiveTab] = useState<"arrived" | "departure">("arrived");
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    // Note Modal State
+    const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+    const [selectedGuestForNote, setSelectedGuestForNote] = useState<any | null>(null);
+    const [noteContent, setNoteContent] = useState("");
+    const [isUpdatingNote, setIsUpdatingNote] = useState(false);
 
     // New State for Individual Companion Drivers
     const [assignSameDriver, setAssignSameDriver] = useState(true);
@@ -96,6 +104,7 @@ export default function CoordinatorDashboard() {
                 isPrimary: true,
                 displayName: guest.name,
                 actualName: guest.name,
+                notes: guest.departure_details?.notes || "",
                 uniqueKey: `primary-${guest.id}`
             };
 
@@ -123,6 +132,7 @@ export default function CoordinatorDashboard() {
                     companionIndex: i,
                     displayName: guest.name, // Per user request: "displayed name should be that of the main guest"
                     actualName: m.name,      // Keep original name for search and reference
+                    notes: m.notes || "",    // Extract notes from attendee object
                     uniqueKey: `companion-${guest.id}-${i}`
                 };
             });
@@ -424,6 +434,65 @@ export default function CoordinatorDashboard() {
             toastError(`Failed to assign driver: ${error.message || "Unknown error"}`);
         } finally {
             setIsUpdatingDriver(false);
+        }
+    };
+
+    const openNoteModal = (person: any) => {
+        setSelectedGuestForNote(person);
+        setNoteContent(person.notes || "");
+        setIsNoteModalOpen(true);
+    };
+
+    const handleUpdateNote = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedGuestForNote) return;
+
+        setIsUpdatingNote(true);
+        try {
+            const guestId = selectedGuestForNote.id;
+            const isPrimary = selectedGuestForNote.isPrimary;
+
+            // Fetch current guest data to ensure we have latest attendees_data/departure_details
+            const { data: currentGuest, error: fetchError } = await supabase
+                .from("guests")
+                .select("*")
+                .eq("id", guestId)
+                .single();
+
+            if (fetchError) throw fetchError;
+
+            let updatePayload: any = {};
+
+            if (isPrimary) {
+                const updatedDetails = { 
+                    ...(currentGuest.departure_details || {}),
+                    notes: noteContent 
+                };
+                updatePayload = { departure_details: updatedDetails };
+            } else {
+                const updatedAttendees = [...(currentGuest.attendees_data || [])];
+                const index = selectedGuestForNote.companionIndex;
+                if (updatedAttendees[index]) {
+                    updatedAttendees[index].notes = noteContent;
+                }
+                updatePayload = { attendees_data: updatedAttendees };
+            }
+
+            const { error } = await supabase
+                .from("guests")
+                .update(updatePayload)
+                .eq("id", guestId);
+
+            if (error) throw error;
+
+            toastSuccess("Note saved successfully");
+            setIsNoteModalOpen(false);
+            fetchCoordinatorAndGuests();
+        } catch (error: any) {
+            console.error("Error saving note:", error);
+            toastError("Failed to save note");
+        } finally {
+            setIsUpdatingNote(false);
         }
     };
 
@@ -835,6 +904,16 @@ export default function CoordinatorDashboard() {
                                                                                 </a>
                                                                             )}
                                                                             {person.isPrimary && person.seat_number && <span className="text-[10px] font-black text-zinc-400 uppercase">Seat: {person.seat_number}</span>}
+                                                                            <button 
+                                                                                onClick={() => openNoteModal(person)}
+                                                                                className={cn(
+                                                                                    "text-[10px] font-bold flex items-center gap-1 transition-colors px-2 py-0.5 rounded cursor-pointer ml-auto",
+                                                                                    person.notes ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                                                                                )}
+                                                                            >
+                                                                                <FileText size={10} />
+                                                                                {person.notes ? "View/Edit Note" : "Add Note"}
+                                                                            </button>
                                                                         </div>
                                                                     </div>
                                                                 </td>
@@ -983,6 +1062,16 @@ export default function CoordinatorDashboard() {
                                                                         {person.phone}
                                                                     </a>
                                                                 )}
+                                                                <button 
+                                                                    onClick={() => openNoteModal(person)}
+                                                                    className={cn(
+                                                                        "text-[10px] font-bold flex items-center gap-1 transition-colors px-2 py-0.5 rounded cursor-pointer",
+                                                                        person.notes ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                                                                    )}
+                                                                >
+                                                                    <FileText size={10} />
+                                                                    {person.notes ? "View/Edit Note" : "Add Note"}
+                                                                </button>
                                                             </div>
                                                         </div>
 
@@ -1114,6 +1203,16 @@ export default function CoordinatorDashboard() {
                                                                                     {person.phone}
                                                                                 </a>
                                                                             )}
+                                                                            <button 
+                                                                                onClick={() => openNoteModal(person)}
+                                                                                className={cn(
+                                                                                    "text-[10px] font-bold flex items-center gap-1 transition-colors px-2 py-0.5 rounded cursor-pointer ml-auto",
+                                                                                    person.notes ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                                                                                )}
+                                                                            >
+                                                                                <FileText size={10} />
+                                                                                {person.notes ? "View/Edit Note" : "Add Note"}
+                                                                            </button>
                                                                         </div>
                                                                     </div>
                                                                 </td>
@@ -1248,6 +1347,16 @@ export default function CoordinatorDashboard() {
                                                                         Primary: {person.displayName}
                                                                     </span>
                                                                 )}
+                                                                <button 
+                                                                    onClick={() => openNoteModal(person)}
+                                                                    className={cn(
+                                                                        "text-[10px] font-bold flex items-center gap-1 transition-colors px-2 py-0.5 rounded cursor-pointer",
+                                                                        person.notes ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                                                                    )}
+                                                                >
+                                                                    <FileText size={10} />
+                                                                    {person.notes ? "View/Edit Note" : "Add Note"}
+                                                                </button>
                                                             </div>
                                                         </div>
 
@@ -1500,6 +1609,69 @@ export default function CoordinatorDashboard() {
                                             <Loader2 size={20} className="animate-spin" />
                                         ) : (
                                             "Save Assignments"
+                                        )}
+                                    </Button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Note Modal */}
+            {isNoteModalOpen && selectedGuestForNote && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+                    <div 
+                        className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm transition-opacity"
+                        onClick={() => setIsNoteModalOpen(false)}
+                    />
+                    <div className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-[32px] shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in fade-in zoom-in duration-300">
+                        <div className="p-8 sm:p-10">
+                            <div className="flex items-center justify-between mb-8">
+                                <div>
+                                    <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight flex items-center gap-3">
+                                        Guest Notes
+                                    </h3>
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">
+                                        For {selectedGuestForNote.actualName}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setIsNoteModalOpen(false)}
+                                    className="p-3 rounded-2xl hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-900 transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleUpdateNote} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Note Content</label>
+                                    <textarea
+                                        placeholder="Enter notes here..."
+                                        value={noteContent}
+                                        onChange={(e) => setNoteContent(e.target.value)}
+                                        className="w-full h-40 p-4 rounded-2xl border-2 border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus:border-indigo-500/20 focus:ring-0 font-medium text-sm resize-none"
+                                    />
+                                </div>
+
+                                <div className="flex gap-4 pt-4">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setIsNoteModalOpen(false)}
+                                        className="flex-1 h-14 rounded-2xl font-black text-xs uppercase tracking-widest border-2"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={isUpdatingNote}
+                                        className="flex-1 h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/20"
+                                    >
+                                        {isUpdatingNote ? (
+                                            <Loader2 size={20} className="animate-spin" />
+                                        ) : (
+                                            "Save Note"
                                         )}
                                     </Button>
                                 </div>
