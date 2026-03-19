@@ -112,6 +112,9 @@ export default function CoordinatorDashboard() {
 
             // 2. Prepare Companion Entries
             const companionEntries = (guest.attendees_data || []).map((m: any, i) => {
+                // Skip if this is actually the primary guest (visual duplication fix)
+                if (m.name === guest.name) return null;
+
                 const companionDetails = { ...(guest.departure_details || {}) };
                 if (m.arrival_driver) {
                     companionDetails.arrival = {
@@ -138,7 +141,7 @@ export default function CoordinatorDashboard() {
                     departure_notes: m.departure_notes || "", // Extract departure notes from attendee object
                     uniqueKey: `companion-${guest.id}-${i}`
                 };
-            });
+            }).filter(Boolean);
 
             // 3. Filter based on query
             const matchesPrimary = 
@@ -822,14 +825,16 @@ export default function CoordinatorDashboard() {
                                     <>
                                         <div className="bg-white dark:bg-zinc-900 p-8 sm:p-10 flex flex-col gap-1">
                                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Total Expecting</span>
-                                            <span className="text-4xl font-black text-blue-600">{guests.reduce((acc, g) => acc + 1 + (g.attendees_data?.length || 0), 0)}</span>
+                                            <span className="text-4xl font-black text-blue-600">
+                                                {guests.reduce((acc, g) => acc + 1 + (g.attendees_data || []).filter((a: any) => a.name !== g.name).length, 0)}
+                                            </span>
                                         </div>
                                         <div className="bg-white dark:bg-zinc-900 p-8 sm:p-10 flex flex-col gap-1">
                                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Arrived Now</span>
                                             <span className="text-4xl font-black text-emerald-500">
                                                 {guests.reduce((acc, g) => {
                                                     const mainArrived = g.check_in_status === "arrived" ? 1 : 0;
-                                                    const subArrived = (g.attendees_data || []).filter((a: any) => a.checked_in).length;
+                                                    const subArrived = (g.attendees_data || []).filter((a: any) => a.checked_in && a.name !== g.name).length;
                                                     return acc + mainArrived + subArrived;
                                                 }, 0)}
                                             </span>
@@ -839,14 +844,16 @@ export default function CoordinatorDashboard() {
                                     <>
                                         <div className="bg-white dark:bg-zinc-900 p-8 sm:p-10 flex flex-col gap-1">
                                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">To Depart</span>
-                                            <span className="text-4xl font-black text-blue-600">{guests.reduce((acc, g) => acc + 1 + (g.attendees_data?.length || 0), 0)}</span>
+                                            <span className="text-4xl font-black text-blue-600">
+                                                {guests.reduce((acc, g) => acc + 1 + (g.attendees_data || []).filter((a: any) => a.name !== g.name).length, 0)}
+                                            </span>
                                         </div>
                                         <div className="bg-white dark:bg-zinc-900 p-8 sm:p-10 flex flex-col gap-1">
                                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Already Departed</span>
                                             <span className="text-4xl font-black text-indigo-500">
                                                 {guests.reduce((acc, g) => {
                                                     const mainDeparted = g.departure_status === "departed" ? 1 : 0;
-                                                    const subDeparted = (g.attendees_data || []).filter((a: any) => a.departed).length;
+                                                    const subDeparted = (g.attendees_data || []).filter((a: any) => a.departed && a.name !== g.name).length;
                                                     return acc + mainDeparted + subDeparted;
                                                 }, 0)}
                                             </span>
