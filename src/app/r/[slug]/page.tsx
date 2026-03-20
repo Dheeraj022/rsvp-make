@@ -356,7 +356,7 @@ export default function PublicEventPage() {
                                 'drop_location', 'number_of_bags', 'number_of_vehicles',
                                 'contact_number', 'number_of_pax'
                             ];
-                            
+
                             let needsUpdate = false;
                             for (const field of fieldsToSync as (keyof typeof mainGuestData)[]) {
                                 if (newTravelers[idx][field] !== mainGuestData[field]) {
@@ -969,12 +969,14 @@ export default function PublicEventPage() {
                             >
                                 {/* Progress Bar */}
                                 <div className="absolute top-0 left-0 w-full h-1 bg-zinc-100 dark:bg-zinc-800">
-                                    <motion.div 
+                                    <motion.div
                                         className="h-full bg-zinc-900 dark:bg-zinc-50"
                                         initial={{ width: 0 }}
-                                        animate={{ width: `${activeSection === 'rsvp' 
-                                            ? ((rsvpStep + 1) / totalRsvpSteps) * 100 
-                                            : ((transportStep + 1) / totalTransportSteps) * 100}%` }}
+                                        animate={{
+                                            width: `${activeSection === 'rsvp'
+                                                ? ((rsvpStep + 1) / totalRsvpSteps) * 100
+                                                : ((transportStep + 1) / totalTransportSteps) * 100}%`
+                                        }}
                                         transition={{ duration: 0.5, ease: "easeInOut" }}
                                     />
                                 </div>
@@ -997,8 +999,8 @@ export default function PublicEventPage() {
                                 {/* Status Message */}
                                 {selectedGuest.status !== 'pending' && (
                                     <div className={`p-4 rounded-xl mb-6 text-sm border flex items-start gap-3 ${selectedGuest.departure_details?.arrival_applicable !== undefined || selectedGuest.departure_details?.departure_applicable !== undefined
-                                            ? "bg-green-50 border-green-100 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300"
-                                            : "bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300"
+                                        ? "bg-green-50 border-green-100 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300"
+                                        : "bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300"
                                         }`}>
                                         <div className="mt-0.5">
                                             {selectedGuest.departure_details?.arrival_applicable !== undefined || selectedGuest.departure_details?.departure_applicable !== undefined
@@ -1066,7 +1068,7 @@ export default function PublicEventPage() {
                                             >
                                                 Edit information or Add members
                                             </Button>
-                                            </div>
+                                        </div>
                                     ) : (
                                         <form onSubmit={handleSubmitRSVP} className="space-y-3">
                                             <AnimatePresence mode="wait">
@@ -1166,7 +1168,7 @@ export default function PublicEventPage() {
                                                     </StepWrapper>
                                                 )}
 
-                                                {status === 'accepted' && attendees.map((attendee, idx) => 
+                                                {status === 'accepted' && attendees.map((attendee, idx) =>
                                                     rsvpStep === (4 + idx) && (
                                                         <StepWrapper activeSection={activeSection}
                                                             key={idx}
@@ -1273,7 +1275,7 @@ export default function PublicEventPage() {
                                         </form>
                                     )
                                 )}
- 
+
                                 {/* Transport Section */}
                                 {activeSection === "transport" && (
                                     (selectedGuest.departure_details?.arrival_applicable !== undefined || selectedGuest.departure_details?.departure_applicable !== undefined) && !isEditingTransport ? (
@@ -1333,20 +1335,20 @@ export default function PublicEventPage() {
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             <div className="space-y-2">
                                                                 <Label className="text-sm font-medium text-zinc-500">Pick-up Date <span className="text-red-400">*</span></Label>
-                                                                <Input 
-                                                                    type="date" 
-                                                                    value={arrivalDate} 
-                                                                    onChange={(e) => { setArrivalDate(e.target.value); setTransportError(""); }} 
-                                                                    className={`h-11 text-sm rounded-xl border-2 ${transportError && transportError.includes('date') && transportStep === 1 ? 'border-red-400' : ''}`} 
+                                                                <Input
+                                                                    type="date"
+                                                                    value={arrivalDate}
+                                                                    onChange={(e) => { setArrivalDate(e.target.value); setTransportError(""); }}
+                                                                    className={`h-11 text-sm rounded-xl border-2 ${transportError && transportError.includes('date') && transportStep === 1 ? 'border-red-400' : ''}`}
                                                                 />
                                                             </div>
                                                             <div className="space-y-2">
                                                                 <Label className="text-sm font-medium text-zinc-500">Pick-up Time <span className="text-red-400">*</span></Label>
-                                                                <Input 
-                                                                    type="time" 
-                                                                    value={arrivalTime} 
-                                                                    onChange={(e) => { setArrivalTime(e.target.value); setTransportError(""); }} 
-                                                                    className={`h-11 text-sm rounded-xl border-2 ${transportError && transportError.includes('time') && transportStep === 1 ? 'border-red-400' : ''}`} 
+                                                                <Input
+                                                                    type="time"
+                                                                    value={arrivalTime}
+                                                                    onChange={(e) => { setArrivalTime(e.target.value); setTransportError(""); }}
+                                                                    className={`h-11 text-sm rounded-xl border-2 ${transportError && transportError.includes('time') && transportStep === 1 ? 'border-red-400' : ''}`}
                                                                 />
                                                             </div>
                                                         </div>
@@ -1354,7 +1356,7 @@ export default function PublicEventPage() {
                                                     </StepWrapper>
                                                 )}
 
-                                                {isArrivalApplicable && arrivalTravelers.map((traveler, idx) => 
+                                                {isArrivalApplicable && arrivalTravelers.map((traveler, idx) =>
                                                     transportStep === (2 + idx) && (
                                                         <StepWrapper activeSection={activeSection}
                                                             key={`arrival-${idx}`}
@@ -1423,25 +1425,25 @@ export default function PublicEventPage() {
                                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                                             <div className="space-y-2">
                                                                                 <Label className="uppercase text-[10px] font-bold text-zinc-400">Bags</Label>
-                                                                                <Input type="number" min="0" value={traveler.number_of_bags ?? ''} onChange={(e) => { 
+                                                                                <Input type="number" min="0" value={traveler.number_of_bags ?? ''} onChange={(e) => {
                                                                                     const val = Math.max(0, parseInt(e.target.value) || 0);
-                                                                                    const newT = [...arrivalTravelers]; 
-                                                                                    newT[idx] = { ...newT[idx], number_of_bags: val.toString() }; 
-                                                                                    setArrivalTravelers(newT); 
+                                                                                    const newT = [...arrivalTravelers];
+                                                                                    newT[idx] = { ...newT[idx], number_of_bags: val.toString() };
+                                                                                    setArrivalTravelers(newT);
                                                                                 }} className="h-11 text-sm rounded-xl border-2" />
                                                                             </div>
                                                                             <div className="space-y-2">
                                                                                 <Label className="uppercase text-[10px] font-bold text-zinc-400">Vehicles Needed</Label>
-                                                                                <Input type="number" min="1" value={traveler.number_of_vehicles ?? ''} onChange={(e) => { 
+                                                                                <Input type="number" min="1" value={traveler.number_of_vehicles ?? ''} onChange={(e) => {
                                                                                     const val = Math.max(1, parseInt(e.target.value) || 1);
-                                                                                    const newT = [...arrivalTravelers]; 
-                                                                                    newT[idx] = { ...newT[idx], number_of_vehicles: val.toString() }; 
-                                                                                    setArrivalTravelers(newT); 
+                                                                                    const newT = [...arrivalTravelers];
+                                                                                    newT[idx] = { ...newT[idx], number_of_vehicles: val.toString() };
+                                                                                    setArrivalTravelers(newT);
                                                                                 }} className="h-11 text-sm rounded-xl border-2" />
                                                                             </div>
                                                                         </div>
                                                                         {transportError && transportStep === (2 + idx) && <p className="text-red-500 text-sm font-medium mt-1">{transportError}</p>}
-                                                                        
+
                                                                         <div className="space-y-2 border-t border-zinc-100 pt-4 mt-2">
                                                                             <Label className="uppercase text-[10px] font-bold text-zinc-400">Upload Ticket <span className="text-red-400">*</span></Label>
                                                                             <div className="relative group">
@@ -1499,20 +1501,20 @@ export default function PublicEventPage() {
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             <div className="space-y-2">
                                                                 <Label className="text-sm font-medium text-zinc-500">Drop Date <span className="text-red-400">*</span></Label>
-                                                                <Input 
-                                                                    type="date" 
-                                                                    value={departureDate} 
-                                                                    onChange={(e) => { setDepartureDate(e.target.value); setTransportError(""); }} 
-                                                                    className={`h-11 text-sm rounded-xl border-2 ${transportError && transportError.includes('date') && transportStep > 1 ? 'border-red-400' : ''}`} 
+                                                                <Input
+                                                                    type="date"
+                                                                    value={departureDate}
+                                                                    onChange={(e) => { setDepartureDate(e.target.value); setTransportError(""); }}
+                                                                    className={`h-11 text-sm rounded-xl border-2 ${transportError && transportError.includes('date') && transportStep > 1 ? 'border-red-400' : ''}`}
                                                                 />
                                                             </div>
                                                             <div className="space-y-2">
                                                                 <Label className="text-sm font-medium text-zinc-500">Drop Time <span className="text-red-400">*</span></Label>
-                                                                <Input 
-                                                                    type="time" 
-                                                                    value={departureTime} 
-                                                                    onChange={(e) => { setDepartureTime(e.target.value); setTransportError(""); }} 
-                                                                    className={`h-11 text-sm rounded-xl border-2 ${transportError && transportError.includes('time') && transportStep > 1 ? 'border-red-400' : ''}`} 
+                                                                <Input
+                                                                    type="time"
+                                                                    value={departureTime}
+                                                                    onChange={(e) => { setDepartureTime(e.target.value); setTransportError(""); }}
+                                                                    className={`h-11 text-sm rounded-xl border-2 ${transportError && transportError.includes('time') && transportStep > 1 ? 'border-red-400' : ''}`}
                                                                 />
                                                             </div>
                                                         </div>
@@ -1528,7 +1530,7 @@ export default function PublicEventPage() {
                                                     </StepWrapper>
                                                 )}
 
-                                                {isDepartureApplicable && departureTravelers.map((traveler, idx) => 
+                                                {isDepartureApplicable && departureTravelers.map((traveler, idx) =>
                                                     transportStep === (arrivalSteps + 2 + idx) && (
                                                         <StepWrapper activeSection={activeSection}
                                                             key={`departure-${idx}`}
@@ -1584,25 +1586,25 @@ export default function PublicEventPage() {
                                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                                             <div className="space-y-2">
                                                                                 <Label className="uppercase text-[10px] font-bold text-zinc-400">Bags</Label>
-                                                                                <Input type="number" min="0" value={traveler.number_of_bags ?? ''} onChange={(e) => { 
+                                                                                <Input type="number" min="0" value={traveler.number_of_bags ?? ''} onChange={(e) => {
                                                                                     const val = Math.max(0, parseInt(e.target.value) || 0);
-                                                                                    const newT = [...departureTravelers]; 
-                                                                                    newT[idx] = { ...newT[idx], number_of_bags: val.toString() }; 
-                                                                                    setDepartureTravelers(newT); 
+                                                                                    const newT = [...departureTravelers];
+                                                                                    newT[idx] = { ...newT[idx], number_of_bags: val.toString() };
+                                                                                    setDepartureTravelers(newT);
                                                                                 }} className="h-11 text-sm rounded-xl border-2" />
                                                                             </div>
                                                                             <div className="space-y-2">
                                                                                 <Label className="uppercase text-[10px] font-bold text-zinc-400">Vehicles Needed</Label>
-                                                                                <Input type="number" min="1" value={traveler.number_of_vehicles ?? ''} onChange={(e) => { 
+                                                                                <Input type="number" min="1" value={traveler.number_of_vehicles ?? ''} onChange={(e) => {
                                                                                     const val = Math.max(1, parseInt(e.target.value) || 1);
-                                                                                    const newT = [...departureTravelers]; 
-                                                                                    newT[idx] = { ...newT[idx], number_of_vehicles: val.toString() }; 
-                                                                                    setDepartureTravelers(newT); 
+                                                                                    const newT = [...departureTravelers];
+                                                                                    newT[idx] = { ...newT[idx], number_of_vehicles: val.toString() };
+                                                                                    setDepartureTravelers(newT);
                                                                                 }} className="h-11 text-sm rounded-xl border-2" />
                                                                             </div>
                                                                         </div>
                                                                         {transportError && transportStep === (arrivalSteps + 2 + idx) && <p className="text-red-500 text-sm font-medium mt-1">{transportError}</p>}
-                                                                        
+
                                                                         <div className="space-y-2 border-t border-zinc-100 pt-4 mt-2">
                                                                             <Label className="uppercase text-[10px] font-bold text-zinc-400">Upload Ticket <span className="text-red-400">*</span></Label>
                                                                             <div className="relative group">
