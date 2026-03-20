@@ -1128,10 +1128,11 @@ export default function CoordinatorDashboard() {
                                                                             <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter block">
                                                                                 {person.departure_details.arrival.travelers[0].mode_of_travel || "Transport"}
                                                                             </span>
-                                                                            <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
-                                                                                <Navigation size={10} className="text-blue-500" />
-                                                                                {person.departure_details.arrival.travelers[0].transport_number || "No Ref."}
-                                                                            </p>
+                                                                                <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                                                                                    <Navigation size={10} className="text-blue-500" />
+                                                                                    {person.departure_details.arrival.travelers[0].transport_number || "No Ref."}
+                                                                                    <span className="text-zinc-400 font-normal ml-1">({person.departure_details.arrival.travelers[0].station_airport || "No Station"})</span>
+                                                                                </p>
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -1412,8 +1413,10 @@ export default function CoordinatorDashboard() {
                                                                             <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter block">
                                                                                 {person.departure_details.departure.travelers[0].mode_of_travel || "Transport"}
                                                                             </span>
-                                                                            <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                                                                            <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                                                                                <Navigation size={10} className="text-orange-500" />
                                                                                 {person.departure_details.departure.travelers[0].transport_number || "No Ref."}
+                                                                                <span className="text-zinc-400 font-normal ml-1">({person.departure_details.departure.travelers[0].station_airport || "No Station"})</span>
                                                                             </p>
                                                                         </div>
                                                                     )}
