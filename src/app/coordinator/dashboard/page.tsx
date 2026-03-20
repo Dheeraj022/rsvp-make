@@ -508,6 +508,64 @@ export default function CoordinatorDashboard() {
         }
     };
 
+    const handleRemoveNote = async () => {
+        if (!selectedGuestForNote) return;
+        
+        // Ask for confirmation
+        if (!confirm("Are you sure you want to remove this note?")) return;
+
+        setIsUpdatingNote(true);
+        try {
+            const guestId = selectedGuestForNote.id;
+            const isPrimary = selectedGuestForNote.isPrimary;
+
+            const { data: currentGuest, error: fetchError } = await supabase
+                .from("guests")
+                .select("*")
+                .eq("id", guestId)
+                .single();
+
+            if (fetchError) throw fetchError;
+
+            let updatePayload: any = {};
+
+            if (isPrimary) {
+                const updatedDetails = { ...(currentGuest.departure_details || {}) };
+                if (updatedDetails[noteType]) {
+                    delete updatedDetails[noteType].notes;
+                }
+                updatePayload = { departure_details: updatedDetails };
+            } else {
+                const updatedAttendees = [...(currentGuest.attendees_data || [])];
+                const index = selectedGuestForNote.companionIndex;
+                if (updatedAttendees[index]) {
+                    if (noteType === 'arrival') {
+                        delete updatedAttendees[index].arrival_notes;
+                    } else {
+                        delete updatedAttendees[index].departure_notes;
+                    }
+                }
+                updatePayload = { attendees_data: updatedAttendees };
+            }
+
+            const { error } = await supabase
+                .from("guests")
+                .update(updatePayload)
+                .eq("id", guestId);
+
+            if (error) throw error;
+
+            toastSuccess("Note removed successfully");
+            setIsNoteModalOpen(false);
+            fetchCoordinatorAndGuests();
+        } catch (error: any) {
+            console.error("Error removing note:", error);
+            toastError("Failed to remove note");
+        } finally {
+            setIsUpdatingNote(false);
+        }
+    };
+
     const openDriverModal = (guest: Guest, type: 'arrival' | 'departure') => {
         setSelectedGuestForDriver(guest);
         setDriverType(type);
@@ -1689,19 +1747,32 @@ export default function CoordinatorDashboard() {
                                     />
                                 </div>
 
-                                <div className="flex gap-4 pt-4">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setIsNoteModalOpen(false)}
-                                        className="flex-1 h-14 rounded-2xl font-black text-xs uppercase tracking-widest border-2"
-                                    >
-                                        Cancel
-                                    </Button>
+                                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                                    <div className="flex flex-1 gap-3">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setIsNoteModalOpen(false)}
+                                            className="flex-1 h-14 rounded-2xl font-black text-xs uppercase tracking-widest border-2"
+                                        >
+                                            Cancel
+                                        </Button>
+                                        {(noteType === 'arrival' ? selectedGuestForNote.arrival_notes : selectedGuestForNote.departure_notes) && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={handleRemoveNote}
+                                                disabled={isUpdatingNote}
+                                                className="flex-1 h-14 rounded-2xl border-2 border-red-100 hover:border-red-200 hover:bg-red-50 text-red-600 font-black text-xs uppercase tracking-widest transition-colors"
+                                            >
+                                                Remove Note
+                                            </Button>
+                                        )}
+                                    </div>
                                     <Button
                                         type="submit"
                                         disabled={isUpdatingNote}
-                                        className="flex-1 h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/20"
+                                        className="w-full sm:flex-1 h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/20"
                                     >
                                         {isUpdatingNote ? (
                                             <Loader2 size={20} className="animate-spin" />
