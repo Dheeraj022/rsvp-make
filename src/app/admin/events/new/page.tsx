@@ -18,7 +18,6 @@ function CreateEvent() {
     const [formData, setFormData] = useState({
         name: "",
         date: "",
-        time: "",
         location: "",
         description: "",
         slug: "",
@@ -48,8 +47,8 @@ function CreateEvent() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("No user found");
 
-            // Combine date and time
-            const datetime = new Date(`${formData.date}T${formData.time}`);
+            // Use date only
+            const datetime = new Date(formData.date);
 
             const { error } = await supabase.from("events").insert({
                 name: formData.name,
@@ -99,29 +98,16 @@ function CreateEvent() {
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="date">Date</Label>
-                                <Input
-                                    id="date"
-                                    name="date"
-                                    type="date"
-                                    value={formData.date}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="time">Time</Label>
-                                <Input
-                                    id="time"
-                                    name="time"
-                                    type="time"
-                                    value={formData.time}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="date">Date</Label>
+                            <Input
+                                id="date"
+                                name="date"
+                                type="date"
+                                value={formData.date}
+                                onChange={handleChange}
+                                required
+                            />
                         </div>
 
                         <div className="grid gap-2">
