@@ -27,7 +27,8 @@ import {
     Plane,
     PlaneLanding,
     Mail,
-    ChevronDown
+    ChevronDown,
+    ChevronUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ type Guest = {
     id: string;
     name: string;
     phone?: string | null;
+    parent_id?: string | null;
     arrival_date?: string | null;
     arrival_time?: string | null;
     check_in_status: string;
@@ -107,6 +109,17 @@ export default function CoordinatorDashboard() {
     // Primary Guest Linking
     const [selectedPrimaryGuestId, setSelectedPrimaryGuestId] = useState<string | null>(null);
 
+    // Accordion Sections for Add Guest Modal
+    const [expandedSections, setExpandedSections] = useState<string[]>([]);
+
+    const toggleSection = (section: string) => {
+        setExpandedSections(prev => 
+            prev.includes(section) 
+                ? prev.filter(s => s !== section) 
+                : [...prev, section]
+        );
+    };
+
     // New State for Individual Companion Drivers
     const [assignSameDriver, setAssignSameDriver] = useState(true);
     const [companionDrivers, setCompanionDrivers] = useState<Record<number, { name: string; phone: string }>>({});
@@ -124,8 +137,19 @@ export default function CoordinatorDashboard() {
     const flattenedGuests = useMemo(() => {
         const query = searchQuery.toLowerCase();
         const result: any[] = [];
+        // Map to hold linked companions by their parent_id
+        const linkedCompanionsMap: Record<string, Guest[]> = {};
+        guests.forEach(g => {
+            if (g.parent_id) {
+                if (!linkedCompanionsMap[g.parent_id]) linkedCompanionsMap[g.parent_id] = [];
+                linkedCompanionsMap[g.parent_id].push(g);
+            }
+        });
 
         guests.forEach(guest => {
+            // Skip linked companions in the main loop (they will be added under their parent)
+            if (guest.parent_id) return;
+
             // 1. Prepare Primary Guest Entry
             const primaryEntry = {
                 ...guest,
@@ -137,38 +161,48 @@ export default function CoordinatorDashboard() {
                 uniqueKey: `primary-${guest.id}`
             };
 
-            // 2. Prepare Companion Entries
-            const companionEntries = (guest.attendees_data || []).map((m: any, i) => {
-                // Skip if this is actually the primary guest (visual duplication fix)
+            // 2. Prepare Companion Entries (both attendees_data AND linked separately)
+            
+            // 2a. Internal attendees_data companions
+            const attendeeCompanions = (guest.attendees_data || []).map((m: any, i) => {
                 if (m.name === guest.name) return null;
-
                 const companionDetails = { ...(guest.departure_details || {}) };
                 if (m.arrival_driver) {
-                    companionDetails.arrival = {
-                        ...(companionDetails.arrival || {}),
-                        driver: m.arrival_driver
-                    };
+                    companionDetails.arrival = { ...(companionDetails.arrival || {}), driver: m.arrival_driver };
                 }
                 if (m.departure_driver) {
-                    companionDetails.departure = {
-                        ...(companionDetails.departure || {}),
-                        driver: m.departure_driver
-                    };
+                    companionDetails.departure = { ...(companionDetails.departure || {}), driver: m.departure_driver };
                 }
-
                 return {
-                    ...guest, // Inherit all travel/event/driver info
-                    ...m,     // Override with member specific data (name, phone, checked_in, departed)
-                    departure_details: companionDetails, // Use specific driver details if they exist
+                    ...guest,
+                    ...m,
+                    departure_details: companionDetails,
                     isPrimary: false,
                     companionIndex: i,
-                    displayName: guest.name, // Per user request: "displayed name should be that of the main guest"
-                    actualName: m.name,      // Keep original name for search and reference
-                    arrival_notes: m.arrival_notes || "",    // Extract arrival notes from attendee object
-                    departure_notes: m.departure_notes || "", // Extract departure notes from attendee object
-                    uniqueKey: `companion-${guest.id}-${i}`
+                    displayName: guest.name,
+                    actualName: m.name,
+                    arrival_notes: m.arrival_notes || "",
+                    departure_notes: m.departure_notes || "",
+                    uniqueKey: `companion-${guest.id}-${i}`,
+                    isLinkedGuest: false
                 };
             }).filter(Boolean);
+
+            // 2b. Linked companions (separate rows in DB)
+            const linkedCompanions = (linkedCompanionsMap[guest.id] || []).map((lg, i) => {
+                return {
+                    ...lg,
+                    isPrimary: false,
+                    displayName: guest.name,
+                    actualName: lg.name,
+                    arrival_notes: lg.departure_details?.arrival?.notes || "",
+                    departure_notes: lg.departure_details?.departure?.notes || "",
+                    uniqueKey: `linked-${lg.id}`,
+                    isLinkedGuest: true
+                };
+            });
+
+            const allCompanionEntries = [...attendeeCompanions, ...linkedCompanions];
 
             // 3. Filter based on query
             const matchesPrimary = 
@@ -176,7 +210,7 @@ export default function CoordinatorDashboard() {
                 primaryEntry.phone?.toLowerCase().includes(query) ||
                 primaryEntry.seat_number?.toLowerCase().includes(query);
 
-            const matchingCompanions = companionEntries.filter(c => 
+            const matchingCompanions = allCompanionEntries.filter(c => 
                 c.actualName.toLowerCase().includes(query) ||
                 c.phone?.toLowerCase().includes(query)
             );
@@ -186,16 +220,14 @@ export default function CoordinatorDashboard() {
             // If query is empty, show everything.
             if (!query) {
                 result.push(primaryEntry);
-                result.push(...companionEntries);
-            } else {
-                if (matchesPrimary) {
-                    result.push(primaryEntry);
-                    // Also show companions if the primary name matches
-                    result.push(...companionEntries);
-                } else if (matchingCompanions.length > 0) {
-                    // Show ONLY matching companions if primary didn't match
-                    result.push(...matchingCompanions);
-                }
+                result.push(...allCompanionEntries);
+            } else if (matchesPrimary) {
+                result.push(primaryEntry);
+                // Also show companions if the primary name matches
+                result.push(...allCompanionEntries);
+            } else if (matchingCompanions.length > 0) {
+                // Show ONLY matching companions if primary didn't match
+                result.push(...matchingCompanions);
             }
         });
 
@@ -370,7 +402,7 @@ export default function CoordinatorDashboard() {
             let guestsQuery = supabase
                 .from("guests")
                 .select(`
-                    id, name, phone, check_in_status, seat_number, assignment_label, event_id, attending_count, attendees_data, departure_details,
+                    id, name, phone, check_in_status, seat_number, assignment_label, event_id, attending_count, attendees_data, departure_details, parent_id, coordinator_id,
                     events ( name, date )
                 `);
 
@@ -757,6 +789,7 @@ export default function CoordinatorDashboard() {
             setDepTransportNo("");
             setDepStation("");
             setSelectedPrimaryGuestId(null);
+            setExpandedSections([]);
             
             fetchCoordinatorAndGuests();
         } catch (error: any) {
@@ -1871,214 +1904,260 @@ export default function CoordinatorDashboard() {
                                     </p>
                                 </div>
                                 <button
-                                    onClick={() => setIsAddGuestModalOpen(false)}
+                                    onClick={() => {
+                                        setIsAddGuestModalOpen(false);
+                                        setExpandedSections([]);
+                                    }}
                                     className="p-3 rounded-2xl hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-900 transition-colors"
                                 >
                                     <X size={20} />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleAddGuest} className="space-y-8">
+                            <form onSubmit={handleAddGuest} className="space-y-6">
                                 {/* Basic Info Section */}
                                 <div className="space-y-4">
-                                    <h4 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                        <div className="h-px flex-1 bg-zinc-100 dark:bg-zinc-800"></div>
-                                        Basic Information
-                                        <div className="h-px flex-1 bg-zinc-100 dark:bg-zinc-800"></div>
-                                    </h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Full Name *</label>
-                                            <div className="relative">
-                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
-                                                <Input
-                                                    placeholder="Guest Name"
-                                                    value={newGuestName}
-                                                    onChange={(e) => setNewGuestName(e.target.value)}
-                                                    className="h-14 pl-12 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 font-bold"
-                                                    required
-                                                />
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleSection('basic')}
+                                        className="w-full flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 group transition-all"
+                                    >
+                                        <span className="text-xs font-black text-zinc-900 dark:text-zinc-50 uppercase tracking-widest flex items-center gap-3">
+                                            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl text-indigo-600">
+                                                <User size={18} />
                                             </div>
+                                            Basic Information
+                                        </span>
+                                        <div className="text-zinc-400 group-hover:text-zinc-900">
+                                            {expandedSections.includes('basic') ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Phone Number</label>
-                                            <div className="relative">
-                                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
-                                                <Input
-                                                    placeholder="Contact Number"
-                                                    value={newGuestPhone}
-                                                    onChange={(e) => setNewGuestPhone(e.target.value)}
-                                                    className="h-14 pl-12 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 font-bold"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Email Address</label>
-                                            <div className="relative">
-                                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
-                                                <Input
-                                                    placeholder="Email (Optional)"
-                                                    value={newGuestEmail}
-                                                    onChange={(e) => setNewGuestEmail(e.target.value)}
-                                                    className="h-14 pl-12 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 font-bold"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
+                                    </button>
 
-                                    {/* Link to Primary Guest (Optional) */}
-                                    <div className="space-y-2 pt-4 border-t border-zinc-100 dark:border-zinc-800/50 mt-2">
-                                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1 text-indigo-600/70">Parent / Primary Guest (Optional)</label>
-                                        <div className="relative group">
-                                            <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-hover:text-indigo-500 transition-colors" size={18} />
-                                            <select
-                                                value={selectedPrimaryGuestId || ""}
-                                                onChange={(e) => setSelectedPrimaryGuestId(e.target.value || null)}
-                                                className="w-full h-14 pl-12 pr-10 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none transition-all hover:border-indigo-200"
-                                            >
-                                                <option value="">Independent (Direct Guest)</option>
-                                                {guests
-                                                    .filter(g => !g.parent_id)
-                                                    .sort((a, b) => a.name.localeCompare(b.name))
-                                                    .map(pg => (
-                                                        <option key={pg.id} value={pg.id}>
-                                                            Companion of: {pg.name}
-                                                        </option>
-                                                    ))
-                                                }
-                                            </select>
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400 group-hover:text-zinc-600 transition-colors">
-                                                <ChevronDown size={18} />
+                                    {expandedSections.includes('basic') && (
+                                        <div className="p-2 space-y-6 animate-in slide-in-from-top-2 duration-200">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Full Name *</label>
+                                                    <div className="relative group">
+                                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
+                                                        <Input
+                                                            placeholder="Guest Name"
+                                                            value={newGuestName}
+                                                            onChange={(e) => setNewGuestName(e.target.value)}
+                                                            className="h-14 pl-12 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black/20 font-bold focus:ring-2 focus:ring-indigo-500/20"
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Phone Number</label>
+                                                    <div className="relative group">
+                                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
+                                                        <Input
+                                                            placeholder="Contact Number"
+                                                            value={newGuestPhone}
+                                                            onChange={(e) => setNewGuestPhone(e.target.value)}
+                                                            className="h-14 pl-12 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black/20 font-bold focus:ring-2 focus:ring-indigo-500/20"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Email Address</label>
+                                                    <div className="relative group">
+                                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
+                                                        <Input
+                                                            placeholder="Email (Optional)"
+                                                            value={newGuestEmail}
+                                                            onChange={(e) => setNewGuestEmail(e.target.value)}
+                                                            className="h-14 pl-12 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black/20 font-bold focus:ring-2 focus:ring-indigo-500/20"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Link to Primary Guest (Optional) */}
+                                            <div className="space-y-2 pt-4 border-t border-zinc-100 dark:border-zinc-800/50 mt-2">
+                                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1 text-indigo-600/70">Parent / Primary Guest (Optional)</label>
+                                                <div className="relative group">
+                                                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-hover:text-indigo-500 transition-colors" size={18} />
+                                                    <select
+                                                        value={selectedPrimaryGuestId || ""}
+                                                        onChange={(e) => setSelectedPrimaryGuestId(e.target.value || null)}
+                                                        className="w-full h-14 pl-12 pr-10 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black/20 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none transition-all hover:border-indigo-200"
+                                                    >
+                                                        <option value="">Independent (Direct Guest)</option>
+                                                        {guests
+                                                            .filter(g => !g.parent_id)
+                                                            .sort((a, b) => a.name.localeCompare(b.name))
+                                                            .map(pg => (
+                                                                <option key={pg.id} value={pg.id}>
+                                                                    Companion of: {pg.name}
+                                                                </option>
+                                                            ))
+                                                        }
+                                                    </select>
+                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400 group-hover:text-zinc-600 transition-colors">
+                                                        <ChevronDown size={18} />
+                                                    </div>
+                                                </div>
+                                                <p className="text-[9px] text-zinc-500 ml-1 font-medium italic">Select a primary guest if this person is part of their group.</p>
                                             </div>
                                         </div>
-                                        <p className="text-[9px] text-zinc-500 ml-1 font-medium italic">Select a primary guest if this person is part of their group.</p>
-                                    </div>
+                                    )}
                                 </div>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                    {/* Arrival Section */}
-                                    <div className="space-y-4">
-                                        <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                            <PlaneLanding size={16} />
+                                {/* Arrival Section Accordion */}
+                                <div className="space-y-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleSection('arrival')}
+                                        className="w-full flex items-center justify-between p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 dark:border-blue-900/20 group transition-all"
+                                    >
+                                        <span className="text-xs font-black text-blue-900 dark:text-blue-50 uppercase tracking-widest flex items-center gap-3">
+                                            <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-xl text-blue-600">
+                                                <PlaneLanding size={18} />
+                                            </div>
                                             Arrival Details
-                                            <div className="h-px flex-1 bg-blue-50 dark:bg-blue-900/20"></div>
-                                        </h4>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Date</label>
-                                                <Input
-                                                    type="date"
-                                                    value={arrDate}
-                                                    onChange={(e) => setArrDate(e.target.value)}
-                                                    className="h-12 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Time</label>
-                                                <Input
-                                                    type="time"
-                                                    value={arrTime}
-                                                    onChange={(e) => setArrTime(e.target.value)}
-                                                    className="h-12 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
-                                                />
-                                            </div>
+                                        </span>
+                                        <div className="text-blue-400 group-hover:text-blue-900">
+                                            {expandedSections.includes('arrival') ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Mode & Reference</label>
-                                            <div className="flex gap-2">
-                                                <select
-                                                    value={arrMode}
-                                                    onChange={(e) => setArrMode(e.target.value)}
-                                                    className="w-1/3 h-12 rounded-xl border border-zinc-200 bg-zinc-50/50 px-3 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                                                >
-                                                    <option>Flight</option>
-                                                    <option>Train</option>
-                                                    <option>Bus</option>
-                                                    <option>Car</option>
-                                                </select>
-                                                <Input
-                                                    placeholder="Flight/Train No."
-                                                    value={arrTransportNo}
-                                                    onChange={(e) => setArrTransportNo(e.target.value)}
-                                                    className="flex-1 h-12 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Airport / Station Name</label>
-                                            <div className="relative">
-                                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
-                                                <Input
-                                                    placeholder="e.g. Airport Terminal 1"
-                                                    value={arrStation}
-                                                    onChange={(e) => setArrStation(e.target.value)}
-                                                    className="h-12 pl-10 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
+                                    </button>
 
-                                    {/* Departure Section */}
-                                    <div className="space-y-4">
-                                        <h4 className="text-xs font-black text-orange-600 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                            <Plane size={16} />
+                                    {expandedSections.includes('arrival') && (
+                                        <div className="p-4 bg-blue-50/20 dark:bg-blue-900/5 rounded-2xl border border-blue-50 dark:border-blue-900/10 space-y-6 animate-in slide-in-from-top-2 duration-200">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Date</label>
+                                                    <Input
+                                                        type="date"
+                                                        value={arrDate}
+                                                        onChange={(e) => setArrDate(e.target.value)}
+                                                        className="h-12 rounded-xl border-zinc-200 bg-white font-bold"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Time</label>
+                                                    <Input
+                                                        type="time"
+                                                        value={arrTime}
+                                                        onChange={(e) => setArrTime(e.target.value)}
+                                                        className="h-12 rounded-xl border-zinc-200 bg-white font-bold"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Mode & Reference</label>
+                                                <div className="flex gap-2">
+                                                    <select
+                                                        value={arrMode}
+                                                        onChange={(e) => setArrMode(e.target.value)}
+                                                        className="w-1/3 h-12 rounded-xl border border-zinc-200 bg-white px-3 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none"
+                                                    >
+                                                        <option>Flight</option>
+                                                        <option>Train</option>
+                                                        <option>Bus</option>
+                                                        <option>Car</option>
+                                                    </select>
+                                                    <Input
+                                                        placeholder="Flight/Train No."
+                                                        value={arrTransportNo}
+                                                        onChange={(e) => setArrTransportNo(e.target.value)}
+                                                        className="flex-1 h-12 rounded-xl border-zinc-200 bg-white font-bold"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Airport / Station Name</label>
+                                                <div className="relative">
+                                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                                                    <Input
+                                                        placeholder="e.g. Airport Terminal 1"
+                                                        value={arrStation}
+                                                        onChange={(e) => setArrStation(e.target.value)}
+                                                        className="h-12 pl-10 rounded-xl border-zinc-200 bg-white font-bold"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Departure Section Accordion */}
+                                <div className="space-y-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleSection('departure')}
+                                        className="w-full flex items-center justify-between p-4 bg-orange-50/50 dark:bg-orange-900/10 rounded-2xl border border-orange-100/50 dark:border-orange-900/20 group transition-all"
+                                    >
+                                        <span className="text-xs font-black text-orange-900 dark:text-orange-50 uppercase tracking-widest flex items-center gap-3">
+                                            <div className="p-2 bg-orange-100 dark:bg-orange-900/40 rounded-xl text-orange-600">
+                                                <Plane size={18} />
+                                            </div>
                                             Departure Details
-                                            <div className="h-px flex-1 bg-orange-50 dark:bg-orange-900/20"></div>
-                                        </h4>
-                                        <div className="grid grid-cols-2 gap-4">
+                                        </span>
+                                        <div className="text-orange-400 group-hover:text-orange-900">
+                                            {expandedSections.includes('departure') ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                        </div>
+                                    </button>
+
+                                    {expandedSections.includes('departure') && (
+                                        <div className="p-4 bg-orange-50/20 dark:bg-orange-900/5 rounded-2xl border border-orange-50 dark:border-orange-900/10 space-y-6 animate-in slide-in-from-top-2 duration-200">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Date</label>
+                                                    <Input
+                                                        type="date"
+                                                        value={depDate}
+                                                        onChange={(e) => setDepDate(e.target.value)}
+                                                        className="h-12 rounded-xl border-zinc-200 bg-white font-bold"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Time</label>
+                                                    <Input
+                                                        type="time"
+                                                        value={depTime}
+                                                        onChange={(e) => setDepTime(e.target.value)}
+                                                        className="h-12 rounded-xl border-zinc-200 bg-white font-bold"
+                                                    />
+                                                </div>
+                                            </div>
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Date</label>
-                                                <Input
-                                                    type="date"
-                                                    value={depDate}
-                                                    onChange={(e) => setDepDate(e.target.value)}
-                                                    className="h-12 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
-                                                />
+                                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Mode & Reference</label>
+                                                <div className="flex gap-2">
+                                                    <select
+                                                        value={depMode}
+                                                        onChange={(e) => setDepMode(e.target.value)}
+                                                        className="w-1/3 h-12 rounded-xl border border-zinc-200 bg-white px-3 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none"
+                                                    >
+                                                        <option>Flight</option>
+                                                        <option>Train</option>
+                                                        <option>Bus</option>
+                                                        <option>Car</option>
+                                                    </select>
+                                                    <Input
+                                                        placeholder="Flight/Train No."
+                                                        value={depTransportNo}
+                                                        onChange={(e) => setDepTransportNo(e.target.value)}
+                                                        className="flex-1 h-12 rounded-xl border-zinc-200 bg-white font-bold"
+                                                    />
+                                                </div>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Time</label>
-                                                <Input
-                                                    type="time"
-                                                    value={depTime}
-                                                    onChange={(e) => setDepTime(e.target.value)}
-                                                    className="h-12 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
-                                                />
+                                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Airport / Station Name</label>
+                                                <div className="relative">
+                                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                                                    <Input
+                                                        placeholder="e.g. Airport Terminal 1"
+                                                        value={depStation}
+                                                        onChange={(e) => setDepStation(e.target.value)}
+                                                        className="h-12 pl-10 rounded-xl border-zinc-200 bg-white font-bold"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Mode & Reference</label>
-                                            <div className="flex gap-2">
-                                                <select
-                                                    value={depMode}
-                                                    onChange={(e) => setDepMode(e.target.value)}
-                                                    className="w-1/3 h-12 rounded-xl border border-zinc-200 bg-zinc-50/50 px-3 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                                                >
-                                                    <option>Flight</option>
-                                                    <option>Train</option>
-                                                    <option>Bus</option>
-                                                    <option>Car</option>
-                                                </select>
-                                                <Input
-                                                    placeholder="Flight/Train No."
-                                                    value={depTransportNo}
-                                                    onChange={(e) => setDepTransportNo(e.target.value)}
-                                                    className="flex-1 h-12 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Airport / Station Name</label>
-                                            <div className="relative">
-                                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
-                                                <Input
-                                                    placeholder="e.g. Airport Terminal 1"
-                                                    value={depStation}
-                                                    onChange={(e) => setDepStation(e.target.value)}
-                                                    className="h-12 pl-10 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
 
                                 <div className="flex gap-4 pt-6">

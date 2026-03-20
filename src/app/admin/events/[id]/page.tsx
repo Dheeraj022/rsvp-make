@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import withAuth from "@/components/admin/withAuth";
@@ -82,6 +82,8 @@ type Guest = {
         departure_mode?: string;
         travelers?: any[];
     };
+    coordinator_id?: string | null;
+    parent_id?: string | null;
 };
 
 function EventDetails() {
@@ -94,11 +96,12 @@ function EventDetails() {
     const [event, setEvent] = useState<Event | null>(null);
     const [guests, setGuests] = useState<Guest[]>([]);
     const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
+    const [coordinators, setCoordinators] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeTab, setActiveTab] = useState<"guests" | "arrival" | "departure">("guests");
-
+    const [selectedPrimaryGuestId, setSelectedPrimaryGuestId] = useState<string | null>(null);
 
     const [showHotelModal, setShowHotelModal] = useState(false);
     const [hotelEmail, setHotelEmail] = useState("");
@@ -147,6 +150,19 @@ function EventDetails() {
 
             if (guestError) throw guestError;
             setGuests(guestData || []);
+
+            // Fetch Coordinators for attribution
+            const { data: coordData } = await supabase
+                .from("coordinators")
+                .select("id, name");
+            
+            if (coordData) {
+                const coordMap = coordData.reduce((acc: Record<string, string>, curr: any) => {
+                    acc[curr.id] = curr.name;
+                    return acc;
+                }, {});
+                setCoordinators(coordMap);
+            }
 
         } catch (error) {
             console.error("Error fetching data:", error);
@@ -274,6 +290,7 @@ function EventDetails() {
                 name: newGuestName,
                 email: newGuestEmail || null,
                 phone: newGuestPhone || null,
+                parent_id: selectedPrimaryGuestId,
                 allowed_guests: 1,
                 status: "pending",
             }]);
@@ -285,6 +302,7 @@ function EventDetails() {
             setNewGuestName("");
             setNewGuestEmail("");
             setNewGuestPhone("");
+            setSelectedPrimaryGuestId(null);
             fetchEventData(); // Refresh list
         } catch (error: any) {
             alert("Error adding guest: " + error.message);
@@ -486,10 +504,89 @@ function EventDetails() {
         }
     };
 
-    const filteredGuests = guests.filter(g =>
-        g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        g.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredGuests = guests.filter((guest) =>
+        guest.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (guest.email && guest.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (guest.phone && guest.phone.includes(searchQuery))
     );
+
+    const flattenedGuests = useMemo(() => {
+        const query = searchQuery.toLowerCase();
+        const result: any[] = [];
+        
+        // Map to hold linked companions by their parent_id
+        const linkedCompanionsMap: Record<string, Guest[]> = {};
+        guests.forEach(g => {
+            if (g.parent_id) {
+                if (!linkedCompanionsMap[g.parent_id]) linkedCompanionsMap[g.parent_id] = [];
+                linkedCompanionsMap[g.parent_id].push(g);
+            }
+        });
+
+        guests.forEach(guest => {
+            // Skip linked companions in the main loop
+            if (guest.parent_id) return;
+
+            const primaryEntry = {
+                ...guest,
+                isPrimary: true,
+                displayName: guest.name,
+                actualName: guest.name,
+                uniqueKey: `primary-${guest.id}`
+            };
+
+            // 2a. Internal attendees_data companions (if any)
+            const attendeeCompanions = (guest.attendees_data || []).map((m: any, i) => {
+                if (m.name === guest.name) return null;
+                return {
+                    ...guest,
+                    ...m,
+                    isPrimary: false,
+                    displayName: guest.name,
+                    actualName: m.name,
+                    uniqueKey: `companion-${guest.id}-${i}`,
+                    isLinkedGuest: false
+                };
+            }).filter(Boolean);
+
+            // 2b. Linked companions (separate rows in DB)
+            const linkedCompanions = (linkedCompanionsMap[guest.id] || []).map((lg) => {
+                return {
+                    ...lg,
+                    isPrimary: false,
+                    displayName: guest.name,
+                    actualName: lg.name,
+                    uniqueKey: `linked-${lg.id}`,
+                    isLinkedGuest: true
+                };
+            });
+
+            const allCompanionEntries = [...attendeeCompanions, ...linkedCompanions];
+
+            // Filter logic
+            const matchesPrimary = 
+                primaryEntry.name.toLowerCase().includes(query) ||
+                (primaryEntry.email && primaryEntry.email.toLowerCase().includes(query)) ||
+                (primaryEntry.phone && primaryEntry.phone.includes(query));
+
+            const matchingCompanions = allCompanionEntries.filter(c => 
+                c.actualName.toLowerCase().includes(query) ||
+                (c.phone && c.phone.includes(query))
+            );
+
+            if (!query) {
+                result.push(primaryEntry);
+                result.push(...allCompanionEntries);
+            } else if (matchesPrimary) {
+                result.push(primaryEntry);
+                result.push(...allCompanionEntries);
+            } else if (matchingCompanions.length > 0) {
+                result.push(...matchingCompanions);
+            }
+        });
+
+        return result;
+    }, [guests, searchQuery]);
 
     const stats = {
         total: guests.length,
@@ -664,16 +761,30 @@ function EventDetails() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                                    {filteredGuests.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={5} className="px-6 py-8 text-center text-zinc-500">
-                                                No guests found. Import a CSV to get started.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        filteredGuests.map((guest) => (
-                                            <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                                <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{guest.name}</td>
+                                        {flattenedGuests.length === 0 ? (
+                                            <tr><td colSpan={6} className="px-6 py-10 text-center text-zinc-500">No guests found</td></tr>
+                                        ) : (
+                                            flattenedGuests.map((guest) => (
+                                                <tr key={guest.uniqueKey || guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                                    <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
+                                                        <div className="flex items-center gap-2">
+                                                            {!guest.isPrimary && <div className="w-4 h-px bg-zinc-300 dark:bg-zinc-700 ml-1 mr-1"></div>}
+                                                            <div>
+                                                                <div>{guest.actualName || guest.name}</div>
+                                                                {!guest.isPrimary && (
+                                                                    <div className="text-[10px] text-zinc-400 font-normal">
+                                                                        Companion of: {guest.displayName}
+                                                                    </div>
+                                                                )}
+                                                                {guest.coordinator_id && coordinators[guest.coordinator_id] && (
+                                                                    <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-normal mt-0.5 flex items-center gap-1">
+                                                                        <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
+                                                                        Added by: {coordinators[guest.coordinator_id]}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </td>
                                                 <td className="px-6 py-4 text-zinc-500">{guest.phone || "-"}</td>
                                                 <td className="px-6 py-4">
                                                     {guest.status === 'accepted' && guest.attendees_data && guest.attendees_data.some((a: any) => a.id_front || a.id_back) ? (
@@ -759,7 +870,15 @@ function EventDetails() {
                                             const arrival = guest.departure_details?.arrival;
                                             return (
                                                 <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                                    <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{guest.name}</td>
+                                                    <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
+                                                        <div>{guest.name}</div>
+                                                        {guest.coordinator_id && coordinators[guest.coordinator_id] && (
+                                                            <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-normal mt-0.5 flex items-center gap-1">
+                                                                <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
+                                                                {coordinators[guest.coordinator_id]}
+                                                            </div>
+                                                        )}
+                                                    </td>
                                                     <td className="px-6 py-4 text-zinc-500">
                                                         {arrival?.date ? format(new Date(arrival.date), "MMM d, yyyy") :
                                                             guest.departure_details?.arrival_date ? format(new Date(guest.departure_details.arrival_date), "MMM d, yyyy") : "-"}
@@ -845,7 +964,15 @@ function EventDetails() {
                                             if (departureData?.applicable === false) {
                                                 return (
                                                     <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                                        <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{guest.name}</td>
+                                                        <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
+                                                            <div>{guest.name}</div>
+                                                            {guest.coordinator_id && coordinators[guest.coordinator_id] && (
+                                                                <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-normal mt-0.5 flex items-center gap-1">
+                                                                    <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
+                                                                    {coordinators[guest.coordinator_id]}
+                                                                </div>
+                                                            )}
+                                                        </td>
                                                         <td className="px-6 py-4 text-zinc-500 italic">Not Applicable</td>
                                                         <td className="px-6 py-4 text-zinc-500 italic">Not Applicable</td>
                                                         <td className="px-6 py-4 text-zinc-500 italic">Not Applicable</td>
@@ -870,7 +997,15 @@ function EventDetails() {
                                             if (travelers.length === 0) {
                                                 return (
                                                     <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                                        <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{guest.name}</td>
+                                                        <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
+                                                            <div>{guest.name}</div>
+                                                            {guest.coordinator_id && coordinators[guest.coordinator_id] && (
+                                                                <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-normal mt-0.5 flex items-center gap-1">
+                                                                    <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
+                                                                    {coordinators[guest.coordinator_id]}
+                                                                </div>
+                                                            )}
+                                                        </td>
                                                         <td className="px-6 py-4 text-zinc-500">
                                                             {departure?.date ? format(new Date(departure.date), "MMM d, yyyy") :
                                                                 departureData?.departure_date ? format(new Date(departureData.departure_date), "MMM d, yyyy") : "-"}
@@ -897,8 +1032,13 @@ function EventDetails() {
                                             return travelers.map((traveler: any, idx: number) => (
                                                 <tr key={`${guest.id}-${idx}`} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                                                     <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
-                                                        {traveler.name}
-                                                        <span className="ml-2 text-xs text-zinc-500">({guest.name})</span>
+                                                        <div>{guest.name}</div>
+                                                        {guest.coordinator_id && coordinators[guest.coordinator_id] && (
+                                                            <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-normal mt-0.5 flex items-center gap-1">
+                                                                <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
+                                                                {coordinators[guest.coordinator_id]}
+                                                            </div>
+                                                        )}
                                                     </td>
                                                     <td className="px-6 py-4 text-zinc-500">
                                                         {departure?.date ? format(new Date(departure.date), "MMM d, yyyy") :
@@ -996,6 +1136,24 @@ function EventDetails() {
                                     value={newGuestPhone}
                                     onChange={(e) => setNewGuestPhone(e.target.value)}
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Parent / Primary Guest (Optional)</Label>
+                                <select
+                                    className="w-full flex h-10 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:ring-offset-zinc-950 dark:placeholder:text-zinc-400 dark:focus-visible:ring-zinc-300"
+                                    value={selectedPrimaryGuestId || ""}
+                                    onChange={(e) => setSelectedPrimaryGuestId(e.target.value || null)}
+                                >
+                                    <option value="">Select Primary Guest (None)</option>
+                                    {guests
+                                        .filter(g => !g.parent_id)
+                                        .map((g) => (
+                                            <option key={g.id} value={g.id}>
+                                                {g.name}
+                                            </option>
+                                        ))}
+                                </select>
                             </div>
                         </div>
 

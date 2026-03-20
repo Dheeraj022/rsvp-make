@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import jsPDF from "jspdf";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
 
 type GuestDetailsModalProps = {
@@ -20,6 +20,21 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
     const [downloading, setDownloading] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
     const [addingLoader, setAddingLoader] = useState(false);
+    const [coordinatorName, setCoordinatorName] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (guest?.coordinator_id) {
+            const fetchCoord = async () => {
+                const { data } = await supabase
+                    .from('coordinators')
+                    .select('name')
+                    .eq('id', guest.coordinator_id)
+                    .single();
+                if (data) setCoordinatorName(data.name);
+            };
+            fetchCoord();
+        }
+    }, [guest?.coordinator_id]);
 
     // New Member State
     const [newMemberName, setNewMemberName] = useState("");
@@ -345,6 +360,15 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                             <span className="text-zinc-500 block">Total Guests</span>
                             <span className="font-medium text-zinc-900 dark:text-zinc-100">{attendees.length > 0 ? attendees.length : guest.attending_count}</span>
                         </div>
+                        {coordinatorName && (
+                            <div className="space-y-1">
+                                <span className="text-zinc-500 block">Entry Source</span>
+                                <span className="inline-flex items-center gap-1.5 font-medium text-indigo-600 dark:text-indigo-400">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                                    Coordinator: {coordinatorName}
+                                </span>
+                            </div>
+                        )}
                     </div>
 
                     {/* Transport Details (Arrival & Departure) */}
