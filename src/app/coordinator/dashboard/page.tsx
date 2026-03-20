@@ -14,7 +14,6 @@ import {
     Calendar,
     Bus,
     RefreshCw,
-    PlaneLanding,
     Menu,
     X,
     Phone,
@@ -23,7 +22,11 @@ import {
     Train,
     Clock,
     Navigation,
-    FileText
+    FileText,
+    UserPlus,
+    Plane,
+    PlaneLanding,
+    Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,6 +82,26 @@ export default function CoordinatorDashboard() {
     const [noteContent, setNoteContent] = useState("");
     const [noteType, setNoteType] = useState<'arrival' | 'departure'>('arrival');
     const [isUpdatingNote, setIsUpdatingNote] = useState(false);
+
+    // Add Guest Modal State
+    const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
+    const [isAddingGuest, setIsAddingGuest] = useState(false);
+    const [newGuestName, setNewGuestName] = useState("");
+    const [newGuestPhone, setNewGuestPhone] = useState("");
+    const [newGuestEmail, setNewGuestEmail] = useState("");
+    
+    // Transport for new guest
+    const [arrDate, setArrDate] = useState("");
+    const [arrTime, setArrTime] = useState("");
+    const [arrMode, setArrMode] = useState("Flight");
+    const [arrTransportNo, setArrTransportNo] = useState("");
+    const [arrStation, setArrStation] = useState("");
+    
+    const [depDate, setDepDate] = useState("");
+    const [depTime, setDepTime] = useState("");
+    const [depMode, setDepMode] = useState("Flight");
+    const [depTransportNo, setDepTransportNo] = useState("");
+    const [depStation, setDepStation] = useState("");
 
     // New State for Individual Companion Drivers
     const [assignSameDriver, setAssignSameDriver] = useState(true);
@@ -641,6 +664,82 @@ export default function CoordinatorDashboard() {
         }
     };
 
+    const handleAddGuest = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newGuestName.trim()) {
+            toastError("Please enter a guest name.");
+            return;
+        }
+
+        setIsAddingGuest(true);
+        try {
+            const event_id = coordinator?.event_id || null;
+            const coordinator_id = coordinator?.id || null;
+
+            const departure_details = {
+                applicable: true,
+                arrival: {
+                    date: arrDate || null,
+                    time: arrTime || null,
+                    travelers: [{
+                        name: newGuestName,
+                        mode_of_travel: arrMode,
+                        transport_number: arrTransportNo || "",
+                        station_airport: arrStation || ""
+                    }]
+                },
+                departure: {
+                    date: depDate || null,
+                    time: depTime || null,
+                    travelers: [{
+                        name: newGuestName,
+                        mode_of_travel: depMode,
+                        transport_number: depTransportNo || "",
+                        station_airport: depStation || ""
+                    }]
+                }
+            };
+
+            const { error } = await supabase.from("guests").insert([{
+                name: newGuestName,
+                phone: newGuestPhone || null,
+                email: newGuestEmail || null,
+                event_id: event_id,
+                coordinator_id: coordinator_id,
+                status: 'accepted',
+                check_in_status: 'pending',
+                attending_count: 1,
+                attendees_data: [],
+                departure_details: departure_details
+            }]);
+
+            if (error) throw error;
+
+            toastSuccess("Guest added successfully!");
+            setIsAddGuestModalOpen(false);
+            
+            // Reset state
+            setNewGuestName("");
+            setNewGuestPhone("");
+            setNewGuestEmail("");
+            setArrDate("");
+            setArrTime("");
+            setArrTransportNo("");
+            setArrStation("");
+            setDepDate("");
+            setDepTime("");
+            setDepTransportNo("");
+            setDepStation("");
+            
+            fetchCoordinatorAndGuests();
+        } catch (error: any) {
+            console.error("Error adding guest:", error);
+            toastError(`Failed to add guest: ${error.message || "Unknown error"}`);
+        } finally {
+            setIsAddingGuest(false);
+        }
+    };
+
     const handleSubMemberCheckIn = async (guestId: string, subMemberIndex: number, currentStatus: boolean) => {
         const newStatus = !currentStatus;
         try {
@@ -832,6 +931,14 @@ export default function CoordinatorDashboard() {
                         <Button
                             variant="outline"
                             size="icon"
+                            onClick={() => setIsAddGuestModalOpen(true)}
+                            className="rounded-xl shadow-sm h-10 w-10 bg-indigo-50 text-indigo-600 border-indigo-100"
+                        >
+                            <UserPlus size={18} />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="icon"
                             onClick={handleExportExcel}
                             className="rounded-xl shadow-sm h-10 w-10 border-emerald-100 hover:bg-emerald-50 text-emerald-600"
                         >
@@ -856,20 +963,27 @@ export default function CoordinatorDashboard() {
                             </div>
                             <div className="flex items-center gap-3">
                                 <Button
-                                    onClick={handleExportExcel}
-                                    variant="outline"
-                                    className="rounded-2xl h-12 px-6 font-bold bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950 transition-all shadow-sm gap-2"
+                                    onClick={() => setIsAddGuestModalOpen(true)}
+                                    className="rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 px-6 gap-2 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
                                 >
-                                    <FileSpreadsheet size={18} className="text-emerald-500" />
-                                    Export Report
+                                    <UserPlus size={18} />
+                                    <span>Add Guest</span>
                                 </Button>
                                 <Button
+                                    variant="outline"
+                                    onClick={handleExportExcel}
+                                    className="rounded-2xl border-emerald-200 text-emerald-600 font-bold hover:bg-emerald-50 h-12 px-6 gap-2"
+                                >
+                                    <FileSpreadsheet size={18} />
+                                    Export Excel
+                                </Button>
+                                <Button
+                                    variant="outline"
                                     onClick={handleRefresh}
                                     disabled={isRefreshing}
-                                    className="rounded-2xl h-12 px-6 font-bold bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 transition-all shadow-sm gap-2"
+                                    className="rounded-2xl border-zinc-200 text-zinc-600 font-bold hover:bg-zinc-50 h-12 w-12 p-0 flex items-center justify-center"
                                 >
                                     <RefreshCw size={18} className={cn(isRefreshing && "animate-spin")} />
-                                    Refresh Status
                                 </Button>
                             </div>
                         </div>
@@ -1702,6 +1816,234 @@ export default function CoordinatorDashboard() {
                                             <Loader2 size={20} className="animate-spin" />
                                         ) : (
                                             "Save Assignments"
+                                        )}
+                                    </Button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Add Guest Modal */}
+            {isAddGuestModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+                    <div 
+                        className="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm transition-opacity"
+                        onClick={() => setIsAddGuestModalOpen(false)}
+                    />
+                    <div className="relative w-full max-w-4xl bg-white dark:bg-zinc-900 rounded-[32px] shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in fade-in zoom-in duration-300 my-8">
+                        <div className="p-8 sm:p-10">
+                            <div className="flex items-center justify-between mb-8">
+                                <div>
+                                    <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight flex items-center gap-3">
+                                        <UserPlus className="text-indigo-600" size={28} />
+                                        Add New Guest
+                                    </h3>
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">
+                                        Create manual entry for offline or last-minute guests
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setIsAddGuestModalOpen(false)}
+                                    className="p-3 rounded-2xl hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-900 transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleAddGuest} className="space-y-8">
+                                {/* Basic Info Section */}
+                                <div className="space-y-4">
+                                    <h4 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                        <div className="h-px flex-1 bg-zinc-100 dark:bg-zinc-800"></div>
+                                        Basic Information
+                                        <div className="h-px flex-1 bg-zinc-100 dark:bg-zinc-800"></div>
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Full Name *</label>
+                                            <div className="relative">
+                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+                                                <Input
+                                                    placeholder="Guest Name"
+                                                    value={newGuestName}
+                                                    onChange={(e) => setNewGuestName(e.target.value)}
+                                                    className="h-14 pl-12 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 font-bold"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Phone Number</label>
+                                            <div className="relative">
+                                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+                                                <Input
+                                                    placeholder="Contact Number"
+                                                    value={newGuestPhone}
+                                                    onChange={(e) => setNewGuestPhone(e.target.value)}
+                                                    className="h-14 pl-12 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 font-bold"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Email Address</label>
+                                            <div className="relative">
+                                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+                                                <Input
+                                                    placeholder="Email (Optional)"
+                                                    value={newGuestEmail}
+                                                    onChange={(e) => setNewGuestEmail(e.target.value)}
+                                                    className="h-14 pl-12 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 font-bold"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    {/* Arrival Section */}
+                                    <div className="space-y-4">
+                                        <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                            <PlaneLanding size={16} />
+                                            Arrival Details
+                                            <div className="h-px flex-1 bg-blue-50 dark:bg-blue-900/20"></div>
+                                        </h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Date</label>
+                                                <Input
+                                                    type="date"
+                                                    value={arrDate}
+                                                    onChange={(e) => setArrDate(e.target.value)}
+                                                    className="h-12 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Time</label>
+                                                <Input
+                                                    type="time"
+                                                    value={arrTime}
+                                                    onChange={(e) => setArrTime(e.target.value)}
+                                                    className="h-12 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Mode & Reference</label>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    value={arrMode}
+                                                    onChange={(e) => setArrMode(e.target.value)}
+                                                    className="w-1/3 h-12 rounded-xl border border-zinc-200 bg-zinc-50/50 px-3 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                                >
+                                                    <option>Flight</option>
+                                                    <option>Train</option>
+                                                    <option>Bus</option>
+                                                    <option>Car</option>
+                                                </select>
+                                                <Input
+                                                    placeholder="Flight/Train No."
+                                                    value={arrTransportNo}
+                                                    onChange={(e) => setArrTransportNo(e.target.value)}
+                                                    className="flex-1 h-12 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Airport / Station Name</label>
+                                            <div className="relative">
+                                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                                                <Input
+                                                    placeholder="e.g. Airport Terminal 1"
+                                                    value={arrStation}
+                                                    onChange={(e) => setArrStation(e.target.value)}
+                                                    className="h-12 pl-10 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Departure Section */}
+                                    <div className="space-y-4">
+                                        <h4 className="text-xs font-black text-orange-600 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                            <Plane size={16} />
+                                            Departure Details
+                                            <div className="h-px flex-1 bg-orange-50 dark:bg-orange-900/20"></div>
+                                        </h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Date</label>
+                                                <Input
+                                                    type="date"
+                                                    value={depDate}
+                                                    onChange={(e) => setDepDate(e.target.value)}
+                                                    className="h-12 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Time</label>
+                                                <Input
+                                                    type="time"
+                                                    value={depTime}
+                                                    onChange={(e) => setDepTime(e.target.value)}
+                                                    className="h-12 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Mode & Reference</label>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    value={depMode}
+                                                    onChange={(e) => setDepMode(e.target.value)}
+                                                    className="w-1/3 h-12 rounded-xl border border-zinc-200 bg-zinc-50/50 px-3 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                                >
+                                                    <option>Flight</option>
+                                                    <option>Train</option>
+                                                    <option>Bus</option>
+                                                    <option>Car</option>
+                                                </select>
+                                                <Input
+                                                    placeholder="Flight/Train No."
+                                                    value={depTransportNo}
+                                                    onChange={(e) => setDepTransportNo(e.target.value)}
+                                                    className="flex-1 h-12 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Airport / Station Name</label>
+                                            <div className="relative">
+                                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                                                <Input
+                                                    placeholder="e.g. Airport Terminal 1"
+                                                    value={depStation}
+                                                    onChange={(e) => setDepStation(e.target.value)}
+                                                    className="h-12 pl-10 rounded-xl border-zinc-200 bg-zinc-50/50 font-bold"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4 pt-6">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setIsAddGuestModalOpen(false)}
+                                        className="flex-1 h-14 rounded-2xl font-black text-xs uppercase tracking-widest border-2"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={isAddingGuest}
+                                        className="flex-[2] h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
+                                    >
+                                        {isAddingGuest ? (
+                                            <Loader2 size={24} className="animate-spin" />
+                                        ) : (
+                                            "Add Guest & Details"
                                         )}
                                     </Button>
                                 </div>
