@@ -196,12 +196,17 @@ function CoordinatorsPage() {
         setIsUpdating(true);
 
         try {
-            const { error } = await supabase
-                .from("coordinators")
-                .update({ event_id: editEventId || null })
-                .eq("id", editingCoordinator.id);
+            const response = await fetch("/api/admin/coordinators/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    coordinatorId: editingCoordinator.id,
+                    eventId: editEventId || null,
+                }),
+            });
 
-            if (error) throw error;
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || "Failed to update coordinator");
 
             await fetchCoordinators();
             setIsEditModalOpen(false);
