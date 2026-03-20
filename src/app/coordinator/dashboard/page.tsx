@@ -1796,66 +1796,68 @@ export default function CoordinatorDashboard() {
                                     </div>
                                 </div>
 
-                                {/* Individual Companion Inputs */}
+                                { /* Individual Companion Inputs */ }
                                 {!assignSameDriver && selectedGuestForDriver.attendees_data?.map((m: any, idx: number) => (
-                                    <div key={idx} className="space-y-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                                        <div className="flex items-center justify-between px-1">
-                                            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest italic">Driver for {m.name}</label>
-                                            <button 
-                                                type="button"
-                                                onClick={() => {
-                                                    setCompanionDrivers(prev => ({
-                                                        ...prev,
-                                                        [idx]: { name: driverName, phone: driverPhone }
-                                                    }));
-                                                }}
-                                                className="text-[9px] font-bold text-blue-500 hover:text-blue-600 transition-colors uppercase tracking-tighter"
-                                            >
-                                                Use Main Driver
-                                            </button>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <Input
-                                                list={`available-drivers-${idx}`}
-                                                placeholder={`Driver for ${m.name}`}
-                                                value={companionDrivers[idx]?.name || ""}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    const found = availableDrivers.find(d => d.name === val);
-                                                    setCompanionDrivers(prev => ({
-                                                        ...prev,
-                                                        [idx]: { 
-                                                            name: val, 
-                                                            phone: found ? found.phone : (prev[idx]?.phone || "") 
-                                                        }
-                                                    }));
-                                                }}
-                                                className="h-12 rounded-xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus-visible:ring-indigo-500/20 font-bold"
-                                                required={!assignSameDriver}
-                                            />
-                                            <datalist id={`available-drivers-${idx}`}>
-                                                {availableDrivers.map(d => (
-                                                    <option key={`${d.name}-${d.phone}-comp-${idx}`} value={d.name}>{d.phone}</option>
-                                                ))}
-                                            </datalist>
-                                            <div className="relative">
-                                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
-                                                <Input
-                                                    placeholder="Phone number"
-                                                    value={companionDrivers[idx]?.phone || ""}
-                                                    onChange={(e) => {
-                                                        const val = e.target.value;
+                                    m.name === selectedGuestForDriver.name ? null : (
+                                        <div key={idx} className="space-y-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                                            <div className="flex items-center justify-between px-1">
+                                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest italic">Driver for {m.name}</label>
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => {
                                                         setCompanionDrivers(prev => ({
                                                             ...prev,
-                                                            [idx]: { ...prev[idx], phone: val }
+                                                            [idx]: { name: driverName, phone: driverPhone }
                                                         }));
                                                     }}
-                                                    className="h-12 pl-10 rounded-xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus-visible:ring-indigo-500/20 font-bold text-sm"
+                                                    className="text-[9px] font-bold text-blue-500 hover:text-blue-600 transition-colors uppercase tracking-tighter"
+                                                >
+                                                    Use Main Driver
+                                                </button>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <Input
+                                                    list={`available-drivers-${idx}`}
+                                                    placeholder={`Driver for ${m.name}`}
+                                                    value={companionDrivers[idx]?.name || ""}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        const found = availableDrivers.find(d => d.name === val);
+                                                        setCompanionDrivers(prev => ({
+                                                            ...prev,
+                                                            [idx]: { 
+                                                                name: val, 
+                                                                phone: found ? found.phone : (prev[idx]?.phone || "") 
+                                                            }
+                                                        }));
+                                                    }}
+                                                    className="h-12 rounded-xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus-visible:ring-indigo-500/20 font-bold"
                                                     required={!assignSameDriver}
                                                 />
+                                                <datalist id={`available-drivers-${idx}`}>
+                                                    {availableDrivers.map(d => (
+                                                        <option key={`${d.name}-${d.phone}-comp-${idx}`} value={d.name}>{d.phone}</option>
+                                                    ))}
+                                                </datalist>
+                                                <div className="relative">
+                                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
+                                                    <Input
+                                                        placeholder="Phone number"
+                                                        value={companionDrivers[idx]?.phone || ""}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            setCompanionDrivers(prev => ({
+                                                                ...prev,
+                                                                [idx]: { ...prev[idx], phone: val }
+                                                            }));
+                                                        }}
+                                                        className="h-12 pl-10 rounded-xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus-visible:ring-indigo-500/20 font-bold text-sm"
+                                                        required={!assignSameDriver}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )
                                 ))}
 
                                 <div className="flex gap-4 pt-4">
