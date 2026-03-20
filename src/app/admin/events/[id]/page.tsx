@@ -382,6 +382,18 @@ function EventDetails() {
             }
 
             // Proceed with Deletion
+            // 1. Delete associated guests first (or their deletion should be cascaded, but better to be safe)
+            const { error: guestsError } = await supabase.from("guests").delete().eq("event_id", eventId);
+            if (guestsError) throw guestsError;
+
+            // 2. Unassign coordinators from this event (clears the foreign key constraint)
+            const { error: coordError } = await supabase
+                .from("coordinators")
+                .update({ event_id: null })
+                .eq("event_id", eventId);
+            if (coordError) throw coordError;
+
+            // 3. Finally delete the event
             const { error } = await supabase.from("events").delete().eq("id", eventId);
             if (error) throw error;
 
