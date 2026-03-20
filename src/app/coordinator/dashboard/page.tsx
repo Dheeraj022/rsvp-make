@@ -26,7 +26,8 @@ import {
     UserPlus,
     Plane,
     PlaneLanding,
-    Mail
+    Mail,
+    ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,6 +103,9 @@ export default function CoordinatorDashboard() {
     const [depMode, setDepMode] = useState("Flight");
     const [depTransportNo, setDepTransportNo] = useState("");
     const [depStation, setDepStation] = useState("");
+    
+    // Primary Guest Linking
+    const [selectedPrimaryGuestId, setSelectedPrimaryGuestId] = useState<string | null>(null);
 
     // New State for Individual Companion Drivers
     const [assignSameDriver, setAssignSameDriver] = useState(true);
@@ -673,7 +677,17 @@ export default function CoordinatorDashboard() {
 
         setIsAddingGuest(true);
         try {
-            const event_id = coordinator?.event_id || null;
+            let finalEventId = coordinator?.event_id;
+            
+            // If coordinator has no explicit event_id, try to pull from existing guests
+            if (!finalEventId && guests.length > 0) {
+                finalEventId = guests[0].event_id;
+            }
+
+            if (!finalEventId) {
+                throw new Error("No event ID found to associate with guest. Please contact support.");
+            }
+
             const coordinator_id = coordinator?.id || null;
 
             const departure_details = {
@@ -700,20 +714,32 @@ export default function CoordinatorDashboard() {
                 }
             };
 
-            const { error } = await supabase.from("guests").insert([{
+            const payload = {
                 name: newGuestName,
                 phone: newGuestPhone || null,
                 email: newGuestEmail || null,
-                event_id: event_id,
+                event_id: finalEventId,
                 coordinator_id: coordinator_id,
+                parent_id: selectedPrimaryGuestId,
                 status: 'accepted',
                 check_in_status: 'pending',
+                allowed_guests: 1,
                 attending_count: 1,
                 attendees_data: [],
                 departure_details: departure_details
-            }]);
+            };
 
-            if (error) throw error;
+            const response = await fetch("/api/coordinator/add-guest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || "Failed to add guest through server-side handler.");
+            }
 
             toastSuccess("Guest added successfully!");
             setIsAddGuestModalOpen(false);
@@ -730,11 +756,12 @@ export default function CoordinatorDashboard() {
             setDepTime("");
             setDepTransportNo("");
             setDepStation("");
+            setSelectedPrimaryGuestId(null);
             
             fetchCoordinatorAndGuests();
         } catch (error: any) {
             console.error("Error adding guest:", error);
-            toastError(`Failed to add guest: ${error.message || "Unknown error"}`);
+            toastError(`Failed to add guest: ${error.message}`);
         } finally {
             setIsAddingGuest(false);
         }
@@ -1897,6 +1924,34 @@ export default function CoordinatorDashboard() {
                                                 />
                                             </div>
                                         </div>
+                                    </div>
+
+                                    {/* Link to Primary Guest (Optional) */}
+                                    <div className="space-y-2 pt-4 border-t border-zinc-100 dark:border-zinc-800/50 mt-2">
+                                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1 text-indigo-600/70">Parent / Primary Guest (Optional)</label>
+                                        <div className="relative group">
+                                            <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-hover:text-indigo-500 transition-colors" size={18} />
+                                            <select
+                                                value={selectedPrimaryGuestId || ""}
+                                                onChange={(e) => setSelectedPrimaryGuestId(e.target.value || null)}
+                                                className="w-full h-14 pl-12 pr-10 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none transition-all hover:border-indigo-200"
+                                            >
+                                                <option value="">Independent (Direct Guest)</option>
+                                                {guests
+                                                    .filter(g => !g.parent_id)
+                                                    .sort((a, b) => a.name.localeCompare(b.name))
+                                                    .map(pg => (
+                                                        <option key={pg.id} value={pg.id}>
+                                                            Companion of: {pg.name}
+                                                        </option>
+                                                    ))
+                                                }
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400 group-hover:text-zinc-600 transition-colors">
+                                                <ChevronDown size={18} />
+                                            </div>
+                                        </div>
+                                        <p className="text-[9px] text-zinc-500 ml-1 font-medium italic">Select a primary guest if this person is part of their group.</p>
                                     </div>
                                 </div>
 
