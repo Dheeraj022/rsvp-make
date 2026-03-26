@@ -13,10 +13,17 @@ import {
     Search,
     ChevronRight,
     MoreVertical,
+    Download,
+    Trash2,
+    Copy,
+    Check
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import Papa from "papaparse";
+import { saveAs } from "file-saver";
 
 // Types
 type Event = {
@@ -35,6 +42,8 @@ function EventsPage() {
     const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(true);
+    const [actionEvent, setActionEvent] = useState<Event | null>(null);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchEvents();
@@ -78,6 +87,49 @@ function EventsPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleDeleteEvent = async (id: string, name: string) => {
+        if (!confirm(`Are you sure you want to delete "${name}"? This will also remove all guest RSVPs for this event.`)) return;
+
+        try {
+            const { error } = await supabase.from("events").delete().eq("id", id);
+            if (error) throw error;
+            setEvents(prev => prev.filter(e => e.id !== id));
+            alert("Event deleted successfully.");
+        } catch (error: any) {
+            console.error("Error deleting event:", error);
+            alert("Failed to delete event: " + error.message);
+        }
+    };
+
+    const handleExportCSV = async (id: string, name: string) => {
+        try {
+            const { data, error } = await supabase
+                .from("guests")
+                .select("*")
+                .eq("event_id", id);
+
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                alert("No guests to export for this event.");
+                return;
+            }
+
+            const csv = Papa.unparse(data);
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            saveAs(blob, `${name.replace(/\s+/g, "_")}_guests.csv`);
+        } catch (error: any) {
+            console.error("Error exporting CSV:", error);
+            alert("Failed to export guests.");
+        }
+    };
+
+    const handleCopyLink = async (eventId: string, slug: string) => {
+        const url = `${window.location.origin}/r/${slug}`;
+        await navigator.clipboard.writeText(url);
+        setCopiedId(eventId);
+        setTimeout(() => setCopiedId(null), 2000);
     };
 
     return (
@@ -168,12 +220,17 @@ function EventsPage() {
                                         <td className="px-4 md:px-8 py-6 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <Link href={`/admin/events/${event.id}`}>
-                                                    <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700 rounded-xl px-4 h-9 text-[10px] md:text-xs font-semibold gap-2 border-none">
+                                                    <Button size="sm" className="bg-zinc-900 text-white hover:bg-black rounded-xl px-4 md:px-5 h-9 text-[10px] md:text-xs font-black gap-2 border-none">
                                                         <span className="hidden xs:inline">Details</span>
                                                         <ChevronRight size={14} />
                                                     </Button>
                                                 </Link>
-                                                <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl text-zinc-400">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-9 w-9 rounded-xl text-zinc-400 hover:bg-blue-600 hover:text-white border border-zinc-100 transition-all shadow-sm active:scale-95"
+                                                    onClick={() => setActionEvent(event)}
+                                                >
                                                     <MoreVertical size={16} />
                                                 </Button>
                                             </div>
@@ -185,6 +242,79 @@ function EventsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Action Popup Modal */}
+            {actionEvent && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setActionEvent(null)} />
+                    <div className="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl relative animate-in zoom-in slide-in-from-bottom-8 duration-300">
+                        <div className="p-8 space-y-6">
+                            <div className="space-y-1">
+                                <h3 className="text-xl font-black text-zinc-900">{actionEvent.name}</h3>
+                                <p className="text-sm font-medium text-zinc-500 uppercase tracking-widest">{format(new Date(actionEvent.date), "dd MMM yyyy")}</p>
+                            </div>
+
+                            <div className="grid gap-3">
+                                <button
+                                    onClick={() => {
+                                        handleCopyLink(actionEvent.id, actionEvent.slug);
+                                        setTimeout(() => setActionEvent(null), 1000);
+                                    }}
+                                    className="flex items-center gap-4 p-5 rounded-2xl bg-zinc-50 hover:bg-blue-50 text-zinc-600 hover:text-blue-600 transition-all group w-full text-left"
+                                >
+                                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                        {copiedId === actionEvent.id ? <Check className="text-emerald-500" size={20} /> : <Copy size={20} />}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-black">{copiedId === actionEvent.id ? "Copied!" : "Copy Invite Link"}</span>
+                                        <span className="text-[10px] font-bold opacity-60">Share URL with guests</span>
+                                    </div>
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        handleExportCSV(actionEvent.id, actionEvent.name);
+                                        setActionEvent(null);
+                                    }}
+                                    className="flex items-center gap-4 p-5 rounded-2xl bg-zinc-50 hover:bg-emerald-50 text-zinc-600 hover:text-emerald-600 transition-all group w-full text-left"
+                                >
+                                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                        <Download size={20} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-black">Export Guest CSV</span>
+                                        <span className="text-[10px] font-bold opacity-60">Download attendee list</span>
+                                    </div>
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        handleDeleteEvent(actionEvent.id, actionEvent.name);
+                                        setActionEvent(null);
+                                    }}
+                                    className="flex items-center gap-4 p-5 rounded-2xl bg-red-50 hover:bg-red-500 text-red-600 hover:text-white transition-all group w-full text-left"
+                                >
+                                    <div className="w-10 h-10 rounded-xl bg-white group-hover:bg-red-400 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                        <Trash2 size={20} className="group-hover:text-white" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-black text-red-600 group-hover:text-white">Delete Event</span>
+                                        <span className="text-[10px] font-bold opacity-60 group-hover:text-white/80">Permanent removal</span>
+                                    </div>
+                                </button>
+                            </div>
+
+                            <Button 
+                                variant="ghost" 
+                                className="w-full h-14 rounded-2xl text-zinc-900 bg-zinc-100 font-black hover:bg-blue-600 hover:text-white transition-all transform active:scale-95 shadow-sm"
+                                onClick={() => setActionEvent(null)}
+                            >
+                                Close Actions
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }
