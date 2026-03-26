@@ -75,7 +75,6 @@ function AdminDashboard() {
             const { data: eventsData, error: eventsError } = await supabase
                 .from("events")
                 .select("*")
-                .eq("admin_id", user.id)
                 .order("date", { ascending: true });
 
             if (eventsError) throw eventsError;
@@ -97,13 +96,11 @@ function AdminDashboard() {
 
             const { count: hotelCount } = await supabase
                 .from("hotels")
-                .select("*", { count: 'exact', head: true })
-                .eq("admin_id", user.id);
+                .select("*", { count: 'exact', head: true });
 
             const { count: coordCount } = await supabase
                 .from("coordinators")
-                .select("*", { count: 'exact', head: true })
-                .eq("admin_id", user.id);
+                .select("*", { count: 'exact', head: true });
 
             const totalGuests = eventsWithStats.reduce((sum, e) => sum + (e.guest_count || 0), 0);
             const upcoming = eventsWithStats.filter(e => new Date(e.date) >= new Date()).length;

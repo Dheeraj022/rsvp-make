@@ -87,8 +87,7 @@ function HotelsPage() {
             // 2. Fetch all events (to check assignments)
             const { data: eventsData, error: eventsError } = await supabase
                 .from("events")
-                .select("id, name, assigned_hotel_email")
-                .eq("admin_id", user.id);
+                .select("id, name, assigned_hotel_email");
 
             if (eventsError) throw eventsError;
 
@@ -125,24 +124,21 @@ function HotelsPage() {
             // HOWEVER, if the user explicitly wants a password field here, we'll try to use signUp.
             // Since this is a pair programming session, I'll implement it and warn about the session.
 
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: newHotelEmail,
-                password: newHotelPassword,
+            const response = await fetch("/api/admin/create-user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    type: 'hotel',
+                    email: newHotelEmail,
+                    password: newHotelPassword,
+                    name: newHotelName,
+                    managerName: newHotelManager,
+                    adminId: user.id
+                }),
             });
 
-            if (authError) throw authError;
-
-            const { error } = await supabase
-                .from("hotels")
-                .insert({
-                    name: newHotelName,
-                    manager_name: newHotelManager,
-                    email: newHotelEmail,
-                    admin_id: user.id,
-                    user_id: authData.user?.id
-                });
-
-            if (error) throw error;
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || "Failed to create hotel");
 
             await fetchData();
             setIsCreateModalOpen(false);

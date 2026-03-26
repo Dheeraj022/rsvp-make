@@ -118,25 +118,22 @@ function CoordinatorsPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Not authenticated");
 
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: newEmail,
-                password: newPassword,
-            });
-
-            if (authError || !authData.user) throw authError || new Error("Failed to create auth user");
-
-            // 2. Insert Metadata
-            const { error: dbError } = await supabase.from("coordinators").insert([
-                {
+            const response = await fetch("/api/admin/create-user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    type: 'coordinator',
+                    email: newEmail,
+                    password: newPassword,
                     name: newName,
                     username: newUsername,
-                    email: newEmail,
-                    user_id: authData.user.id,
-                    event_id: selectedEventId || null,
-                    admin_id: user.id,
-                },
-            ]);
-            if (dbError) throw dbError;
+                    eventId: selectedEventId || null,
+                    adminId: user.id
+                }),
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || "Failed to create coordinator");
 
             await fetchCoordinators();
             setIsCreateModalOpen(false);

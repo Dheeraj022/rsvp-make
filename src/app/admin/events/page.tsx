@@ -56,7 +56,6 @@ function EventsPage() {
             const { data: eventsData, error: eventsError } = await supabase
                 .from("events")
                 .select("*")
-                .eq("admin_id", user.id)
                 .order("date", { ascending: true });
 
             if (eventsError) throw eventsError;
