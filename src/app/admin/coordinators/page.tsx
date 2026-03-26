@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import withAuth from "@/components/admin/withAuth";
+import withRoleAuth from "@/components/admin/withRoleAuth";
 import { Button } from "@/components/ui/button";
 import {
     Plus,
@@ -507,4 +507,4 @@ function CoordinatorsPage() {
     );
 }
 
-export default withAuth(CoordinatorsPage);
+export default withRoleAuth(CoordinatorsPage, 'admin');

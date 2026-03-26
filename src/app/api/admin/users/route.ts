@@ -28,7 +28,25 @@ export async function PATCH(req: NextRequest) {
             return NextResponse.json({ error: "User ID is required" }, { status: 400 });
         }
 
+        // Get current admin for admin_id reference if needed
+        const authHeader = req.headers.get('Authorization');
+        const token = authHeader?.split(' ')[1];
+        let adminId = userId; // Fallback
+
+        if (token) {
+            const { data: { user: currentUser } } = await supabaseAdmin.auth.getUser(token);
+            if (currentUser) adminId = currentUser.id;
+        }
+
         // 1. Update public.users
+        const { data: userData, error: fetchError } = await supabaseAdmin
+            .from("users")
+            .select("email")
+            .eq("id", userId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
         const { error: dbError } = await supabaseAdmin
             .from("users")
             .update({ full_name, role, status })
@@ -36,7 +54,34 @@ export async function PATCH(req: NextRequest) {
 
         if (dbError) throw dbError;
 
-        // 2. Update auth.user metadata if role or name changed
+        // 2. Cross-table synchronization
+        if (role === 'coordinator') {
+            const { data: coord } = await supabaseAdmin.from("coordinators").select("id").eq("user_id", userId).single();
+            if (!coord) {
+                await supabaseAdmin.from("coordinators").insert({
+                    user_id: userId,
+                    name: full_name || userData.email.split('@')[0],
+                    username: userData.email.split('@')[0] + '_' + Math.random().toString(36).slice(-4),
+                    admin_id: adminId
+                });
+            } else {
+                await supabaseAdmin.from("coordinators").update({ name: full_name }).eq("user_id", userId);
+            }
+        } else if (role === 'hotel') {
+            const { data: hotel } = await supabaseAdmin.from("hotels").select("id").eq("user_id", userId).single();
+            if (!hotel) {
+                await supabaseAdmin.from("hotels").insert({
+                    user_id: userId,
+                    name: full_name || userData.email.split('@')[0],
+                    email: userData.email,
+                    manager_name: full_name
+                });
+            } else {
+                await supabaseAdmin.from("hotels").update({ name: full_name }).eq("user_id", userId);
+            }
+        }
+
+        // 3. Update auth.user metadata
         const updateData: any = {};
         if (full_name) updateData.full_name = full_name;
         if (role) updateData.role = role;

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import withAuth from "@/components/admin/withAuth";
+import { supabase } from "@/lib/supabase";
+import withRoleAuth from "@/components/admin/withRoleAuth";
 import { Button } from "@/components/ui/button";
 import {
     Plus,
@@ -91,9 +92,14 @@ function TeamManagementPage() {
     const handleSaveEdit = async (userId: string) => {
         setIsSaving(userId);
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            
             const response = await fetch("/api/admin/users", {
                 method: "PATCH",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${session?.access_token}`
+                },
                 body: JSON.stringify({
                     userId,
                     ...editForm
@@ -324,4 +330,4 @@ function TeamManagementPage() {
     );
 }
 
-export default withAuth(TeamManagementPage);
+export default withRoleAuth(TeamManagementPage, 'admin');

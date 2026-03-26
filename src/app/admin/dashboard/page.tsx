@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import withAuth from "@/components/admin/withAuth";
+import withRoleAuth from "@/components/admin/withRoleAuth";
 import { Button } from "@/components/ui/button";
 import {
     Plus,
@@ -413,4 +413,4 @@ function AdminDashboard() {
     );
 }
 
-export default withAuth(AdminDashboard);
+export default withRoleAuth(AdminDashboard, 'admin');

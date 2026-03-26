@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
 
-export default function withAuth(Component: any) {
+export default function withRoleAuth(Component: any, allowedRole: string) {
     return function ProtectedRoute(props: any) {
         const router = useRouter();
         const [loading, setLoading] = useState(true);
@@ -18,19 +18,29 @@ export default function withAuth(Component: any) {
                     return;
                 }
 
-                // Check user status and role from public.users table for real-time enforcement
+                // Check real-time role from public.users
                 const { data: userData, error } = await supabase
                     .from("users")
-                    .select("status, role")
+                    .select("role, status")
                     .eq("id", session.user.id)
                     .single();
 
-                if (error || !userData || userData.status === 'inactive') {
-                    if (userData?.status === 'inactive') {
-                        alert("Your account has been disabled. Please contact the administrator.");
-                    }
+                if (error || !userData) {
                     await supabase.auth.signOut();
                     router.replace("/admin/login");
+                    return;
+                }
+
+                if (userData.status === 'inactive') {
+                    alert("Your account has been disabled.");
+                    await supabase.auth.signOut();
+                    router.replace("/admin/login");
+                    return;
+                }
+
+                if (userData.role !== allowedRole) {
+                    alert(`Unauthorized access. Only ${allowedRole}s are allowed.`);
+                    router.replace("/admin/dashboard");
                     return;
                 }
 
@@ -41,8 +51,11 @@ export default function withAuth(Component: any) {
 
         if (loading) {
             return (
-                <div className="flex h-screen w-full items-center justify-center bg-zinc-50 dark:bg-black">
-                    <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+                <div className="flex h-screen w-full items-center justify-center bg-zinc-50">
+                    <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="h-10 w-10 animate-spin text-zinc-400" />
+                        <span className="text-zinc-400 font-bold uppercase tracking-widest text-xs">Verifying access...</span>
+                    </div>
                 </div>
             );
         }

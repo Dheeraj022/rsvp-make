@@ -13,20 +13,43 @@ import {
     Menu,
     X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 const menuItems = [
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Events", href: "/admin/events", icon: Calendar },
     { name: "Hotels", href: "/admin/hotels", icon: Hotel },
     { name: "Coordinators", href: "/admin/coordinators", icon: UserCog },
-    { name: "Team Management", href: "/admin/team", icon: Users },
+    { name: "Team Management", href: "/admin/team", icon: Users, adminOnly: true },
     { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
 export default function Sidebar() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(true);
+    const [userRole, setUserRole] = useState<string | null>(null);
+    const [userName, setUserName] = useState("User");
+
+    useEffect(() => {
+        const fetchUserRole = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                const { data } = await supabase
+                    .from("users")
+                    .select("role, full_name")
+                    .eq("id", session.user.id)
+                    .single();
+                if (data) {
+                    setUserRole(data.role);
+                    setUserName(data.full_name || "User");
+                }
+            }
+        };
+        fetchUserRole();
+    }, []);
+
+    const filteredMenuItems = menuItems.filter(item => !item.adminOnly || userRole === 'admin');
 
     return (
         <>
@@ -63,7 +86,7 @@ export default function Sidebar() {
 
                     {/* Navigation */}
                     <nav className="flex-1 px-4 space-y-2 mt-6">
-                        {menuItems.map((item) => {
+                        {filteredMenuItems.map((item) => {
                             const isActive = pathname === item.href;
                             const Icon = item.icon;
 
@@ -103,12 +126,12 @@ export default function Sidebar() {
                     <div className="p-4 border-t border-white/5">
                         {isOpen ? (
                             <div className="bg-white/5 rounded-2xl p-4 flex items-center gap-3 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group">
-                                <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 border border-white/10 group-hover:border-white/20 transition-all">
-                                    <UserCog size={20} />
+                                <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 border border-white/10 group-hover:border-white/20 transition-all shrink-0">
+                                    <span className="font-black text-xs uppercase">{userName[0]}</span>
                                 </div>
-                                <div className="flex flex-col">
-                                    <span className="text-xs font-bold text-zinc-100 uppercase tracking-tighter">Event Master</span>
-                                    <span className="text-[10px] text-zinc-500 font-medium">Administrator</span>
+                                <div className="flex flex-col min-w-0">
+                                    <span className="text-xs font-bold text-zinc-100 uppercase tracking-tighter truncate">{userName}</span>
+                                    <span className="text-[10px] text-zinc-500 font-medium capitalize">{userRole || "User"}</span>
                                 </div>
                             </div>
                         ) : (
