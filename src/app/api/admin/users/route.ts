@@ -55,6 +55,8 @@ export async function PATCH(req: NextRequest) {
         if (dbError) throw dbError;
 
         // 2. Cross-table synchronization
+        const isActive = status === 'active';
+
         if (role === 'coordinator') {
             const { data: coord } = await supabaseAdmin.from("coordinators").select("id").eq("user_id", userId).single();
             if (!coord) {
@@ -62,10 +64,14 @@ export async function PATCH(req: NextRequest) {
                     user_id: userId,
                     name: full_name || userData.email.split('@')[0],
                     username: userData.email.split('@')[0] + '_' + Math.random().toString(36).slice(-4),
-                    admin_id: adminId
+                    admin_id: adminId,
+                    is_active: isActive
                 });
             } else {
-                await supabaseAdmin.from("coordinators").update({ name: full_name }).eq("user_id", userId);
+                await supabaseAdmin.from("coordinators").update({ 
+                    name: full_name,
+                    is_active: isActive 
+                }).eq("user_id", userId);
             }
         } else if (role === 'hotel') {
             const { data: hotel } = await supabaseAdmin.from("hotels").select("id").eq("user_id", userId).single();
@@ -74,10 +80,14 @@ export async function PATCH(req: NextRequest) {
                     user_id: userId,
                     name: full_name || userData.email.split('@')[0],
                     email: userData.email,
-                    manager_name: full_name
+                    manager_name: full_name,
+                    is_active: isActive
                 });
             } else {
-                await supabaseAdmin.from("hotels").update({ name: full_name }).eq("user_id", userId);
+                await supabaseAdmin.from("hotels").update({ 
+                    name: full_name,
+                    is_active: isActive 
+                }).eq("user_id", userId);
             }
         }
 

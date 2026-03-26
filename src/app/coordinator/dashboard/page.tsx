@@ -38,6 +38,7 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { useToast } from "@/hooks/useToast";
 import { ToastContainer } from "@/components/ui/toast";
+import withAuth from "@/components/auth/withAuth";
 
 // Types
 type Guest = {
@@ -62,7 +63,7 @@ type Guest = {
     };
 };
 
-export default function CoordinatorDashboard() {
+function CoordinatorDashboard() {
     const [guests, setGuests] = useState<Guest[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(true);
@@ -374,11 +375,9 @@ export default function CoordinatorDashboard() {
 
     const fetchCoordinatorAndGuests = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                router.push("/coordinator/login");
-                return;
-            }
+            const { data: { session } } = await supabase.auth.getSession();
+            const user = session?.user;
+            if (!user) return;
 
             // Fetch coordinator metadata
             const { data: coordData, error: coordError } = await supabase
@@ -2267,3 +2266,8 @@ export default function CoordinatorDashboard() {
         </div>
     );
 }
+
+export default withAuth(CoordinatorDashboard, { 
+    loginPath: '/coordinator/login', 
+    requiredRole: 'coordinator' 
+});

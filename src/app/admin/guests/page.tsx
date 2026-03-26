@@ -1,6 +1,6 @@
 "use client";
 
-import withAuth from "@/components/admin/withAuth";
+import withAuth from "@/components/auth/withAuth";
 import { Users, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";

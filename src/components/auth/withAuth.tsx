@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
 
-export default function withAuth(Component: any) {
+export default function withAuth(Component: any, options: { loginPath?: string, requiredRole?: string } = {}) {
+    const { loginPath = "/admin/login", requiredRole } = options;
+
     return function ProtectedRoute(props: any) {
         const router = useRouter();
         const [loading, setLoading] = useState(true);
@@ -14,7 +16,7 @@ export default function withAuth(Component: any) {
             const checkAuth = async () => {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (!session) {
-                    router.replace("/admin/login");
+                    router.replace(loginPath);
                     return;
                 }
 
@@ -25,12 +27,12 @@ export default function withAuth(Component: any) {
                     .eq("id", session.user.id)
                     .single();
 
-                if (error || !userData || userData.status === 'inactive') {
+                if (error || !userData || userData.status === 'inactive' || (requiredRole && userData.role !== requiredRole)) {
                     if (userData?.status === 'inactive') {
                         alert("Your account has been disabled. Please contact the administrator.");
                     }
                     await supabase.auth.signOut();
-                    router.replace("/admin/login");
+                    router.replace(loginPath);
                     return;
                 }
 

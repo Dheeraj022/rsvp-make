@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import withHotelAuth from "@/components/hotel/withHotelAuth";
+import withAuth from "@/components/auth/withAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut, Calendar, MapPin, ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -29,7 +29,8 @@ function HotelDashboard() {
 
     const fetchAssignedEvents = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { session } } = await supabase.auth.getSession();
+            const user = session?.user;
             if (!user || !user.email) return;
 
             setUserEmail(user.email);
@@ -141,4 +142,4 @@ function HotelDashboard() {
     );
 }
 
-export default withHotelAuth(HotelDashboard);
+export default withAuth(HotelDashboard, { loginPath: '/hotel/login', requiredRole: 'hotel' });
