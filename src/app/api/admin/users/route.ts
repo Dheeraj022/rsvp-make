@@ -60,34 +60,38 @@ export async function PATCH(req: NextRequest) {
         if (role === 'coordinator') {
             const { data: coord } = await supabaseAdmin.from("coordinators").select("id").eq("user_id", userId).single();
             if (!coord) {
-                await supabaseAdmin.from("coordinators").insert({
+                const { error: syncError } = await supabaseAdmin.from("coordinators").insert({
                     user_id: userId,
                     name: full_name || userData.email.split('@')[0],
                     username: userData.email.split('@')[0] + '_' + Math.random().toString(36).slice(-4),
                     admin_id: adminId,
                     is_active: isActive
                 });
+                if (syncError) throw syncError;
             } else {
-                await supabaseAdmin.from("coordinators").update({ 
+                const { error: syncError } = await supabaseAdmin.from("coordinators").update({ 
                     name: full_name,
                     is_active: isActive 
                 }).eq("user_id", userId);
+                if (syncError) throw syncError;
             }
         } else if (role === 'hotel') {
             const { data: hotel } = await supabaseAdmin.from("hotels").select("id").eq("user_id", userId).single();
             if (!hotel) {
-                await supabaseAdmin.from("hotels").insert({
+                const { error: syncError } = await supabaseAdmin.from("hotels").insert({
                     user_id: userId,
                     name: full_name || userData.email.split('@')[0],
                     email: userData.email,
                     manager_name: full_name,
                     is_active: isActive
                 });
+                if (syncError) throw syncError;
             } else {
-                await supabaseAdmin.from("hotels").update({ 
+                const { error: syncError } = await supabaseAdmin.from("hotels").update({ 
                     name: full_name,
                     is_active: isActive 
                 }).eq("user_id", userId);
+                if (syncError) throw syncError;
             }
         }
 
