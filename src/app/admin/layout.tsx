@@ -16,6 +16,7 @@ export default function AdminLayout({
     if (pathname.includes("/admin/events")) pageTitle = "Events Management";
     if (pathname.includes("/admin/hotels")) pageTitle = "Hotels & Accommodation";
     if (pathname.includes("/admin/coordinators")) pageTitle = "Coordinator Management";
+    if (pathname.includes("/admin/team")) pageTitle = "Team Management";
     if (pathname.includes("/admin/settings")) pageTitle = "Settings";
 
     // Check if we are on login/signup pages where we don't want the sidebar/header

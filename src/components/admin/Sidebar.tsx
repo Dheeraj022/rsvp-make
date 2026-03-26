@@ -20,6 +20,7 @@ const menuItems = [
     { name: "Events", href: "/admin/events", icon: Calendar },
     { name: "Hotels", href: "/admin/hotels", icon: Hotel },
     { name: "Coordinators", href: "/admin/coordinators", icon: UserCog },
+    { name: "Team Management", href: "/admin/team", icon: Users },
     { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
