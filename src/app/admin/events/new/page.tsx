@@ -57,6 +57,8 @@ function CreateEvent() {
                 description: formData.description,
                 slug: formData.slug,
                 admin_id: user.id,
+                created_by_name: user.user_metadata?.full_name || "Admin",
+                created_by_email: user.email,
                 drop_locations: formData.drop_locations.split(',').map(s => s.trim()).filter(s => s !== ""),
             });
 

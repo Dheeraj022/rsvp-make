@@ -32,6 +32,8 @@ type Event = {
     description: string;
     guest_count?: number;
     hotel_count?: number;
+    created_by_name?: string;
+    created_by_email?: string;
 };
 
 type Stats = {
@@ -109,7 +111,7 @@ function AdminDashboard() {
                 totalEvents: eventsWithStats.length,
                 upcomingEvents: upcoming,
                 totalHotels: hotelCount || 0,
-                totalGuests: totalGuests,
+                totalGuests: 0,
                 coordinators: coordCount || 0,
             });
 
@@ -122,7 +124,6 @@ function AdminDashboard() {
 
     const statCards = [
         { label: "Active Events", value: stats.totalEvents, icon: Calendar, color: "text-blue-600", bg: "bg-blue-600/10" },
-        { label: "Guest RSVPs", value: stats.totalGuests, icon: Users, color: "text-purple-600", bg: "bg-purple-600/10" },
         { label: "Hotel Partners", value: stats.totalHotels, icon: Hotel, color: "text-emerald-600", bg: "bg-emerald-600/10" },
         { label: "Coordinators", value: stats.coordinators, icon: UserCog, color: "text-orange-600", bg: "bg-orange-600/10" },
     ];
@@ -144,7 +145,7 @@ function AdminDashboard() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {statCards.map((stat, i) => (
                     <div
                         key={i}
@@ -211,6 +212,7 @@ function AdminDashboard() {
                                     <th className="hidden md:table-cell px-6 py-6 font-black">Timeline</th>
                                     <th className="hidden lg:table-cell px-6 py-6 font-black">Destination</th>
                                     <th className="hidden sm:table-cell px-6 py-6 font-black">Guest List</th>
+                                    <th className="hidden xl:table-cell px-6 py-6 font-black">Admin</th>
                                     <th className="px-6 md:px-10 py-6 text-right font-black">Action</th>
                                 </tr>
                             </thead>
@@ -246,6 +248,16 @@ function AdminDashboard() {
                                             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 group-hover:bg-blue-100 text-zinc-600 group-hover:text-blue-700 transition-all duration-300">
                                                 <Users size={14} className="opacity-70" />
                                                 <span className="text-[13px] font-black">{event.guest_count}</span>
+                                            </div>
+                                        </td>
+                                        <td className="hidden xl:table-cell px-6 py-8">
+                                            <div className="flex flex-col gap-1">
+                                                <div className="text-xs font-black text-zinc-900 uppercase tracking-widest">
+                                                    {event.created_by_name || "Admin"}
+                                                </div>
+                                                <div className="text-[10px] font-bold text-zinc-400 lowercase">
+                                                    {event.created_by_email || "N/A"}
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="px-6 md:px-10 py-8 text-right">
