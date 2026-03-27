@@ -919,9 +919,9 @@ function CoordinatorDashboard() {
                     <Button
                         variant="outline"
                         onClick={handleLogout}
-                        className="w-full rounded-2xl border-zinc-200 text-zinc-600 font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/20 dark:hover:border-red-900/30 transition-all gap-2 h-11"
+                        className="w-full rounded-2xl border-zinc-200 text-zinc-600 font-bold hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-500/20 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 dark:hover:border-rose-500/20 transition-all gap-2 h-11 group"
                     >
-                        <LogOut size={16} />
+                        <LogOut size={16} className="group-hover:rotate-12 transition-transform" />
                         Logout
                     </Button>
                 </div>
@@ -963,7 +963,7 @@ function CoordinatorDashboard() {
                             <Button
                                 variant="outline"
                                 onClick={handleLogout}
-                                className="w-full rounded-2xl font-bold gap-2 h-12 border-zinc-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/20 dark:hover:border-red-900/30 transition-all"
+                                className="w-full rounded-2xl font-bold gap-3 h-14 border-zinc-200 text-zinc-600 hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-500/20 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 dark:hover:border-rose-500/20 transition-all"
                             >
                                 <LogOut size={18} />
                                 Logout
@@ -1264,7 +1264,7 @@ function CoordinatorDashboard() {
                                                                 <td className="px-6 py-10 text-center">
                                                                     <div className={cn(
                                                                         "inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest",
-                                                                        (person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"
+                                                                        (person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400" : "bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400"
                                                                     )}>
                                                                         {(person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
                                                                         {(person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? "Arrived" : "Pending"}
@@ -1305,7 +1305,7 @@ function CoordinatorDashboard() {
                                                                 </h4>
                                                                 <div className={cn(
                                                                     "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shrink-0",
-                                                                    (person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"
+                                                                    (person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400" : "bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400"
                                                                 )}>
                                                                     {(person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
                                                                     {(person.isPrimary ? person.check_in_status === "arrived" : person.checked_in) ? "Arrived" : "Pending"}
@@ -1427,10 +1427,10 @@ function CoordinatorDashboard() {
                                             <table className="w-full text-left">
                                                 <thead>
                                                     <tr className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-400 text-[10px] font-black uppercase tracking-widest border-b border-zinc-100 dark:border-zinc-800">
-                                                        <th className="px-10 py-5">Guest Name</th>
+                                                        <th className="px-8 py-5">Guest Name</th>
                                                         <th className="px-6 py-5 text-center">Departure Details</th>
                                                         <th className="px-6 py-5 text-center">Status</th>
-                                                        <th className="px-10 py-5 text-center">Action</th>
+                                                        <th className="px-8 py-5 text-center">Action</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
@@ -1447,7 +1447,7 @@ function CoordinatorDashboard() {
                                                         </tr>
                                                     ) : (
                                                         flattenedGuests.map((person: any) => (
-                                                            <tr key={person.uniqueKey} className="group hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-all border-b border-zinc-50 dark:border-zinc-800/50">
+                                                            <tr key={person.uniqueKey} className="group hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-all border-b border-zinc-50 dark:border-zinc-800/50 align-top">
                                                                 <td className="px-10 py-8">
                                                                     <div className="flex flex-col gap-1">
                                                                         <span className="text-base font-bold text-zinc-900 dark:text-zinc-50 group-hover:text-indigo-600 transition-colors">
@@ -1556,24 +1556,24 @@ function CoordinatorDashboard() {
                                                                 <td className="px-6 py-8 text-center">
                                                                     <div className={cn(
                                                                         "inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300",
-                                                                        (person.isPrimary ? person.departure_status === "departed" : person.departed) ? "bg-indigo-50 text-indigo-600 scale-105" : "bg-zinc-50 text-zinc-400"
+                                                                        (person.isPrimary ? person.departure_status === "departed" : person.departed) ? "bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 scale-105" : "bg-zinc-50 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500"
                                                                     )}>
                                                                         {(person.isPrimary ? person.departure_status === "departed" : person.departed) ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
                                                                         {(person.isPrimary ? person.departure_status === "departed" : person.departed) ? "Departed" : "Ready"}
                                                                     </div>
                                                                 </td>
-                                                                <td className="px-10 py-8 text-center">
+                                                                <td className="px-8 py-8 text-center min-w-[160px]">
                                                                     <Button
                                                                         onClick={() => person.isPrimary 
                                                                             ? handleDepartureCheckIn(person.id, person.departure_status)
                                                                             : handleSubMemberDeparture(person.id, person.companionIndex, person.departed)
                                                                         }
                                                                         className={cn(
-                                                                            "w-full h-12 rounded-2xl font-black text-xs uppercase tracking-widest transition-all",
-                                                                            (person.isPrimary ? person.departure_status === "departed" : person.departed) ? "bg-indigo-600 text-white shadow-indigo-600/20" : "bg-white text-zinc-900 border-2 border-zinc-100 hover:border-indigo-100 shadow-sm"
+                                                                            "w-full h-11 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all",
+                                                                            (person.isPrimary ? person.departure_status === "departed" : person.departed) ? "bg-indigo-600 text-white shadow-indigo-600/20" : "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-2 border-zinc-100 dark:border-zinc-700 hover:border-indigo-100 dark:hover:border-indigo-500/50 shadow-sm"
                                                                         )}
                                                                     >
-                                                                        {(person.isPrimary ? person.departure_status === "departed" : person.departed) ? "Undo Departure" : "Mark Departed"}
+                                                                        {(person.isPrimary ? person.departure_status === "departed" : person.departed) ? "Undo" : "Mark Departed"}
                                                                     </Button>
                                                                 </td>
                                                             </tr>
@@ -1597,7 +1597,7 @@ function CoordinatorDashboard() {
                                                                 </h4>
                                                                 <div className={cn(
                                                                     "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shrink-0",
-                                                                    (person.isPrimary ? person.departure_status === "departed" : person.departed) ? "bg-indigo-50 text-indigo-600" : "bg-zinc-50 text-zinc-400"
+                                                                    (person.isPrimary ? person.departure_status === "departed" : person.departed) ? "bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400" : "bg-zinc-50 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500"
                                                                 )}>
                                                                     {(person.isPrimary ? person.departure_status === "departed" : person.departed) ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
                                                                     {(person.isPrimary ? person.departure_status === "departed" : person.departed) ? "Departed" : "Ready"}

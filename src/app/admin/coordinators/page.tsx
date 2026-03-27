@@ -75,7 +75,7 @@ function CoordinatorsPage() {
 
     const fetchCoordinators = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } = {} } = await supabase.auth.getUser();
             if (!user) return;
 
             const { data, error } = await supabase
@@ -115,7 +115,7 @@ function CoordinatorsPage() {
         e.preventDefault();
         setIsCreating(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } = {} } = await supabase.auth.getUser();
             if (!user) throw new Error("Not authenticated");
 
             const response = await fetch("/api/admin/create-user", {
@@ -220,8 +220,8 @@ function CoordinatorsPage() {
             {/* Header */}
             <div className="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-4 py-2">
                 <div className="overflow-hidden">
-                    <h2 className="text-2xl md:text-3xl font-bold text-zinc-900 tracking-tight truncate">Coordinators</h2>
-                    <p className="text-zinc-500 mt-1 text-sm md:text-base truncate">Manage event coordinators and access.</p>
+                    <h2 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight truncate">Coordinators</h2>
+                    <p className="text-zinc-500 dark:text-zinc-400 mt-1 text-sm md:text-base truncate">Manage event coordinators and access.</p>
                 </div>
                 <Button
                     className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-lg px-4 md:px-5 h-10 transition-all font-medium gap-2 shrink-0"
@@ -234,40 +234,40 @@ function CoordinatorsPage() {
             </div>
 
             {/* Search */}
-            <div className="relative group max-w-full bg-white rounded-lg border border-zinc-200">
+            <div className="relative group max-w-full bg-white dark:bg-white/5 rounded-lg border border-zinc-200 dark:border-white/10">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-600 transition-colors" size={18} />
                 <Input
                     placeholder="Search by name or username..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-11 bg-transparent border-none rounded-lg h-12 box-shadow-none focus-visible:ring-0 text-zinc-600 w-full"
+                    className="pl-11 bg-transparent border-none rounded-lg h-12 box-shadow-none focus-visible:ring-0 text-zinc-900 dark:text-zinc-50 w-full placeholder:text-zinc-400"
                 />
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-white/5 rounded-xl border border-zinc-200 dark:border-white/10 shadow-sm overflow-hidden">
                 {loading ? (
                     <div className="p-20 text-center">
                         <div className="flex flex-col items-center gap-3">
                             <Loader2 size={24} className="animate-spin text-zinc-400" />
-                            <span className="text-zinc-500 font-medium tracking-wider text-xs uppercase font-black">Loading...</span>
+                            <span className="text-zinc-500 dark:text-zinc-400 font-medium tracking-wider text-xs uppercase font-black">Loading...</span>
                         </div>
                     </div>
                 ) : filteredCoordinators.length === 0 ? (
                     <div className="p-20 text-center">
-                        <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-300">
+                        <div className="w-16 h-16 bg-zinc-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-300 dark:text-zinc-500">
                             <UserCog size={32} />
                         </div>
-                        <h4 className="text-lg font-semibold text-zinc-900">No coordinators found</h4>
-                        <p className="text-zinc-500 mt-1 uppercase text-xs font-bold tracking-wider">Start by creating your first coordinator</p>
+                        <h4 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">No coordinators found</h4>
+                        <p className="text-zinc-500 dark:text-zinc-400 mt-1 uppercase text-xs font-bold tracking-wider">Start by creating your first coordinator</p>
                     </div>
                 ) : (
                     <>
                         {/* Desktop View */}
                         <div className="hidden lg:block overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead>
-                                    <tr className="bg-[#f8f9fa] text-zinc-700 text-[10px] md:text-xs font-black uppercase tracking-widest border-b border-zinc-100">
+                                <thead className="bg-zinc-50/50 dark:bg-white/5">
+                                    <tr className="text-zinc-400 dark:text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] border-b border-zinc-100 dark:border-white/5">
                                         <th className="px-4 md:px-6 py-4">Coordinator Info</th>
                                         <th className="px-6 py-4">Credentials</th>
                                         <th className="px-6 py-4 text-left">Assigned Event</th>
@@ -276,46 +276,46 @@ function CoordinatorsPage() {
                                         <th className="px-4 md:px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-zinc-100">
+                                <tbody className="divide-y divide-zinc-100 dark:divide-white/5">
                                     {filteredCoordinators.map((c) => (
-                                        <tr key={c.id} className="hover:bg-zinc-50/50 transition-colors group">
+                                        <tr key={c.id} className="hover:bg-zinc-50/50 dark:hover:bg-white/5 transition-colors group">
                                             <td className="px-4 md:px-6 py-5">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 border border-zinc-200">
+                                                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-zinc-100 dark:bg-white/5 flex items-center justify-center text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-white/10">
                                                         <User size={16} />
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <span className="font-bold text-zinc-900 text-sm">{c.name}</span>
-                                                        <span className="text-[10px] text-zinc-500 mt-0.5">{c.username}</span>
+                                                        <span className="font-bold text-zinc-900 dark:text-zinc-50 text-sm">{c.name}</span>
+                                                        <span className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">{c.username}</span>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-5">
                                                 <div className="flex flex-col gap-1">
-                                                    <div className="flex items-center gap-2 text-zinc-600">
-                                                        <User size={14} className="text-zinc-400" />
+                                                    <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
+                                                        <User size={14} className="text-zinc-400 dark:text-zinc-500" />
                                                         <span className="text-sm font-medium">{c.username}</span>
                                                     </div>
-                                                    <div className="flex items-center gap-2 text-zinc-500">
-                                                        <Mail size={14} className="text-zinc-400" />
+                                                    <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
+                                                        <Mail size={14} className="text-zinc-400 dark:text-zinc-500" />
                                                         <span className="text-xs">{c.email || "N/A"}</span>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-5">
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900">
                                                     {c.events?.name || "No event"}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-5">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${c.is_active
-                                                    ? "bg-green-50 text-green-700 border-green-100"
-                                                    : "bg-yellow-50 text-yellow-700 border-yellow-100"
+                                                    ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-100 dark:border-green-900"
+                                                    : "bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 border-yellow-100 dark:border-yellow-900"
                                                     }`}>
                                                     {c.is_active ? "Active" : "Pending"}
                                                 </span>
                                             </td>
-                                            <td className="hidden xl:table-cell px-6 py-5 text-sm text-zinc-600">
+                                            <td className="hidden xl:table-cell px-6 py-5 text-sm text-zinc-600 dark:text-zinc-400">
                                                 {new Date(c.created_at).toLocaleDateString()}
                                             </td>
                                             <td className="px-4 md:px-6 py-5 text-right">
@@ -324,7 +324,7 @@ function CoordinatorsPage() {
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 transition-colors"
+                                                            className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950 transition-colors"
                                                             title="Activate Coordinator"
                                                             onClick={() => handleToggleActivation(c.id, c.is_active, c.name)}
                                                         >
@@ -334,7 +334,7 @@ function CoordinatorsPage() {
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-zinc-400 hover:text-zinc-900 transition-colors"
+                                                        className="h-8 w-8 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 transition-colors"
                                                         onClick={() => {
                                                             setEditingCoordinator(c);
                                                             setEditEventId(c.event_id || "");
@@ -360,22 +360,22 @@ function CoordinatorsPage() {
                         </div>
 
                         {/* Mobile View */}
-                        <div className="lg:hidden divide-y divide-zinc-100 overflow-hidden">
+                        <div className="lg:hidden divide-y divide-zinc-100 dark:divide-white/5 overflow-hidden">
                             {filteredCoordinators.map((c) => (
-                                <div key={c.id} className="p-5 space-y-4 hover:bg-zinc-50/50 transition-colors">
+                                <div key={c.id} className="p-5 space-y-4 hover:bg-zinc-50/50 dark:hover:bg-white/5 transition-colors">
                                     <div className="flex justify-between items-start gap-3">
                                         <div className="flex items-center gap-3 min-w-0">
-                                            <div className="w-10 h-10 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-400 border border-zinc-100 shrink-0">
+                                            <div className="w-10 h-10 rounded-full bg-zinc-50 dark:bg-white/5 flex items-center justify-center text-zinc-400 dark:text-zinc-500 border border-zinc-100 dark:border-white/10 shrink-0">
                                                 <User size={18} />
                                             </div>
                                             <div className="flex flex-col min-w-0">
-                                                <span className="font-bold text-zinc-900 text-sm truncate">{c.name}</span>
-                                                <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">{c.username}</span>
+                                                <span className="font-bold text-zinc-900 dark:text-zinc-50 text-sm truncate">{c.name}</span>
+                                                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider">{c.username}</span>
                                             </div>
                                         </div>
                                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shrink-0 ${c.is_active
-                                            ? "bg-green-50 text-green-700 border-green-100"
-                                            : "bg-yellow-50 text-yellow-700 border-yellow-100"
+                                            ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-100 dark:border-green-900"
+                                            : "bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 border-yellow-100 dark:border-yellow-900"
                                             }`}>
                                             {c.is_active ? "Active" : "Pending"}
                                         </span>
@@ -383,23 +383,23 @@ function CoordinatorsPage() {
 
                                     <div className="grid grid-cols-2 gap-4 py-1">
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Email Address</span>
-                                            <span className="text-xs text-zinc-600 font-medium truncate">{c.email || "N/A"}</span>
+                                            <span className="text-[9px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Email Address</span>
+                                            <span className="text-xs text-zinc-600 dark:text-zinc-300 font-medium truncate">{c.email || "N/A"}</span>
                                         </div>
                                         <div className="flex flex-col gap-1 items-end text-right">
-                                            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Assigned Event</span>
-                                            <span className="text-[10px] font-bold text-blue-600">{c.events?.name || "Unassigned"}</span>
+                                            <span className="text-[9px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Assigned Event</span>
+                                            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">{c.events?.name || "Unassigned"}</span>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between pt-2 border-t border-zinc-50">
-                                        <span className="text-[10px] text-zinc-400 font-medium italic">Added: {new Date(c.created_at).toLocaleDateString()}</span>
+                                    <div className="flex items-center justify-between pt-2 border-t border-zinc-50 dark:border-white/5">
+                                        <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium italic">Added: {new Date(c.created_at).toLocaleDateString()}</span>
                                         <div className="flex items-center gap-2">
                                             {!c.is_active && (
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
-                                                    className="h-8 text-green-600 border-green-100 hover:bg-green-50 px-3 gap-1.5"
+                                                    className="h-8 text-green-600 border-green-100 hover:bg-green-50 dark:border-green-900 dark:hover:bg-green-950 px-3 gap-1.5"
                                                     onClick={() => handleToggleActivation(c.id, c.is_active, c.name)}
                                                 >
                                                     <UserCheck size={14} />
@@ -409,7 +409,7 @@ function CoordinatorsPage() {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="h-8 w-8 text-zinc-400 hover:text-zinc-900"
+                                                className="h-8 w-8 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50"
                                                 onClick={() => {
                                                     setEditingCoordinator(c);
                                                     setEditEventId(c.event_id || "");
@@ -437,82 +437,88 @@ function CoordinatorsPage() {
 
             {/* Create Modal */}
             {isCreateModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 border border-zinc-200">
-                        <div className="flex justify-between items-start mb-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-zinc-950 rounded-[2.5rem] shadow-2xl w-full max-w-md p-8 sm:p-10 animate-in zoom-in-95 duration-300 border border-zinc-200 dark:border-white/10 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-indigo-500" />
+                        <div className="flex justify-between items-start mb-8">
                             <div>
-                                <h3 className="text-lg font-semibold text-zinc-900 mb-1">Create Coordinator</h3>
-                                <p className="text-zinc-500 text-sm">Register a new coordinator for your events.</p>
+                                <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">Create Coordinator</h3>
+                                <p className="text-zinc-500 dark:text-zinc-400 mt-1 font-medium">Register a new coordinator for your events.</p>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={() => setIsCreateModalOpen(false)} className="h-8 w-8 text-zinc-500 rounded-full shrink-0 -mt-1 -mr-1">
-                                <X className="h-4 w-4" />
+                            <Button variant="ghost" size="icon" onClick={() => setIsCreateModalOpen(false)} className="h-10 w-10 text-zinc-400 dark:text-zinc-600 rounded-full hover:bg-zinc-100 dark:hover:bg-white/5 transition-all">
+                                <X size={20} />
                             </Button>
                         </div>
 
                         <form onSubmit={handleCreateCoordinator} className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-900">Full Name</label>
+                                <label className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Full Name</label>
                                 <Input
                                     required
                                     placeholder="Enter name"
                                     value={newName}
                                     onChange={(e) => setNewName(e.target.value)}
+                                    className="dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-50 dark:placeholder-zinc-400"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-900">Username</label>
+                                <label className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Username</label>
                                 <Input
                                     required
                                     placeholder="Enter username"
                                     value={newUsername}
                                     onChange={(e) => setNewUsername(e.target.value)}
+                                    className="dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-50 dark:placeholder-zinc-400"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-900">Email ID</label>
+                                <label className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Email ID</label>
                                 <Input
                                     required
                                     type="email"
                                     placeholder="Enter email address"
                                     value={newEmail}
                                     onChange={(e) => setNewEmail(e.target.value)}
+                                    className="dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-50 dark:placeholder-zinc-400"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-900">Password</label>
+                                <label className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Password</label>
                                 <Input
                                     required
                                     type="password"
                                     placeholder="••••••••"
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
+                                    className="h-12 bg-zinc-50 dark:bg-white/5 border-none dark:border dark:border-white/10 rounded-2xl focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all font-bold text-zinc-900 dark:text-zinc-50"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-700 flex items-center gap-2">
+                                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-50 flex items-center gap-2">
                                     Assigned Event
                                 </label>
                                 <select
                                     value={selectedEventId}
                                     onChange={(e) => setSelectedEventId(e.target.value)}
-                                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:ring-2 focus:ring-zinc-900 focus:border-transparent outline-none transition-all text-sm"
+                                    className="w-full h-12 px-4 bg-zinc-50 dark:bg-white/5 border-none dark:border dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm font-bold text-zinc-900 dark:text-zinc-50"
                                 >
-                                    <option value="">Select an event (Optional)</option>
+                                    <option value="" className="dark:bg-zinc-950">Select an event (Optional)</option>
                                     {events.map((event) => (
-                                        <option key={event.id} value={event.id}>
+                                        <option key={event.id} value={event.id} className="dark:bg-zinc-950">
                                             {event.name}
                                         </option>
                                     ))}
                                 </select>
                             </div>
 
-                            <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-zinc-100">
-                                <Button type="button" variant="ghost" onClick={() => setIsCreateModalOpen(false)}>
-                                    Cancel
-                                </Button>
-                                <Button type="submit" disabled={isCreating} className="bg-zinc-900 text-white hover:bg-zinc-800">
-                                    {isCreating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Create Coordinator"}
+                            <div className="pt-6">
+                                <Button
+                                    type="submit"
+                                    className="w-full bg-zinc-900 dark:bg-white dark:text-zinc-950 text-white hover:opacity-90 h-14 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-zinc-900/10 active:scale-[0.98] transition-all"
+                                    disabled={isCreating}
+                                >
+                                    {isCreating ? <Loader2 size={18} className="animate-spin" /> : "Confirm & Create"}
                                 </Button>
                             </div>
                         </form>
@@ -521,54 +527,46 @@ function CoordinatorsPage() {
             )}
             {/* Edit/Assign Event Modal */}
             {isEditModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
-                            <h3 className="text-lg font-semibold text-zinc-900">Assign Event</h3>
-                            <button onClick={() => setIsEditModalOpen(false)} className="text-zinc-400 hover:text-zinc-600 transition-colors">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-zinc-950 rounded-[2.5rem] shadow-2xl w-full max-w-md p-8 sm:p-10 animate-in zoom-in-95 duration-300 border border-zinc-200 dark:border-white/10 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-indigo-500" />
+                        <div className="flex justify-between items-start mb-8">
+                            <div>
+                                <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">Assign Event</h3>
+                                <p className="text-zinc-500 dark:text-zinc-400 mt-1 font-medium">Assign an event to {editingCoordinator?.name}.</p>
+                            </div>
+                            <Button variant="ghost" size="icon" onClick={() => setIsEditModalOpen(false)} className="h-10 w-10 text-zinc-400 dark:text-zinc-600 rounded-full hover:bg-zinc-100 dark:hover:bg-white/5 transition-all">
                                 <X size={20} />
-                            </button>
+                            </Button>
                         </div>
 
-                        <div className="p-6 space-y-4">
-                            <p className="text-sm text-zinc-600 mb-4">
-                                Assign an event to <span className="font-semibold text-zinc-900">{editingCoordinator?.name}</span>.
+                        <div className="space-y-6">
+                            <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed">
                                 This will grant them access to all guests of that event.
                             </p>
-
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-700">Select Event</label>
+                                <label className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-1">Select Event</label>
                                 <select
                                     value={editEventId}
                                     onChange={(e) => setEditEventId(e.target.value)}
-                                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:ring-2 focus:ring-zinc-900 focus:border-transparent outline-none transition-all text-sm"
+                                    className="w-full h-12 px-4 bg-zinc-50 dark:bg-white/5 border-none dark:border dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm font-bold text-zinc-900 dark:text-zinc-50"
                                 >
-                                    <option value="">No Event Assigned</option>
+                                    <option value="" className="dark:bg-zinc-950">No Event Assigned</option>
                                     {events.map((event) => (
-                                        <option key={event.id} value={event.id}>
+                                        <option key={event.id} value={event.id} className="dark:bg-zinc-950">
                                             {event.name}
                                         </option>
                                     ))}
                                 </select>
                             </div>
 
-                            <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-zinc-100">
-                                <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)}>
-                                    Cancel
-                                </Button>
+                            <div className="pt-6">
                                 <Button
                                     onClick={handleUpdateEvent}
                                     disabled={isUpdating}
-                                    className="bg-zinc-900 text-white hover:bg-zinc-800"
+                                    className="w-full bg-zinc-900 dark:bg-white dark:text-zinc-950 text-white hover:opacity-90 h-14 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-zinc-900/10 active:scale-[0.98] transition-all"
                                 >
-                                    {isUpdating ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Updating...
-                                        </>
-                                    ) : (
-                                        "Save Changes"
-                                    )}
+                                    {isUpdating ? <Loader2 size={18} className="animate-spin" /> : "Save Changes"}
                                 </Button>
                             </div>
                         </div>

@@ -27,7 +27,7 @@ export default function AdminLayout({
     }
 
     return (
-        <div className="min-h-screen bg-zinc-50/30 relative overflow-hidden">
+        <div className="min-h-screen bg-zinc-50/30 dark:bg-zinc-950/50 relative overflow-hidden">
             {/* Mesh Gradient Background */}
             <div className="absolute inset-0 bg-gradient-mesh opacity-[0.4] pointer-events-none" />
 

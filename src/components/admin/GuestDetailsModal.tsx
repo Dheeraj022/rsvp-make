@@ -319,79 +319,91 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose} />
             <div
-                className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
+                className="bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col relative animate-in zoom-in slide-in-from-bottom-8 duration-300 border border-zinc-100 dark:border-white/10"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-zinc-100 dark:border-zinc-800">
-                    <div>
-                        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{guest.name}</h2>
-                        <p className="text-sm text-zinc-500">Guest Details & Documents</p>
+                <div className="flex items-center justify-between p-8 md:p-10 border-b border-zinc-100 dark:border-white/5 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-3">
+                            <h2 className="text-3xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">{guest.name}</h2>
+                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest 
+                                ${guest.status === 'accepted' ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20' :
+                                    guest.status === 'declined' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20' :
+                                        'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20'}`}>
+                                {guest.status}
+                            </span>
+                        </div>
+                        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+                            Comprehensive dossier for event attendee
+                        </p>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
-                        <X className="w-5 h-5" />
+                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-2xl w-12 h-12 hover:bg-rose-500/10 hover:text-rose-600 transition-all">
+                        <X className="w-6 h-6" />
                     </Button>
                 </div>
 
                 {/* Content */}
-                <div className="p-6 overflow-y-auto space-y-8">
+                <div className="p-8 md:p-10 overflow-y-auto space-y-12">
                     {/* Main Guest Info */}
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="space-y-1">
-                            <span className="text-zinc-500 block">Email</span>
-                            <span className="font-medium text-zinc-900 dark:text-zinc-100">{guest.email || "-"}</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="space-y-2 p-6 rounded-3xl bg-zinc-50 dark:bg-white/5 border border-zinc-100 dark:border-white/5">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 block">Communication</span>
+                            <div className="space-y-1">
+                                <span className="font-bold text-zinc-900 dark:text-zinc-100 block truncate">{guest.email || "No Email Provided"}</span>
+                                <span className="font-bold text-zinc-900 dark:text-zinc-100 block">{guest.phone || "No Phone Provided"}</span>
+                            </div>
                         </div>
-                        <div className="space-y-1">
-                            <span className="text-zinc-500 block">Phone</span>
-                            <span className="font-medium text-zinc-900 dark:text-zinc-100">{guest.phone || "-"}</span>
-                        </div>
-                        <div className="space-y-1">
-                            <span className="text-zinc-500 block">Status</span>
-                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize 
-                                ${guest.status === 'accepted' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                    guest.status === 'declined' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                        'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}`}>
-                                {guest.status}
-                            </span>
-                        </div>
-                        <div className="space-y-1">
-                            <span className="text-zinc-500 block">Total Guests</span>
-                            <span className="font-medium text-zinc-900 dark:text-zinc-100">{attendees.length > 0 ? attendees.length : guest.attending_count}</span>
+                        <div className="space-y-2 p-6 rounded-3xl bg-zinc-50 dark:bg-white/5 border border-zinc-100 dark:border-white/5">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 block">Attendance</span>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-3xl font-black text-zinc-900 dark:text-zinc-100">{attendees.length > 0 ? attendees.length : guest.attending_count}</span>
+                                <span className="text-sm font-bold text-zinc-500 tracking-tight">Confirmed Members</span>
+                            </div>
                         </div>
                         {coordinatorName && (
-                            <div className="space-y-1">
-                                <span className="text-zinc-500 block">Entry Source</span>
-                                <span className="inline-flex items-center gap-1.5 font-medium text-indigo-600 dark:text-indigo-400">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-                                    Coordinator: {coordinatorName}
-                                </span>
+                            <div className="space-y-2 p-6 rounded-3xl bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/10 dark:border-indigo-500/20">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500 dark:text-indigo-400 block">Acquisition Source</span>
+                                <span className="font-black text-zinc-900 dark:text-zinc-100 block">Coordinated by {coordinatorName}</span>
                             </div>
                         )}
                     </div>
 
                     {/* Transport Details (Arrival & Departure) */}
                     {guest.departure_details?.applicable !== false && (
-                        <div className="space-y-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {/* Arrival Section */}
                             {guest.departure_details?.arrival?.date && (
-                                <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-xl p-4 border border-blue-100 dark:border-blue-900/30 space-y-3">
-                                    <h3 className="font-medium text-blue-900 dark:text-blue-300 flex items-center justify-between">
-                                        <span className="text-xs font-bold uppercase tracking-widest">Arrival Details</span>
-                                        <p className="text-sm font-semibold">{format(new Date(guest.departure_details.arrival.date), "MMMM d, yyyy")} @ {guest.departure_details.arrival.time || "N/A"}</p>
-                                    </h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="bg-blue-500 dark:bg-blue-600 rounded-[2rem] p-8 text-white space-y-6 shadow-2xl shadow-blue-500/20">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Arrival Manifest</span>
+                                            <h3 className="text-2xl font-black tracking-tight">Entry Point</h3>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-lg font-black">{format(new Date(guest.departure_details.arrival.date), "MMM d")}</p>
+                                            <p className="text-xs font-bold opacity-60 uppercase">{guest.departure_details.arrival.time || "TBD"}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
                                         {guest.departure_details.arrival.travelers?.map((t: any, i: number) => (
-                                            <div key={i} className="space-y-2 p-3 rounded-lg bg-white dark:bg-zinc-800 border border-blue-50 dark:border-blue-900/20 shadow-sm">
-                                                <p className="font-bold text-[10px] text-blue-500 uppercase">{t.name || `Guest ${i + 1}`}</p>
-                                                <div className="grid grid-cols-1 gap-1 text-[11px]">
-                                                    <p><span className="text-zinc-500">Mode:</span> {t.mode_of_travel} {t.transport_number ? `(${t.transport_number})` : ""}</p>
-                                                    <p><span className="text-zinc-500">Loc:</span> {t.station_airport}</p>
-                                                    <p><span className="text-zinc-500">Phone:</span> {t.contact_number || "N/A"}</p>
-                                                    <p><span className="text-zinc-500">Pax / Bags:</span> {t.number_of_pax || "1"} / {t.number_of_bags || "0"}</p>
-                                                    {t.drop_location && <p><span className="text-zinc-500">Drop:</span> {t.drop_location}</p>}
-                                                    <p><span className="text-zinc-500">Vehicles:</span> {t.number_of_vehicles || "1"}</p>
+                                            <div key={i} className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 text-sm space-y-2">
+                                                <div className="flex items-center justify-between font-black uppercase text-[10px]">
+                                                    <span className="tracking-widest">{t.name || `Traveler ${i + 1}`}</span>
+                                                    <span className="px-2 py-0.5 rounded-full bg-white text-blue-600">{t.mode_of_travel}</span>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4 text-xs font-medium">
+                                                    <div>
+                                                        <span className="opacity-60 block uppercase text-[8px] font-black mb-0.5">Terminal</span>
+                                                        {t.station_airport}
+                                                    </div>
+                                                    <div>
+                                                        <span className="opacity-60 block uppercase text-[8px] font-black mb-0.5">Contact</span>
+                                                        {t.contact_number || "N/A"}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
@@ -401,22 +413,33 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
 
                             {/* Departure Section */}
                             {guest.departure_details?.departure?.date && (
-                                <div className="bg-orange-50/50 dark:bg-orange-900/10 rounded-xl p-4 border border-orange-100 dark:border-orange-900/30 space-y-3">
-                                    <h3 className="font-medium text-orange-900 dark:text-orange-300 flex items-center justify-between">
-                                        <span className="text-xs font-bold uppercase tracking-widest">Departure Details</span>
-                                        <p className="text-sm font-semibold">{format(new Date(guest.departure_details.departure.date), "MMMM d, yyyy")} @ {guest.departure_details.departure.time || "N/A"}</p>
-                                    </h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="bg-zinc-900 dark:bg-white rounded-[2rem] p-8 text-white dark:text-zinc-900 space-y-6 shadow-2xl shadow-zinc-900/10">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Departure Manifest</span>
+                                            <h3 className="text-2xl font-black tracking-tight">Exit Point</h3>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-lg font-black">{format(new Date(guest.departure_details.departure.date), "MMM d")}</p>
+                                            <p className="text-xs font-bold opacity-60 uppercase">{guest.departure_details.departure.time || "TBD"}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
                                         {guest.departure_details.departure.travelers?.map((t: any, i: number) => (
-                                            <div key={i} className="space-y-2 p-3 rounded-lg bg-white dark:bg-zinc-800 border border-orange-50 dark:border-orange-900/20 shadow-sm">
-                                                <p className="font-bold text-[10px] text-orange-500 uppercase">{t.name || `Guest ${i + 1}`}</p>
-                                                <div className="grid grid-cols-1 gap-1 text-[11px]">
-                                                    <p><span className="text-zinc-500">Mode:</span> {t.mode_of_travel} {t.transport_number ? `(${t.transport_number})` : ""}</p>
-                                                    <p><span className="text-zinc-500">Loc:</span> {t.station_airport}</p>
-                                                    <p><span className="text-zinc-500">Phone:</span> {t.contact_number || "N/A"}</p>
-                                                    <p><span className="text-zinc-500">Pax / Bags:</span> {t.number_of_pax || "1"} / {t.number_of_bags || "0"}</p>
-                                                    {t.drop_location && <p><span className="text-zinc-500">Drop:</span> {t.drop_location}</p>}
-                                                    <p><span className="text-zinc-500">Vehicles:</span> {t.number_of_vehicles || "1"}</p>
+                                            <div key={i} className="p-4 rounded-2xl bg-white/5 dark:bg-zinc-500/5 backdrop-blur-md border border-white/10 dark:border-zinc-500/10 text-sm space-y-2">
+                                                <div className="flex items-center justify-between font-black uppercase text-[10px]">
+                                                    <span className="tracking-widest">{t.name || `Traveler ${i + 1}`}</span>
+                                                    <span className="px-2 py-0.5 rounded-full bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white uppercase tracking-tighter">{t.mode_of_travel}</span>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4 text-xs font-medium">
+                                                    <div>
+                                                        <span className="opacity-60 block uppercase text-[8px] font-black mb-0.5">Station</span>
+                                                        {t.station_airport}
+                                                    </div>
+                                                    <div>
+                                                        <span className="opacity-60 block uppercase text-[8px] font-black mb-0.5">Contact</span>
+                                                        {t.contact_number || "N/A"}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
@@ -584,12 +607,22 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 flex justify-end gap-2">
-                    <Button variant="outline" onClick={handleDownloadPDF} disabled={downloading}>
-                        {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                        Download PDF
+                <div className="p-8 md:p-10 border-t border-zinc-100 dark:border-white/5 bg-zinc-50 dark:bg-zinc-900 flex flex-col sm:flex-row justify-end gap-3">
+                    <Button 
+                        variant="ghost" 
+                        className="h-14 rounded-2xl px-8 font-black text-zinc-900 dark:text-zinc-50 hover:bg-zinc-200 dark:hover:bg-white/10 transition-all border border-zinc-200 dark:border-white/10"
+                        onClick={handleDownloadPDF} 
+                        disabled={downloading}
+                    >
+                        {downloading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Download className="mr-2 h-5 w-5" />}
+                        Export PDF Dossier
                     </Button>
-                    <Button onClick={onClose}>Close</Button>
+                    <Button 
+                        className="h-14 rounded-2xl px-12 font-black bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 hover:opacity-90 transition-all shadow-xl shadow-zinc-900/20 dark:shadow-none"
+                        onClick={onClose}
+                    >
+                        Close Portal
+                    </Button>
                 </div>
             </div>
         </div>

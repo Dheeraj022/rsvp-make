@@ -1083,14 +1083,14 @@ export default function PublicEventPage() {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => { setStatus("accepted"); handleNextRsvp(); }}
-                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${status === 'accepted' ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 hover:border-zinc-400'}`}
+                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${status === 'accepted' ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-black' : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 text-zinc-900 dark:text-zinc-50'}`}
                                                             >
                                                                 Yes, I'm coming!
                                                             </button>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => { setStatus("declined"); setRsvpStep(1); }}
-                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${status === 'declined' ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 hover:border-zinc-400'}`}
+                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${status === 'declined' ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-black' : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 text-zinc-900 dark:text-zinc-50'}`}
                                                             >
                                                                 Regretfully, no
                                                             </button>
@@ -1106,7 +1106,7 @@ export default function PublicEventPage() {
                                                         onPrev={handlePrevRsvp}
                                                     >
                                                         <select
-                                                            className="w-full h-12 px-6 rounded-2xl border-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-zinc-900 transition"
+                                                            className="w-full h-12 px-6 rounded-2xl border-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-50 transition text-zinc-900 dark:text-zinc-50"
                                                             value={attendingCount}
                                                             onChange={(e) => {
                                                                 const count = parseInt(e.target.value);
@@ -1123,7 +1123,7 @@ export default function PublicEventPage() {
                                                             }}
                                                         >
                                                             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                                                                <option key={num} value={num}>{num} Member{num > 1 ? 's' : ''}</option>
+                                                                <option key={num} value={num} className="bg-white dark:bg-zinc-950">{num} Member{num > 1 ? 's' : ''}</option>
                                                             ))}
                                                         </select>
                                                     </StepWrapper>
@@ -1189,7 +1189,7 @@ export default function PublicEventPage() {
                                                                             setRsvpError("");
                                                                         }}
                                                                         placeholder="Enter full name"
-                                                                        className={`h-11 text-base px-4 rounded-xl border-2 ${rsvpError && rsvpError.includes('Name') ? 'border-red-400' : ''}`}
+                                                                        className={`h-11 text-base px-4 rounded-xl border-2 dark:bg-zinc-950 dark:border-zinc-800 ${rsvpError && rsvpError.includes('Name') ? 'border-red-400' : 'border-zinc-200 dark:border-zinc-800'}`}
                                                                     />
                                                                     {rsvpError && rsvpError.includes('Name') && <p className="text-red-500 text-sm mt-1 font-medium">{rsvpError}</p>}
                                                                 </div>
@@ -1212,7 +1212,7 @@ export default function PublicEventPage() {
                                                                 <div className="space-y-2">
                                                                     <Label className="text-sm font-medium text-zinc-500 uppercase">ID Document Type</Label>
                                                                     <select
-                                                                        className="w-full h-11 px-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-base focus:outline-none focus:ring-2 focus:ring-zinc-900 transition"
+                                                                        className="w-full h-11 px-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-base focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-50 transition text-zinc-900 dark:text-zinc-50"
                                                                         value={attendee.id_type}
                                                                         onChange={(e) => {
                                                                             const newA = [...attendees];
@@ -1220,10 +1220,10 @@ export default function PublicEventPage() {
                                                                             setAttendees(newA);
                                                                         }}
                                                                     >
-                                                                        <option value="Aadhar Card">Aadhar Card</option>
-                                                                        <option value="Passport">Passport</option>
-                                                                        <option value="Driving License">Driving License</option>
-                                                                        <option value="Voter ID Card">Voter ID Card</option>
+                                                                        <option value="Aadhar Card" className="bg-white dark:bg-zinc-950">Aadhar Card</option>
+                                                                        <option value="Passport" className="bg-white dark:bg-zinc-950">Passport</option>
+                                                                        <option value="Driving License" className="bg-white dark:bg-zinc-950">Driving License</option>
+                                                                        <option value="Voter ID Card" className="bg-white dark:bg-zinc-950">Voter ID Card</option>
                                                                     </select>
                                                                 </div>
                                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1310,14 +1310,14 @@ export default function PublicEventPage() {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => { setIsArrivalApplicable(true); handleNextTransport(); }}
-                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${isArrivalApplicable === true ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 hover:border-zinc-400'}`}
+                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${isArrivalApplicable === true ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-black' : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 text-zinc-900 dark:text-zinc-50'}`}
                                                             >
                                                                 Yes, please
                                                             </button>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => { setIsArrivalApplicable(false); setTransportStep(1); }}
-                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${isArrivalApplicable === false ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 hover:border-zinc-400'}`}
+                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${isArrivalApplicable === false ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-black' : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 text-zinc-900 dark:text-zinc-50'}`}
                                                             >
                                                                 No, I'm okay
                                                             </button>
@@ -1387,11 +1387,11 @@ export default function PublicEventPage() {
                                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                                             <div className="space-y-2">
                                                                                 <Label className="uppercase text-[10px] font-bold text-zinc-400">Mode <span className="text-red-400">*</span></Label>
-                                                                                <select className={`w-full h-11 px-4 rounded-xl border-2 bg-white dark:bg-zinc-950 dark:border-zinc-800 text-sm ${transportError && transportError.includes('mode') ? 'border-red-400' : ''}`} value={traveler.mode_of_travel || ''} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx] = { ...newT[idx], mode_of_travel: e.target.value }; setArrivalTravelers(newT); setTransportError(""); }}>
-                                                                                    <option value="">Select Mode</option>
-                                                                                    <option value="Bus">Bus</option>
-                                                                                    <option value="Train">Train</option>
-                                                                                    <option value="By Air">By Air</option>
+                                                                                <select className={`w-full h-11 px-4 rounded-xl border-2 bg-white dark:bg-zinc-950 dark:border-zinc-800 text-sm text-zinc-900 dark:text-zinc-50 ${transportError && transportError.includes('mode') ? 'border-red-400' : 'border-zinc-200 dark:border-zinc-800'}`} value={traveler.mode_of_travel || ''} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx] = { ...newT[idx], mode_of_travel: e.target.value }; setArrivalTravelers(newT); setTransportError(""); }}>
+                                                                                    <option value="" className="bg-white dark:bg-zinc-950">Select Mode</option>
+                                                                                    <option value="Bus" className="bg-white dark:bg-zinc-950">Bus</option>
+                                                                                    <option value="Train" className="bg-white dark:bg-zinc-950">Train</option>
+                                                                                    <option value="By Air" className="bg-white dark:bg-zinc-950">By Air</option>
                                                                                 </select>
                                                                             </div>
                                                                             <div className="space-y-2">
@@ -1412,10 +1412,10 @@ export default function PublicEventPage() {
                                                                         <div className="space-y-2">
                                                                             <Label className="uppercase text-[10px] font-bold text-zinc-400">Drop Location <span className="text-red-400">*</span></Label>
                                                                             {event?.drop_locations && event.drop_locations.length > 0 ? (
-                                                                                <select className={`w-full h-11 px-4 rounded-xl border-2 bg-white dark:bg-zinc-950 dark:border-zinc-800 text-sm ${transportError && transportError.includes('drop location') ? 'border-red-400' : ''}`} value={traveler.drop_location} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx] = { ...newT[idx], drop_location: e.target.value }; setArrivalTravelers(newT); setTransportError(""); }}>
-                                                                                    <option value="">Select Drop Location</option>
+                                                                                <select className={`w-full h-11 px-4 rounded-xl border-2 bg-white dark:bg-zinc-950 dark:border-zinc-800 text-sm text-zinc-900 dark:text-zinc-50 ${transportError && transportError.includes('drop location') ? 'border-red-400' : 'border-zinc-200 dark:border-zinc-800'}`} value={traveler.drop_location} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx] = { ...newT[idx], drop_location: e.target.value }; setArrivalTravelers(newT); setTransportError(""); }}>
+                                                                                    <option value="" className="bg-white dark:bg-zinc-950">Select Drop Location</option>
                                                                                     {event.drop_locations.map((loc, i) => (
-                                                                                        <option key={i} value={loc}>{loc}</option>
+                                                                                        <option key={i} value={loc} className="bg-white dark:bg-zinc-950">{loc}</option>
                                                                                     ))}
                                                                                 </select>
                                                                             ) : (
@@ -1476,14 +1476,14 @@ export default function PublicEventPage() {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => { setIsDepartureApplicable(true); handleNextTransport(); }}
-                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${isDepartureApplicable === true ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 hover:border-zinc-400'}`}
+                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${isDepartureApplicable === true ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-black' : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 text-zinc-900 dark:text-zinc-50'}`}
                                                             >
                                                                 Yes, please
                                                             </button>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => { setIsDepartureApplicable(false); setTransportStep(arrivalSteps + 1); }}
-                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${isDepartureApplicable === false ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 hover:border-zinc-400'}`}
+                                                                className={`flex-1 py-4 sm:py-5 rounded-2xl border-2 transition-all text-base sm:text-lg font-bold ${isDepartureApplicable === false ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-black' : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 text-zinc-900 dark:text-zinc-50'}`}
                                                             >
                                                                 No, I'm okay
                                                             </button>
@@ -1561,11 +1561,11 @@ export default function PublicEventPage() {
                                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                                             <div className="space-y-2">
                                                                                 <Label className="uppercase text-[10px] font-bold text-zinc-400">Mode <span className="text-red-400">*</span></Label>
-                                                                                <select className={`w-full h-11 px-4 rounded-xl border-2 bg-white dark:bg-zinc-950 dark:border-zinc-800 text-sm ${transportError && transportError.includes('mode') ? 'border-red-400' : ''}`} value={traveler.mode_of_travel || ''} onChange={(e) => { const newT = [...departureTravelers]; newT[idx] = { ...newT[idx], mode_of_travel: e.target.value }; setDepartureTravelers(newT); setTransportError(""); }}>
-                                                                                    <option value="">Select Mode</option>
-                                                                                    <option value="Bus">Bus</option>
-                                                                                    <option value="Train">Train</option>
-                                                                                    <option value="By Air">By Air</option>
+                                                                                <select className={`w-full h-11 px-4 rounded-xl border-2 bg-white dark:bg-zinc-950 dark:border-zinc-800 text-sm text-zinc-900 dark:text-zinc-50 ${transportError && transportError.includes('mode') ? 'border-red-400' : 'border-zinc-200 dark:border-zinc-800'}`} value={traveler.mode_of_travel || ''} onChange={(e) => { const newT = [...departureTravelers]; newT[idx] = { ...newT[idx], mode_of_travel: e.target.value }; setDepartureTravelers(newT); setTransportError(""); }}>
+                                                                                    <option value="" className="bg-white dark:bg-zinc-950">Select Mode</option>
+                                                                                    <option value="Bus" className="bg-white dark:bg-zinc-950">Bus</option>
+                                                                                    <option value="Train" className="bg-white dark:bg-zinc-950">Train</option>
+                                                                                    <option value="By Air" className="bg-white dark:bg-zinc-950">By Air</option>
                                                                                 </select>
                                                                             </div>
                                                                             <div className="space-y-2">
@@ -1638,7 +1638,7 @@ export default function PublicEventPage() {
                                                             placeholder="Type your message here..."
                                                             value={transportMessage}
                                                             onChange={(e) => setTransportMessage(e.target.value)}
-                                                            className="min-h-[150px] text-base p-6 rounded-2xl border-2"
+                                                            className="min-h-[150px] text-base p-6 rounded-2xl border-2 dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-50 dark:placeholder:text-zinc-600"
                                                             autoFocus
                                                         />
                                                     </StepWrapper>

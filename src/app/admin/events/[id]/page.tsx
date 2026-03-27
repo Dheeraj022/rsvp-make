@@ -8,9 +8,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, ArrowLeft, Upload, Download, Trash2, Search, UserPlus, Eye } from "lucide-react";
+import { 
+    Loader2, 
+    ArrowLeft, 
+    Upload, 
+    Download, 
+    Trash2, 
+    Search, 
+    UserPlus, 
+    Eye,
+    Copy,
+    Hotel,
+    MapPin,
+    Users
+} from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import Papa from "papaparse";
 import GuestDetailsModal from "@/components/admin/GuestDetailsModal";
 
@@ -623,106 +637,104 @@ function EventDetails() {
                 {/* Header */}
                 <div className="flex flex-col gap-4">
                     <div>
-                        <Link href="/admin/dashboard" className="text-xs sm:text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-50 flex items-center mb-2">
+                        <Link href="/admin/dashboard" className="text-xs sm:text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-50 flex items-center mb-2 font-medium transition-colors">
                             <ArrowLeft className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
                             Back to Dashboard
                         </Link>
-                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
                             {event?.name}
                         </h1>
-                        <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400">
+                        <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400 font-medium">
                             {event && format(new Date(event.date), "MMMM d, yyyy • h:mm a")} | {event?.location}
                         </p>
                     </div>
-                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+                    <div className="flex flex-wrap items-center gap-3">
                         <Button
                             variant="outline"
-                            className="gap-1 sm:gap-2 text-xs sm:text-sm"
+                            className="bg-white/50 dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 hover:bg-zinc-100 dark:hover:bg-white/10"
                             onClick={() => {
                                 const url = `${window.location.origin}/r/${event?.slug}`;
                                 navigator.clipboard.writeText(url);
                                 alert("Invite link copied to clipboard!");
                             }}
                         >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="lucide lucide-link sm:w-4 sm:h-4"
-                            >
-                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                            </svg>
+                            <Copy className="h-4 w-4" />
                             <span className="hidden sm:inline">Copy Invite Link</span>
-                            <span className="sm:hidden">Copy Link</span>
+                            <span className="sm:hidden">Share</span>
                         </Button>
-                        <Button variant="outline" onClick={() => setShowHotelModal(true)} className="text-xs sm:text-sm">
+                        <Button 
+                            variant="outline"
+                            className="bg-white/50 dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 hover:bg-zinc-100 dark:hover:bg-white/10"
+                            onClick={() => setShowHotelModal(true)}
+                        >
+                            <Hotel className="h-4 w-4" />
                             Hotel Access
                         </Button>
-                        <Button variant="outline" onClick={() => setShowDropLocationsModal(true)} className="text-xs sm:text-sm">
+                        <Button 
+                            variant="outline"
+                            className="bg-white/50 dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 hover:bg-zinc-100 dark:hover:bg-white/10"
+                            onClick={() => setShowDropLocationsModal(true)}
+                        >
+                            <MapPin className="h-4 w-4" />
                             Drop Locations
                         </Button>
-                        <Button variant="outline" onClick={handleExport} className="gap-1 sm:gap-2 text-xs sm:text-sm">
-                            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-                            <span className="hidden sm:inline">Export CSV</span>
-                            <span className="sm:hidden">Export</span>
+                        <Button 
+                            variant="outline"
+                            className="bg-white/50 dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 hover:bg-zinc-100 dark:hover:bg-white/10"
+                            onClick={handleExport}
+                        >
+                            <Download className="h-4 w-4" />
+                            Export
                         </Button>
-                        <Button variant="destructive" onClick={handleDeleteEvent} className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 dark:border-red-800 text-xs sm:text-sm gap-1 sm:gap-2">
-                            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                            <span className="hidden sm:inline">Delete Event</span>
-                            <span className="sm:hidden">Delete</span>
+                        <Button 
+                            onClick={handleDeleteEvent} 
+                            className="bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-500 dark:hover:text-white rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 border border-red-200 dark:border-red-900/30 shadow-none transition-all"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
                         </Button>
                     </div>
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
-                        { label: "Total Invited", value: stats.total, color: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300" },
-                        { label: "Accepted", value: stats.accepted, color: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300" },
-                        { label: "Declined", value: stats.declined, color: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300" },
-                        { label: "Pending", value: stats.pending, color: "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300" },
+                        { label: "Total Invited", value: stats.total, color: "text-blue-600", bg: "bg-blue-600/10", border: "border-blue-100 dark:border-blue-900/30" },
+                        { label: "Approved Guests", value: stats.accepted, color: "text-emerald-600", bg: "bg-emerald-600/10", border: "border-emerald-100 dark:border-emerald-900/30" },
+                        { label: "Declined RSVPs", value: stats.declined, color: "text-rose-600", bg: "bg-rose-600/10", border: "border-rose-100 dark:border-rose-900/30" },
+                        { label: "Pending Response", value: stats.pending, color: "text-amber-600", bg: "bg-amber-600/10", border: "border-amber-100 dark:border-amber-900/30" },
                     ].map((stat) => (
-                        <div key={stat.label} className={`p-4 rounded-xl ${stat.color} border border-transparent`}>
-                            <p className="text-sm font-medium opacity-80">{stat.label}</p>
-                            <p className="text-3xl font-bold">{stat.value}</p>
+                        <div key={stat.label} className={cn("p-6 rounded-[2rem] border backdrop-blur-sm", stat.bg, stat.color, stat.border)}>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-2 opacity-70">{stat.label}</p>
+                            <p className="text-4xl font-black tracking-tighter">{stat.value}</p>
                         </div>
                     ))}
                 </div>
 
-                <div className="flex gap-2 bg-white dark:bg-zinc-900 p-1.5 sm:p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm w-full sm:w-fit">
+                <div className="flex gap-2 bg-white/40 dark:bg-white/5 p-2 rounded-[1.5rem] border border-white/60 dark:border-white/10 backdrop-blur-md shadow-sm w-full sm:w-fit">
                     <button
                         onClick={() => setActiveTab("guests")}
-                        className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 ${activeTab === "guests"
-                            ? "bg-blue-600 text-white shadow-sm"
-                            : "bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                            }`}
+                        className={cn("flex-1 sm:flex-none px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300", 
+                            activeTab === "guests" ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 shadow-lg" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100")
+                        }
                     >
-                        Guest Details
+                        Directory
                     </button>
                     <button
                         onClick={() => setActiveTab("arrival")}
-                        className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 ${activeTab === "arrival"
-                            ? "bg-blue-600 text-white shadow-sm"
-                            : "bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                            }`}
+                        className={cn("flex-1 sm:flex-none px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300", 
+                            activeTab === "arrival" ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 shadow-lg" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100")
+                        }
                     >
-                        Arrival Details
+                        Arrivals
                     </button>
                     <button
                         onClick={() => setActiveTab("departure")}
-                        className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 ${activeTab === "departure"
-                            ? "bg-blue-600 text-white shadow-sm"
-                            : "bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                            }`}
+                        className={cn("flex-1 sm:flex-none px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300", 
+                            activeTab === "departure" ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 shadow-lg" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100")
+                        }
                     >
-                        Departure Details
+                        Departures
                     </button>
                 </div>
 
@@ -732,16 +744,16 @@ function EventDetails() {
                         <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row gap-4 justify-between items-center">
                             <h2 className="text-lg font-semibold">Guest List</h2>
                             <div className="flex gap-2 w-full sm:w-auto">
-                                <div className="relative flex-1 sm:w-64">
-                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-400" />
+                                <div className="relative group flex-1 max-w-md">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-blue-500 transition-colors" />
                                     <Input
-                                        placeholder="Search guests..."
-                                        className="pl-9"
+                                        placeholder="Search by name, email or phone..."
+                                        className="pl-11 bg-zinc-50 dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all font-medium"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                     />
                                 </div>
-                                <div className="relative">
+                                <div className="flex items-center gap-3">
                                     <input
                                         type="file"
                                         accept=".csv"
@@ -749,12 +761,20 @@ function EventDetails() {
                                         ref={fileInputRef}
                                         onChange={handleFileUpload}
                                     />
-                                    <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} variant="outline" className="mr-2">
-                                        {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                                        Import CSV
+                                    <Button 
+                                        onClick={() => fileInputRef.current?.click()} 
+                                        disabled={uploading} 
+                                        variant="outline"
+                                        className="h-12 px-6 rounded-2xl border-zinc-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-zinc-50 dark:hover:bg-white/10 text-xs font-black uppercase tracking-widest gap-2"
+                                    >
+                                        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                        Import
                                     </Button>
-                                    <Button onClick={() => setShowAddGuestModal(true)}>
-                                        <UserPlus className="mr-2 h-4 w-4" />
+                                    <Button 
+                                        onClick={() => setShowAddGuestModal(true)}
+                                        className="h-12 px-6 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90 text-xs font-black uppercase tracking-widest gap-2 shadow-xl shadow-zinc-900/10"
+                                    >
+                                        <UserPlus className="h-4 w-4" />
                                         Add Guest
                                     </Button>
                                 </div>
@@ -763,72 +783,91 @@ function EventDetails() {
 
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
-                                <thead className="text-zinc-500 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/50">
-                                    <tr>
-                                        <th className="px-6 py-3 font-medium">Name</th>
-                                        <th className="px-6 py-3 font-medium">Contact</th>
-                                        <th className="px-6 py-3 font-medium">Status</th>
-                                        <th className="px-6 py-3 font-medium">Guests</th>
-                                        <th className="px-6 py-3 font-medium text-right">Actions</th>
+                                <thead className="bg-[#f8f9fa] dark:bg-white/5">
+                                    <tr className="text-zinc-400 dark:text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] border-b border-zinc-100 dark:border-white/5">
+                                        <th className="px-10 py-6">Guest Identity</th>
+                                        <th className="px-6 py-6">Direct Contact</th>
+                                        <th className="px-6 py-6">RSVP Status</th>
+                                        <th className="px-6 py-6">Party Size</th>
+                                        <th className="px-10 py-6 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                                         {flattenedGuests.length === 0 ? (
                                             <tr><td colSpan={6} className="px-6 py-10 text-center text-zinc-500">No guests found</td></tr>
                                         ) : (
-                                            flattenedGuests.map((guest) => (
-                                                <tr key={guest.uniqueKey || guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                                    <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
-                                                        <div className="flex items-center gap-2">
-                                                            {!guest.isPrimary && <div className="w-4 h-px bg-zinc-300 dark:bg-zinc-700 ml-1 mr-1"></div>}
-                                                            <div>
-                                                                <div>{guest.actualName || guest.name}</div>
+                                            flattenedGuests.map((guest) => (                                                <tr key={guest.uniqueKey || guest.id} className="group hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-all duration-300">
+                                                    <td className="px-10 py-6">
+                                                        <div className="flex items-center gap-4">
+                                                            {!guest.isPrimary && <div className="w-6 h-px bg-zinc-200 dark:bg-zinc-800 shrink-0"></div>}
+                                                            <div className="flex flex-col min-w-0">
+                                                                <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                                    {guest.actualName || guest.name}
+                                                                </span>
                                                                 {!guest.isPrimary && (
-                                                                    <div className="text-[10px] text-zinc-400 font-normal">
-                                                                        Companion of: {guest.displayName}
-                                                                    </div>
+                                                                    <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mt-0.5">
+                                                                        Companion of {guest.displayName}
+                                                                    </span>
                                                                 )}
                                                                 {guest.coordinator_id && coordinators[guest.coordinator_id] && (
-                                                                    <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-normal mt-0.5 flex items-center gap-1">
-                                                                        <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
-                                                                        Added by: {coordinators[guest.coordinator_id]}
+                                                                    <div className="flex items-center gap-1.5 mt-1">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                                                        <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+                                                                            Added by {coordinators[guest.coordinator_id]}
+                                                                        </span>
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         </div>
                                                     </td>
-                                                <td className="px-6 py-4 text-zinc-500">{guest.phone || "-"}</td>
-                                                <td className="px-6 py-4">
-                                                    {guest.status === 'accepted' && guest.attendees_data && guest.attendees_data.some((a: any) => a.id_front || a.id_back) ? (
-                                                        <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                                                            Docs Uploaded
+                                                    <td className="px-6 py-6">
+                                                        <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                                                            {guest.phone || <span className="opacity-30">—</span>}
                                                         </span>
-                                                    ) : (
-                                                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium capitalize 
-                                                ${guest.status === 'accepted' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                                                guest.status === 'declined' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                                                    'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                                                    </td>
+                                                    <td className="px-6 py-6">
+                                                        <div className={cn(
+                                                            "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                                                            guest.status === "accepted" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" :
+                                                            guest.status === "declined" ? "bg-rose-500/10 text-rose-600 border-rose-500/20" :
+                                                            "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                                                        )}>
+                                                            <div className={cn("w-1.5 h-1.5 rounded-full", 
+                                                                guest.status === "accepted" ? "bg-emerald-500" :
+                                                                guest.status === "declined" ? "bg-rose-500" :
+                                                                "bg-amber-500"
+                                                            )} />
                                                             {guest.status}
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 text-zinc-500">
-                                                    {(() => {
-                                                        const docCount = guest.attendees_data?.filter((a: any) => a.id_front || a.id_back).length || 0;
-                                                        return `${docCount} Docs Uploaded`;
-                                                    })()}
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
-                                                            <Eye className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-red-600" onClick={() => handleDeleteGuest(guest.id)}>
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </td>
-                                            </tr>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-6">
+                                                        <div className="inline-flex items-center gap-1.5 text-zinc-900 dark:text-zinc-100">
+                                                            <Users size={14} className="text-zinc-400" />
+                                                            <span className="text-sm font-black">{guest.allowed_guests}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-10 py-6 text-right">
+                                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                className="h-9 w-9 rounded-xl p-0 hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                                                onClick={() => setSelectedGuest(guest)}
+                                                            >
+                                                                <Eye size={16} />
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                className="h-9 w-9 rounded-xl p-0 hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                                                                onClick={() => handleDeleteGuest(guest.id)}
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+
                                         ))
                                     )}
                                 </tbody>
@@ -1114,69 +1153,83 @@ function EventDetails() {
 
             {/* Add Guest Modal */}
             {showAddGuestModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 border border-zinc-200 dark:border-zinc-800">
-                        <div className="mb-4">
-                            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Add New Guest</h3>
-                            <p className="text-zinc-500 text-sm">
-                                Enter the details of the guest you want to add individually.
-                            </p>
-                        </div>
-
-                        <div className="space-y-4 mb-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowAddGuestModal(false)} />
+                    <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl relative animate-in zoom-in slide-in-from-bottom-8 duration-300 border border-zinc-100 dark:border-white/10">
+                        <div className="p-8 md:p-10 space-y-8">
                             <div className="space-y-2">
-                                <Label>Guest Name *</Label>
-                                <Input
-                                    placeholder="Enter guest name"
-                                    value={newGuestName}
-                                    onChange={(e) => setNewGuestName(e.target.value)}
-                                />
+                                <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">Add Guest</h3>
+                                <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Expand your event directory with a new attendee.</p>
                             </div>
-                            <div className="space-y-2">
-                                <Label>Email Address (Optional)</Label>
-                                <Input
-                                    type="email"
-                                    placeholder="email@example.com"
-                                    value={newGuestEmail}
-                                    onChange={(e) => setNewGuestEmail(e.target.value)}
-                                />
+    
+                            <div className="grid gap-6">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Full Identity</Label>
+                                    <Input
+                                        placeholder="Enter guest name"
+                                        value={newGuestName}
+                                        onChange={(e) => setNewGuestName(e.target.value)}
+                                        className="h-14 bg-zinc-50 dark:bg-white/5 border-zinc-100 dark:border-white/10 rounded-2xl px-6 focus-visible:ring-4 focus-visible:ring-blue-500/10 transition-all font-bold"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Email (Optional)</Label>
+                                        <Input
+                                            type="email"
+                                            placeholder="email@example.com"
+                                            value={newGuestEmail}
+                                            onChange={(e) => setNewGuestEmail(e.target.value)}
+                                            className="h-14 bg-zinc-50 dark:bg-white/5 border-zinc-100 dark:border-white/10 rounded-2xl px-6 focus-visible:ring-4 focus-visible:ring-blue-500/10 transition-all font-bold"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Phone (Optional)</Label>
+                                        <Input
+                                            placeholder="+91..."
+                                            value={newGuestPhone}
+                                            onChange={(e) => setNewGuestPhone(e.target.value)}
+                                            className="h-14 bg-zinc-50 dark:bg-white/5 border-zinc-100 dark:border-white/10 rounded-2xl px-6 focus-visible:ring-4 focus-visible:ring-blue-500/10 transition-all font-bold"
+                                        />
+                                    </div>
+                                </div>
+    
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Guardian / Primary Guest</Label>
+                                    <select
+                                        className="w-full flex h-14 rounded-2xl border border-zinc-100 dark:border-white/10 bg-zinc-50 dark:bg-white/5 px-6 py-2 text-sm font-bold focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/10 transition-all appearance-none cursor-pointer"
+                                        value={selectedPrimaryGuestId || ""}
+                                        onChange={(e) => setSelectedPrimaryGuestId(e.target.value || null)}
+                                    >
+                                        <option value="">Independent Guest</option>
+                                        {guests
+                                            .filter(g => !g.parent_id)
+                                            .map((g) => (
+                                                <option key={g.id} value={g.id}>
+                                                    {g.name}
+                                                </option>
+                                            ))}
+                                    </select>
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label>Phone Number (Optional)</Label>
-                                <Input
-                                    placeholder="e.g. +91 9876543210"
-                                    value={newGuestPhone}
-                                    onChange={(e) => setNewGuestPhone(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>Parent / Primary Guest (Optional)</Label>
-                                <select
-                                    className="w-full flex h-10 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:ring-offset-zinc-950 dark:placeholder:text-zinc-400 dark:focus-visible:ring-zinc-300"
-                                    value={selectedPrimaryGuestId || ""}
-                                    onChange={(e) => setSelectedPrimaryGuestId(e.target.value || null)}
+    
+                            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                                <Button 
+                                    className="flex-1 h-14 rounded-2xl bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 font-black hover:opacity-90 transition-all shadow-xl shadow-zinc-900/20 dark:shadow-none"
+                                    onClick={handleAddGuest} 
+                                    disabled={addGuestLoading}
                                 >
-                                    <option value="">Select Primary Guest (None)</option>
-                                    {guests
-                                        .filter(g => !g.parent_id)
-                                        .map((g) => (
-                                            <option key={g.id} value={g.id}>
-                                                {g.name}
-                                            </option>
-                                        ))}
-                                </select>
+                                    {addGuestLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserPlus className="w-5 h-5 mr-2" />}
+                                    Confirm Addition
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    className="h-14 rounded-2xl px-8 font-black text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+                                    onClick={() => setShowAddGuestModal(false)}
+                                >
+                                    Discard
+                                </Button>
                             </div>
-                        </div>
-
-                        <div className="flex justify-end gap-3">
-                            <Button variant="ghost" onClick={() => setShowAddGuestModal(false)}>
-                                Cancel
-                            </Button>
-                            <Button onClick={handleAddGuest} disabled={addGuestLoading}>
-                                {addGuestLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserPlus className="w-4 h-4 mr-2" />}
-                                Add Guest
-                            </Button>
                         </div>
                     </div>
                 </div>
@@ -1184,198 +1237,234 @@ function EventDetails() {
 
             {/* Delete Confirmation Modal */}
             {showDeleteModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 border border-zinc-200 dark:border-zinc-800">
-                        <div className="mb-4">
-                            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Delete Event?</h3>
-                            <p className="text-zinc-500 text-sm">
-                                This action cannot be undone. All guests and data associated with this event will be permanently deleted.
-                            </p>
-                        </div>
-
-                        <div className="space-y-4 mb-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowDeleteModal(false)} />
+                    <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl relative animate-in zoom-in slide-in-from-bottom-8 duration-300 border border-zinc-100 dark:border-white/10">
+                        <div className="p-8 md:p-10 space-y-8">
+                            <div className="space-y-4 text-center">
+                                <div className="w-20 h-20 bg-rose-500/10 rounded-3xl flex items-center justify-center mx-auto mb-2 border border-rose-500/20">
+                                    <Trash2 className="text-rose-600 dark:text-rose-400" size={32} />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">Destroy Event?</h3>
+                                    <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">This action is permanent. All guest data, RSVPs, and coordinated assignments will be purged.</p>
+                                </div>
+                            </div>
+    
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-900 dark:text-zinc-300">
-                                    Enter Admin Password to Confirm
-                                </label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Administrative Credential</Label>
                                 <Input
                                     type="password"
-                                    placeholder="Password"
+                                    placeholder="Enter password to confirm"
                                     value={deletePassword}
                                     onChange={(e) => setDeletePassword(e.target.value)}
+                                    className="h-14 bg-zinc-50 dark:bg-white/5 border-zinc-100 dark:border-white/10 rounded-2xl px-6 focus-visible:ring-4 focus-visible:ring-rose-500/10 transition-all font-bold"
                                 />
                             </div>
-                        </div>
-
-                        <div className="flex justify-end gap-3">
-                            <Button variant="ghost" onClick={() => {
-                                setShowDeleteModal(false);
-                                setDeletePassword("");
-                            }}>
-                                Cancel
-                            </Button>
-                            <Button variant="destructive" onClick={executeDelete} disabled={deleteLoading}>
-                                {deleteLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                                Delete Forever
-                            </Button>
+    
+                            <div className="flex flex-col gap-3">
+                                <Button 
+                                    variant="destructive" 
+                                    className="h-14 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black transition-all shadow-xl shadow-rose-900/20"
+                                    onClick={executeDelete} 
+                                    disabled={deleteLoading}
+                                >
+                                    {deleteLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Purge Everything"}
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    className="h-14 rounded-2xl font-black text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                                    onClick={() => {
+                                        setShowDeleteModal(false);
+                                        setDeletePassword("");
+                                    }}
+                                >
+                                    Keep Event
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
+
             {/* Guest Delete Confirmation Modal */}
             {showGuestDeleteModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 border border-zinc-200 dark:border-zinc-800">
-                        <div className="mb-4">
-                            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Delete Guest?</h3>
-                            <p className="text-zinc-500 text-sm">
-                                This will permanently remove the guest and all their data. Enter your admin password to confirm.
-                            </p>
-                        </div>
-                        <div className="space-y-4 mb-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowGuestDeleteModal(false)} />
+                    <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl relative animate-in zoom-in slide-in-from-bottom-8 duration-300 border border-zinc-100 dark:border-white/10">
+                        <div className="p-8 md:p-10 space-y-8">
+                            <div className="space-y-4 text-center">
+                                <div className="w-16 h-16 bg-rose-500/10 rounded-2xl flex items-center justify-center mx-auto mb-2 border border-rose-500/20 text-rose-600 dark:text-rose-400">
+                                    <Users size={28} />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">Remove Guest?</h3>
+                                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">This attendee and their companions will be removed from the directory.</p>
+                                </div>
+                            </div>
+    
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-900 dark:text-zinc-300">
-                                    Admin Password
-                                </label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Admin Validation</Label>
                                 <Input
                                     type="password"
-                                    placeholder="Enter your password"
+                                    placeholder="Confirm password"
                                     value={guestDeletePassword}
                                     onChange={(e) => setGuestDeletePassword(e.target.value)}
                                     onKeyDown={(e) => e.key === "Enter" && executeDeleteGuest()}
+                                    className="h-14 bg-zinc-50 dark:bg-white/5 border-zinc-100 dark:border-white/10 rounded-2xl px-6 focus-visible:ring-4 focus-visible:ring-rose-500/10 transition-all font-bold"
                                     autoFocus
                                 />
                             </div>
-                        </div>
-                        <div className="flex justify-end gap-3">
-                            <Button variant="ghost" onClick={() => {
-                                setShowGuestDeleteModal(false);
-                                setGuestToDelete(null);
-                                setGuestDeletePassword("");
-                            }}>Cancel</Button>
-                            <Button variant="destructive" onClick={executeDeleteGuest} disabled={guestDeleteLoading}>
-                                {guestDeleteLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                                Delete Guest
-                            </Button>
+    
+                            <div className="flex flex-col gap-2">
+                                <Button 
+                                    variant="destructive" 
+                                    className="h-14 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black transition-all"
+                                    onClick={executeDeleteGuest} 
+                                    disabled={guestDeleteLoading}
+                                >
+                                    {guestDeleteLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Delete Guest"}
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    className="h-14 rounded-2xl font-black text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                                    onClick={() => {
+                                        setShowGuestDeleteModal(false);
+                                        setGuestToDelete(null);
+                                        setGuestDeletePassword("");
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
 
-
             {showDropLocationsModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 border border-zinc-200 dark:border-zinc-800">
-                        <div className="mb-4">
-                            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Manage Drop Locations</h3>
-                            <p className="text-zinc-500 text-sm">
-                                Provide a comma-separated list of hotels or locations for guests to choose from.
-                            </p>
-                        </div>
-
-                        <div className="space-y-4 mb-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowDropLocationsModal(false)} />
+                    <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl relative animate-in zoom-in slide-in-from-bottom-8 duration-300 border border-zinc-100 dark:border-white/10">
+                        <div className="p-8 md:p-10 space-y-8">
                             <div className="space-y-2">
-                                <Label className="text-sm font-medium">Drop Locations (Comma-separated)</Label>
+                                <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">Drop Locations</h3>
+                                <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Define destinations for guest transportation.</p>
+                            </div>
+    
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Locations Registry (Comma separated)</Label>
                                 <Textarea
                                     placeholder="Grand Hyatt Goa, Taj Exotica, The Leela..."
                                     value={dropLocationsText}
                                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDropLocationsText(e.target.value)}
-                                    rows={4}
+                                    rows={5}
+                                    className="bg-zinc-50 dark:bg-white/5 border-zinc-100 dark:border-white/10 rounded-2xl px-6 py-4 focus-visible:ring-4 focus-visible:ring-blue-500/10 transition-all font-bold resize-none"
                                 />
                             </div>
-                        </div>
-
-                        <div className="flex justify-end gap-3">
-                            <Button variant="ghost" onClick={() => setShowDropLocationsModal(false)}>
-                                Cancel
-                            </Button>
-                            <Button onClick={handleUpdateDropLocations} disabled={dropLocationsLoading}>
-                                {dropLocationsLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Update Locations"}
-                            </Button>
+    
+                            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                                <Button 
+                                    className="flex-1 h-14 rounded-2xl bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 font-black hover:opacity-90 transition-all shadow-xl shadow-zinc-900/20 dark:shadow-none"
+                                    onClick={handleUpdateDropLocations} 
+                                    disabled={dropLocationsLoading}
+                                >
+                                    {dropLocationsLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Update Assignments"}
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    className="h-14 rounded-2xl px-8 font-black text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+                                    onClick={() => setShowDropLocationsModal(false)}
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
 
             {showHotelModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 border border-zinc-200 dark:border-zinc-800">
-                        <div className="mb-4">
-                            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Assign Hotel Access</h3>
-                            <p className="text-zinc-500 text-sm">
-                                Enter the email address of the hotel partner. They will be able to view the guest list and download data.
-                            </p>
-                        </div>
-
-                        <div className="space-y-4 mb-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowHotelModal(false)} />
+                    <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl relative animate-in zoom-in slide-in-from-bottom-8 duration-300 border border-zinc-100 dark:border-white/10">
+                        <div className="p-8 md:p-10 space-y-8">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-900 dark:text-zinc-300">
-                                    Hotel Name (Optional)
-                                </label>
-                                <Input
-                                    type="text"
-                                    placeholder="e.g. Grand Hyatt Goa"
-                                    value={hotelName}
-                                    onChange={(e) => setHotelName(e.target.value)}
-                                />
+                                <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">Hotel Access</h3>
+                                <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Collaborate with your hospitality partners.</p>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-900 dark:text-zinc-300">
-                                    Hotel Email Address
-                                </label>
-                                <Input
-                                    type="email"
-                                    placeholder="hotel@example.com"
-                                    value={hotelEmail}
-                                    onChange={(e) => setHotelEmail(e.target.value)}
-                                />
-                                {event?.assigned_hotel_email && (
-                                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                                        Currently assigned to: <span className="font-semibold">
-                                            {event.assigned_hotel_name ? (
-                                                <>{event.assigned_hotel_name} <span className="font-normal text-zinc-500 dark:text-zinc-400">({event.assigned_hotel_email})</span></>
-                                            ) : (
-                                                event.assigned_hotel_email
-                                            )}
-                                        </span>
-                                    </p>
-                                )}
+    
+                            <div className="grid gap-6">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Partner Organization</Label>
+                                    <Input
+                                        placeholder="e.g. Grand Hyatt Goa"
+                                        value={hotelName}
+                                        onChange={(e) => setHotelName(e.target.value)}
+                                        className="h-14 bg-zinc-50 dark:bg-white/5 border-zinc-100 dark:border-white/10 rounded-2xl px-6 focus-visible:ring-4 focus-visible:ring-blue-500/10 transition-all font-bold"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Authorization Email</Label>
+                                    <Input
+                                        type="email"
+                                        placeholder="partner@hotel.com"
+                                        value={hotelEmail}
+                                        onChange={(e) => setHotelEmail(e.target.value)}
+                                        className="h-14 bg-zinc-50 dark:bg-white/5 border-zinc-100 dark:border-white/10 rounded-2xl px-6 focus-visible:ring-4 focus-visible:ring-blue-500/10 transition-all font-bold"
+                                    />
+                                    {event?.assigned_hotel_email && (
+                                        <div className="flex items-center gap-2 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 mt-2">
+                                            <Hotel size={14} />
+                                            <span className="text-[10px] font-black uppercase tracking-widest truncate">
+                                                Active: {event.assigned_hotel_name || event.assigned_hotel_email}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-
-                        <div className="flex justify-end gap-3">
-                            <Button variant="ghost" onClick={() => setShowHotelModal(false)}>
-                                Cancel
-                            </Button>
-                            {event?.assigned_hotel_email && (
-                                <Button
-                                    variant="destructive"
-                                    onClick={async () => {
-                                        if (!confirm("Are you sure you want to remove hotel access?")) return;
-                                        setAssignLoading(true);
-                                        try {
-                                            const { error } = await supabase.from("events").update({ assigned_hotel_email: null, assigned_hotel_name: null }).eq("id", eventId);
-                                            if (error) throw error;
-                                            setEvent(prev => prev ? ({ ...prev, assigned_hotel_email: undefined, assigned_hotel_name: undefined }) : null);
-                                            setHotelEmail("");
-                                            setHotelName("");
-                                            setShowHotelModal(false);
-                                            alert("Access removed successfully.");
-                                        } catch (e: any) {
-                                            alert(e.message);
-                                        } finally {
-                                            setAssignLoading(false);
-                                        }
-                                    }}
+    
+                            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                                <Button 
+                                    className="flex-3 h-14 rounded-2xl bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 font-black hover:opacity-90 transition-all shadow-xl shadow-zinc-900/20 dark:shadow-none"
+                                    onClick={handleAssignHotel} 
                                     disabled={assignLoading}
-                                    className="mr-auto"
                                 >
-                                    Remove Access
+                                    {assignLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Authorize Partner"}
                                 </Button>
-                            )}
-                            <Button onClick={handleAssignHotel} disabled={assignLoading}>
-                                {assignLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Save Assignment"}
-                            </Button>
+                                {event?.assigned_hotel_email && (
+                                    <Button 
+                                        variant="ghost"
+                                        className="h-14 rounded-2xl px-6 font-black text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white transition-all"
+                                        onClick={async () => {
+                                            if (!confirm("Revoke hospitaly partner access?")) return;
+                                            setAssignLoading(true);
+                                            try {
+                                                const { error } = await supabase.from("events").update({ assigned_hotel_email: null, assigned_hotel_name: null }).eq("id", eventId);
+                                                if (error) throw error;
+                                                setEvent(prev => prev ? ({ ...prev, assigned_hotel_email: undefined, assigned_hotel_name: undefined }) : null);
+                                                setHotelEmail("");
+                                                setHotelName("");
+                                                setShowHotelModal(false);
+                                            } catch (e: any) {
+                                                alert(e.message);
+                                            } finally {
+                                                setAssignLoading(false);
+                                            }
+                                        }}
+                                        disabled={assignLoading}
+                                    >
+                                        Revoke
+                                    </Button>
+                                )}
+                                <Button 
+                                    variant="ghost" 
+                                    className="h-14 rounded-2xl px-6 font-black text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                                    onClick={() => setShowHotelModal(false)}
+                                >
+                                    Close
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -160,12 +160,12 @@ function TeamManagementPage() {
         <div className="space-y-8 animate-in fade-in duration-500 pb-20">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-3xl font-black text-zinc-900 tracking-tight">Team Management</h2>
-                    <p className="text-zinc-500 mt-1 font-medium italic">Manage system users, roles, and access levels.</p>
+                    <h2 className="text-3xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">Team Management</h2>
+                    <p className="text-zinc-500 dark:text-zinc-400 mt-1 font-medium ">Manage system users, roles, and access levels.</p>
                 </div>
             </div>
 
-            <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] border border-zinc-200 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-white/5 rounded-[2rem] sm:rounded-[2.5rem] border border-zinc-200 dark:border-white/10 shadow-sm overflow-hidden">
                 <div className="p-5 sm:p-8 border-b border-zinc-100">
                     <div className="relative group max-w-md">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-blue-500 transition-colors" size={18} />
@@ -173,7 +173,7 @@ function TeamManagementPage() {
                             placeholder="Search by name, email, or role..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-12 bg-zinc-50 border-none rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all font-medium"
+                            className="pl-12 bg-zinc-50 dark:bg-white/5 border-none dark:border dark:border-white/10 rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all font-medium"
                         />
                     </div>
                 </div>
@@ -185,11 +185,11 @@ function TeamManagementPage() {
                     </div>
                 ) : filteredUsers.length === 0 ? (
                     <div className="p-20 text-center">
-                        <div className="w-20 h-20 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-6 text-zinc-300">
+                        <div className="w-20 h-20 bg-zinc-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 text-zinc-300 dark:text-zinc-700">
                             <User size={40} />
                         </div>
-                        <h4 className="text-xl font-black text-zinc-900">No users found</h4>
-                        <p className="text-zinc-500 mt-2 font-medium">Try adjusting your search criteria.</p>
+                        <h4 className="text-xl font-black text-zinc-900 dark:text-zinc-100">No users found</h4>
+                        <p className="text-zinc-500 dark:text-zinc-400 mt-2 font-medium">Try adjusting your search criteria.</p>
                     </div>
                 ) : (
                     <>
@@ -197,7 +197,7 @@ function TeamManagementPage() {
                         <div className="hidden lg:block overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead>
-                                    <tr className="bg-zinc-50/50 text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em] border-b border-zinc-100">
+                                    <tr className="bg-zinc-50/50 dark:bg-white/5 text-zinc-400 dark:text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] border-b border-zinc-100 dark:border-white/5">
                                         <th className="px-10 py-6">User Details</th>
                                         <th className="px-6 py-6 font-black">Role</th>
                                         <th className="px-6 py-6 font-black text-center">Status</th>
@@ -205,24 +205,24 @@ function TeamManagementPage() {
                                         <th className="px-10 py-6 text-right font-black">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-zinc-100">
+                                <tbody className="divide-y divide-zinc-100 dark:divide-white/5">
                                     {filteredUsers.map((user) => {
                                         const isEditing = editingUserId === user.id;
                                         return (
-                                            <tr key={user.id} className="group hover:bg-zinc-50/50 transition-colors">
+                                            <tr key={user.id} className="group hover:bg-zinc-50/50 dark:hover:bg-white/5 transition-colors">
                                                 <td className="px-10 py-8">
                                                     <div className="flex items-center gap-4">
                                                         <div className="flex flex-col min-w-0">
                                                             {isEditing ? (
                                                                 <Input 
-                                                                    className="h-9 mb-1 font-bold text-zinc-900"
+                                                                    className="h-9 mb-1 font-bold text-zinc-900 dark:text-zinc-100 dark:bg-white/5 dark:border-white/10"
                                                                     value={editForm.full_name}
                                                                     onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
                                                                 />
                                                             ) : (
-                                                                <span className="font-black text-zinc-900 truncate text-base">{user.full_name || 'N/A'}</span>
+                                                                <span className="font-black text-zinc-900 dark:text-zinc-100 truncate text-base">{user.full_name || 'N/A'}</span>
                                                             )}
-                                                            <span className="text-xs font-bold text-zinc-400 flex items-center gap-1.5 mt-0.5">
+                                                            <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 flex items-center gap-1.5 mt-0.5">
                                                                 <Mail size={12} className="opacity-70" />
                                                                 {user.email}
                                                             </span>
@@ -232,7 +232,7 @@ function TeamManagementPage() {
                                                 <td className="px-6 py-8">
                                                     {isEditing ? (
                                                         <select 
-                                                            className="h-9 px-3 rounded-xl bg-zinc-50 border-none text-sm font-bold focus:ring-2 focus:ring-blue-500/20"
+                                                            className="h-9 px-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-none dark:border dark:border-white/10 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 text-zinc-900 dark:text-zinc-100"
                                                             value={editForm.role}
                                                             onChange={(e) => setEditForm({...editForm, role: e.target.value})}
                                                         >
@@ -250,7 +250,7 @@ function TeamManagementPage() {
                                                 <td className="px-6 py-8 text-center">
                                                     {isEditing ? (
                                                         <select 
-                                                            className="h-9 px-3 rounded-xl bg-zinc-50 border-none text-sm font-bold focus:ring-2 focus:ring-blue-500/20 mx-auto"
+                                                            className="h-9 px-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-none dark:border dark:border-white/10 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 mx-auto text-zinc-900 dark:text-zinc-100"
                                                             value={editForm.status}
                                                             onChange={(e) => setEditForm({...editForm, status: e.target.value})}
                                                         >
@@ -265,8 +265,8 @@ function TeamManagementPage() {
                                                 </td>
                                                 <td className="px-6 py-8">
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm font-black text-zinc-600">{format(new Date(user.created_at), "dd MMM yyyy")}</span>
-                                                        <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-tight flex items-center gap-1 mt-0.5">
+                                                        <span className="text-sm font-black text-zinc-600 dark:text-zinc-300">{format(new Date(user.created_at), "dd MMM yyyy")}</span>
+                                                        <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-tight flex items-center gap-1 mt-0.5">
                                                             <Clock size={10} className="opacity-60" />
                                                             {format(new Date(user.created_at), "hh:mm a")}
                                                         </span>
@@ -275,7 +275,7 @@ function TeamManagementPage() {
                                                 <td className="px-10 py-8 text-right">
                                                     <div className="flex items-center justify-end gap-3">
                                                         {user.email === 'dheerajkumar8179@gmail.com' ? (
-                                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-300 italic pr-4 select-none">Protected</span>
+                                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-300 dark:text-zinc-700 italic pr-4 select-none">Protected</span>
                                                         ) : isEditing ? (
                                                             <>
                                                                 <Button 
@@ -289,7 +289,7 @@ function TeamManagementPage() {
                                                                 <Button 
                                                                     size="icon" 
                                                                     variant="ghost" 
-                                                                    className="h-10 w-10 rounded-xl text-zinc-400 hover:bg-zinc-100"
+                                                                    className="h-10 w-10 rounded-xl text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5"
                                                                     onClick={() => setEditingUserId(null)}
                                                                 >
                                                                     <X size={18} />
@@ -300,7 +300,7 @@ function TeamManagementPage() {
                                                                 <Button 
                                                                     size="icon" 
                                                                     variant="ghost"
-                                                                    className="h-10 w-10 rounded-xl text-zinc-300 hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-95"
+                                                                    className="h-10 w-10 rounded-xl text-zinc-300 dark:text-zinc-600 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white transition-all shadow-sm active:scale-95"
                                                                     onClick={() => handleEditStart(user)}
                                                                 >
                                                                     <Edit2 size={18} />
@@ -308,7 +308,7 @@ function TeamManagementPage() {
                                                                 <Button 
                                                                     size="icon" 
                                                                     variant="ghost"
-                                                                    className="h-10 w-10 rounded-xl text-zinc-300 hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
+                                                                    className="h-10 w-10 rounded-xl text-zinc-300 dark:text-zinc-600 hover:bg-red-500 dark:hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
                                                                     onClick={() => handleDeleteUser(user.id, user.full_name)}
                                                                 >
                                                                     <Trash2 size={18} />
@@ -325,23 +325,23 @@ function TeamManagementPage() {
                         </div>
 
                         {/* Mobile Card View */}
-                        <div className="lg:hidden divide-y divide-zinc-100">
+                        <div className="lg:hidden divide-y divide-zinc-100 dark:divide-white/5">
                             {filteredUsers.map((user) => {
                                 const isEditing = editingUserId === user.id;
                                 return (
-                                    <div key={user.id} className="p-6 space-y-5 hover:bg-zinc-50/50 transition-colors">
+                                    <div key={user.id} className="p-6 space-y-5 hover:bg-zinc-50/50 dark:hover:bg-white/5 transition-colors">
                                         <div className="flex justify-between items-start gap-4">
                                             <div className="flex flex-col min-w-0">
                                                 {isEditing ? (
                                                     <Input 
-                                                        className="h-9 mb-1 font-bold text-zinc-900"
+                                                        className="h-9 mb-1 font-bold text-zinc-900 dark:text-zinc-100 dark:bg-white/5 dark:border-white/10"
                                                         value={editForm.full_name}
                                                         onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
                                                     />
                                                 ) : (
-                                                    <span className="font-black text-zinc-900 truncate text-base">{user.full_name || 'N/A'}</span>
+                                                    <span className="font-black text-zinc-900 dark:text-zinc-100 truncate text-base">{user.full_name || 'N/A'}</span>
                                                 )}
-                                                <span className="text-xs font-bold text-zinc-400 flex items-center gap-1.5 mt-0.5 break-all">
+                                                <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 flex items-center gap-1.5 mt-0.5 break-all">
                                                     <Mail size={12} className="opacity-70 shrink-0" />
                                                     {user.email}
                                                 </span>
@@ -349,7 +349,7 @@ function TeamManagementPage() {
                                             <div className="flex flex-col items-end gap-2 shrink-0">
                                                 {isEditing ? (
                                                     <select 
-                                                        className="h-8 px-2 rounded-lg bg-zinc-50 border-none text-[10px] font-black uppercase tracking-wider focus:ring-1 focus:ring-blue-500/20"
+                                                        className="h-8 px-2 rounded-lg bg-zinc-50 dark:bg-zinc-900 border-none dark:border dark:border-white/10 text-[10px] font-black uppercase tracking-wider focus:ring-1 focus:ring-blue-500/20 text-zinc-900 dark:text-zinc-100"
                                                         value={editForm.role}
                                                         onChange={(e) => setEditForm({...editForm, role: e.target.value})}
                                                     >
@@ -364,7 +364,7 @@ function TeamManagementPage() {
                                                 )}
                                                 {isEditing ? (
                                                     <select 
-                                                        className="h-8 px-2 rounded-lg bg-zinc-50 border-none text-[10px] font-black uppercase tracking-wider focus:ring-1 focus:ring-blue-500/20"
+                                                        className="h-8 px-2 rounded-lg bg-zinc-50 dark:bg-zinc-900 border-none dark:border dark:border-white/10 text-[10px] font-black uppercase tracking-wider focus:ring-1 focus:ring-blue-500/20 text-zinc-900 dark:text-zinc-100"
                                                         value={editForm.status}
                                                         onChange={(e) => setEditForm({...editForm, status: e.target.value})}
                                                     >
@@ -381,12 +381,12 @@ function TeamManagementPage() {
 
                                         <div className="flex items-center justify-between pt-2">
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Joined</span>
-                                                <span className="text-xs font-black text-zinc-600">{format(new Date(user.created_at), "dd MMM yyyy")}</span>
+                                                <span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1">Joined</span>
+                                                <span className="text-xs font-black text-zinc-600 dark:text-zinc-300">{format(new Date(user.created_at), "dd MMM yyyy")}</span>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 {user.email === 'dheerajkumar8179@gmail.com' ? (
-                                                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-300 italic select-none">Protected</span>
+                                                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-300 dark:text-zinc-700 italic select-none">Protected</span>
                                                 ) : isEditing ? (
                                                     <div className="flex gap-2">
                                                         <Button 
@@ -400,7 +400,7 @@ function TeamManagementPage() {
                                                         <Button 
                                                             size="icon" 
                                                             variant="ghost" 
-                                                            className="h-9 w-9 rounded-xl text-zinc-400 hover:bg-zinc-100"
+                                                            className="h-9 w-9 rounded-xl text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5"
                                                             onClick={() => setEditingUserId(null)}
                                                         >
                                                             <X size={16} />
@@ -411,7 +411,7 @@ function TeamManagementPage() {
                                                         <Button 
                                                             size="icon" 
                                                             variant="ghost"
-                                                            className="h-9 w-9 rounded-xl text-zinc-300 hover:bg-blue-600 hover:text-white transition-all active:scale-95"
+                                                            className="h-9 w-9 rounded-xl text-zinc-300 dark:text-zinc-600 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white transition-all active:scale-95"
                                                             onClick={() => handleEditStart(user)}
                                                         >
                                                             <Edit2 size={16} />
@@ -419,7 +419,7 @@ function TeamManagementPage() {
                                                         <Button 
                                                             size="icon" 
                                                             variant="ghost"
-                                                            className="h-9 w-9 rounded-xl text-zinc-300 hover:bg-red-500 hover:text-white transition-all active:scale-95"
+                                                            className="h-9 w-9 rounded-xl text-zinc-300 dark:text-zinc-600 hover:bg-red-500 dark:hover:bg-red-500 hover:text-white transition-all active:scale-95"
                                                             onClick={() => handleDeleteUser(user.id, user.full_name)}
                                                         >
                                                             <Trash2 size={16} />
