@@ -1141,7 +1141,7 @@ export default function PublicEventPage() {
                                                             placeholder="your@email.com"
                                                             value={email}
                                                             onChange={(e) => { setEmail(e.target.value); setRsvpError(""); }}
-                                                            className={`h-12 text-lg px-6 rounded-2xl border-2 ${rsvpError ? 'border-red-400' : ''}`}
+                                                            className={`h-12 text-lg px-6 rounded-2xl border-2 dark:bg-zinc-950 dark:border-zinc-800 ${rsvpError ? 'border-red-400' : ''}`}
                                                             autoFocus
                                                         />
                                                         {rsvpError && <p className="text-red-500 text-sm mt-1 font-medium">{rsvpError}</p>}
@@ -1160,7 +1160,7 @@ export default function PublicEventPage() {
                                                             placeholder="Your phone number"
                                                             value={phone}
                                                             onChange={(e) => { setPhone(e.target.value); setRsvpError(""); }}
-                                                            className={`h-12 text-lg px-6 rounded-2xl border-2 ${rsvpError ? 'border-red-400' : ''}`}
+                                                            className={`h-12 text-lg px-6 rounded-2xl border-2 dark:bg-zinc-950 dark:border-zinc-800 ${rsvpError ? 'border-red-400' : ''}`}
                                                             required
                                                             autoFocus
                                                         />
@@ -1205,7 +1205,7 @@ export default function PublicEventPage() {
                                                                             setRsvpError("");
                                                                         }}
                                                                         placeholder="Enter age"
-                                                                        className={`h-11 text-base px-4 rounded-xl border-2 ${rsvpError && rsvpError.includes('Age') ? 'border-red-400' : ''}`}
+                                                                        className={`h-11 text-base px-4 rounded-xl border-2 dark:bg-zinc-950 dark:border-zinc-800 ${rsvpError && rsvpError.includes('Age') ? 'border-red-400' : ''}`}
                                                                     />
                                                                     {rsvpError && rsvpError.includes('Age') && <p className="text-red-500 text-sm mt-1 font-medium">{rsvpError}</p>}
                                                                 </div>
@@ -1231,7 +1231,7 @@ export default function PublicEventPage() {
                                                                         <Label className="text-sm font-medium text-zinc-500 uppercase">Front ID <span className="text-red-400">*</span></Label>
                                                                         <div className="relative group">
                                                                             <input type="file" className="hidden" id={`file-${idx}-front`} onChange={(e) => { const file = e.target.files?.[0]; if (file) { handleFileUpload(file, idx, "id_front"); setRsvpError(""); } }} />
-                                                                            <label htmlFor={`file-${idx}-front`} className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all ${attendee.id_front ? 'border-green-500 bg-green-50' : rsvpError && rsvpError.includes('Front ID') ? 'border-red-400 bg-red-50' : 'border-zinc-300 hover:border-zinc-400'}`}>
+                                                                            <label htmlFor={`file-${idx}-front`} className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all ${attendee.id_front ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : rsvpError && rsvpError.includes('Front ID') ? 'border-red-400 bg-red-50 dark:bg-red-950/20' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600'}`}>
                                                                                 {uploading === `${idx}-id_front` ? <Loader2 className="animate-spin" /> : attendee.id_front ? <Check className="text-green-500" /> : <Upload className={rsvpError && rsvpError.includes('Front ID') ? 'text-red-400' : 'text-zinc-400'} />}
                                                                                 <span className={`text-xs mt-2 ${rsvpError && rsvpError.includes('Front ID') ? 'text-red-500 font-medium' : ''}`}>{attendee.id_front ? 'Uploaded' : 'Upload Front'}</span>
                                                                             </label>
@@ -1242,7 +1242,7 @@ export default function PublicEventPage() {
                                                                         <Label className="text-sm font-medium text-zinc-500 uppercase">Back ID</Label>
                                                                         <div className="relative group">
                                                                             <input type="file" className="hidden" id={`file-${idx}-back`} onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileUpload(file, idx, "id_back"); }} />
-                                                                            <label htmlFor={`file-${idx}-back`} className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all ${attendee.id_back ? 'border-green-500 bg-green-50' : 'border-zinc-300 hover:border-zinc-400'}`}>
+                                                                            <label htmlFor={`file-${idx}-back`} className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all ${attendee.id_back ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600'}`}>
                                                                                 {uploading === `${idx}-id_back` ? <Loader2 className="animate-spin" /> : attendee.id_back ? <Check className="text-green-500" /> : <Upload className="text-zinc-400" />}
                                                                                 <span className="text-xs mt-2">{attendee.id_back ? 'Uploaded' : 'Upload Back'}</span>
                                                                             </label>
@@ -1266,7 +1266,7 @@ export default function PublicEventPage() {
                                                             placeholder="Type your message here..."
                                                             value={message}
                                                             onChange={(e) => setMessage(e.target.value)}
-                                                            className="min-h-[150px] text-base p-6 rounded-2xl border-2"
+                                                            className="min-h-[150px] text-base p-6 rounded-2xl border-2 dark:bg-zinc-950 dark:border-zinc-800"
                                                             autoFocus
                                                         />
                                                     </StepWrapper>
@@ -1339,7 +1339,7 @@ export default function PublicEventPage() {
                                                                     type="date"
                                                                     value={arrivalDate}
                                                                     onChange={(e) => { setArrivalDate(e.target.value); setTransportError(""); }}
-                                                                    className={`h-11 text-sm rounded-xl border-2 ${transportError && transportError.includes('date') && transportStep === 1 ? 'border-red-400' : ''}`}
+                                                                    className={`h-11 text-sm rounded-xl border-2 dark:bg-zinc-950 dark:border-zinc-800 ${transportError && transportError.includes('date') && transportStep === 1 ? 'border-red-400' : ''}`}
                                                                 />
                                                             </div>
                                                             <div className="space-y-2">
@@ -1348,7 +1348,7 @@ export default function PublicEventPage() {
                                                                     type="time"
                                                                     value={arrivalTime}
                                                                     onChange={(e) => { setArrivalTime(e.target.value); setTransportError(""); }}
-                                                                    className={`h-11 text-sm rounded-xl border-2 ${transportError && transportError.includes('time') && transportStep === 1 ? 'border-red-400' : ''}`}
+                                                                    className={`h-11 text-sm rounded-xl border-2 dark:bg-zinc-950 dark:border-zinc-800 ${transportError && transportError.includes('time') && transportStep === 1 ? 'border-red-400' : ''}`}
                                                                 />
                                                             </div>
                                                         </div>
@@ -1367,7 +1367,7 @@ export default function PublicEventPage() {
                                                         >
                                                             <div className="space-y-6">
                                                                 {idx > 0 && (
-                                                                    <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 border border-zinc-100">
+                                                                    <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
                                                                         <input type="checkbox" checked={!!traveler.same_as_main} onChange={(e) => {
                                                                             const val = e.target.checked;
                                                                             const newT = [...arrivalTravelers];
@@ -1387,7 +1387,7 @@ export default function PublicEventPage() {
                                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                                             <div className="space-y-2">
                                                                                 <Label className="uppercase text-[10px] font-bold text-zinc-400">Mode <span className="text-red-400">*</span></Label>
-                                                                                <select className={`w-full h-11 px-4 rounded-xl border-2 bg-white text-sm ${transportError && transportError.includes('mode') ? 'border-red-400' : ''}`} value={traveler.mode_of_travel || ''} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx] = { ...newT[idx], mode_of_travel: e.target.value }; setArrivalTravelers(newT); setTransportError(""); }}>
+                                                                                <select className={`w-full h-11 px-4 rounded-xl border-2 bg-white dark:bg-zinc-950 dark:border-zinc-800 text-sm ${transportError && transportError.includes('mode') ? 'border-red-400' : ''}`} value={traveler.mode_of_travel || ''} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx] = { ...newT[idx], mode_of_travel: e.target.value }; setArrivalTravelers(newT); setTransportError(""); }}>
                                                                                     <option value="">Select Mode</option>
                                                                                     <option value="Bus">Bus</option>
                                                                                     <option value="Train">Train</option>
@@ -1412,7 +1412,7 @@ export default function PublicEventPage() {
                                                                         <div className="space-y-2">
                                                                             <Label className="uppercase text-[10px] font-bold text-zinc-400">Drop Location <span className="text-red-400">*</span></Label>
                                                                             {event?.drop_locations && event.drop_locations.length > 0 ? (
-                                                                                <select className={`w-full h-11 px-4 rounded-xl border-2 bg-white text-sm ${transportError && transportError.includes('drop location') ? 'border-red-400' : ''}`} value={traveler.drop_location} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx] = { ...newT[idx], drop_location: e.target.value }; setArrivalTravelers(newT); setTransportError(""); }}>
+                                                                                <select className={`w-full h-11 px-4 rounded-xl border-2 bg-white dark:bg-zinc-950 dark:border-zinc-800 text-sm ${transportError && transportError.includes('drop location') ? 'border-red-400' : ''}`} value={traveler.drop_location} onChange={(e) => { const newT = [...arrivalTravelers]; newT[idx] = { ...newT[idx], drop_location: e.target.value }; setArrivalTravelers(newT); setTransportError(""); }}>
                                                                                     <option value="">Select Drop Location</option>
                                                                                     {event.drop_locations.map((loc, i) => (
                                                                                         <option key={i} value={loc}>{loc}</option>
@@ -1448,7 +1448,7 @@ export default function PublicEventPage() {
                                                                             <Label className="uppercase text-[10px] font-bold text-zinc-400">Upload Ticket <span className="text-red-400">*</span></Label>
                                                                             <div className="relative group">
                                                                                 <input type="file" className="hidden" id={`file-${idx}-arrival-ticket`} onChange={(e) => { const file = e.target.files?.[0]; if (file) handleTicketUpload(file, idx, "arrival"); }} />
-                                                                                <label htmlFor={`file-${idx}-arrival-ticket`} className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-xl cursor-pointer transition-all ${traveler.ticket_url ? 'border-green-500 bg-green-50' : (transportError && transportError.includes('ticket') ? 'border-red-400 bg-red-50/50' : 'border-zinc-300 hover:border-zinc-400')}`}>
+                                                                                <label htmlFor={`file-${idx}-arrival-ticket`} className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-xl cursor-pointer transition-all ${traveler.ticket_url ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : (transportError && transportError.includes('ticket') ? 'border-red-400 bg-red-50/50 dark:bg-red-950/20' : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600')}`}>
                                                                                     {uploadingTicket === `arrival-${idx}` ? <Loader2 className="animate-spin text-zinc-400" /> : traveler.ticket_url ? <Check className="text-green-500" /> : <Upload className={`${transportError && transportError.includes('ticket') ? 'text-red-400' : 'text-zinc-400'}`} />}
                                                                                     <span className={`text-xs mt-2 font-medium ${transportError && transportError.includes('ticket') ? 'text-red-500' : 'text-zinc-500'}`}>{traveler.ticket_url ? 'Ticket Uploaded' : 'Tap to upload ticket'}</span>
                                                                                 </label>
@@ -1505,7 +1505,7 @@ export default function PublicEventPage() {
                                                                     type="date"
                                                                     value={departureDate}
                                                                     onChange={(e) => { setDepartureDate(e.target.value); setTransportError(""); }}
-                                                                    className={`h-11 text-sm rounded-xl border-2 ${transportError && transportError.includes('date') && transportStep > 1 ? 'border-red-400' : ''}`}
+                                                                    className={`h-11 text-sm rounded-xl border-2 dark:bg-zinc-950 dark:border-zinc-800 ${transportError && transportError.includes('date') && transportStep > 1 ? 'border-red-400' : ''}`}
                                                                 />
                                                             </div>
                                                             <div className="space-y-2">
@@ -1514,11 +1514,11 @@ export default function PublicEventPage() {
                                                                     type="time"
                                                                     value={departureTime}
                                                                     onChange={(e) => { setDepartureTime(e.target.value); setTransportError(""); }}
-                                                                    className={`h-11 text-sm rounded-xl border-2 ${transportError && transportError.includes('time') && transportStep > 1 ? 'border-red-400' : ''}`}
+                                                                    className={`h-11 text-sm rounded-xl border-2 dark:bg-zinc-950 dark:border-zinc-800 ${transportError && transportError.includes('time') && transportStep > 1 ? 'border-red-400' : ''}`}
                                                                 />
                                                             </div>
                                                         </div>
-                                                        <div className="mt-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 flex gap-2 items-start">
+                                                        <div className="mt-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 flex gap-2 items-start">
                                                             <div className="mt-0.5 text-blue-600 dark:text-blue-400">
                                                                 <FileText className="w-4 h-4" />
                                                             </div>
@@ -1541,7 +1541,7 @@ export default function PublicEventPage() {
                                                         >
                                                             <div className="space-y-6">
                                                                 {idx > 0 && (
-                                                                    <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 border border-zinc-100">
+                                                                    <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
                                                                         <input type="checkbox" checked={!!traveler.same_as_main} onChange={(e) => {
                                                                             const val = e.target.checked;
                                                                             const newT = [...departureTravelers];
@@ -1561,7 +1561,7 @@ export default function PublicEventPage() {
                                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                                             <div className="space-y-2">
                                                                                 <Label className="uppercase text-[10px] font-bold text-zinc-400">Mode <span className="text-red-400">*</span></Label>
-                                                                                <select className={`w-full h-11 px-4 rounded-xl border-2 bg-white text-sm ${transportError && transportError.includes('mode') ? 'border-red-400' : ''}`} value={traveler.mode_of_travel || ''} onChange={(e) => { const newT = [...departureTravelers]; newT[idx] = { ...newT[idx], mode_of_travel: e.target.value }; setDepartureTravelers(newT); setTransportError(""); }}>
+                                                                                <select className={`w-full h-11 px-4 rounded-xl border-2 bg-white dark:bg-zinc-950 dark:border-zinc-800 text-sm ${transportError && transportError.includes('mode') ? 'border-red-400' : ''}`} value={traveler.mode_of_travel || ''} onChange={(e) => { const newT = [...departureTravelers]; newT[idx] = { ...newT[idx], mode_of_travel: e.target.value }; setDepartureTravelers(newT); setTransportError(""); }}>
                                                                                     <option value="">Select Mode</option>
                                                                                     <option value="Bus">Bus</option>
                                                                                     <option value="Train">Train</option>
