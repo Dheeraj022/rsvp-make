@@ -275,7 +275,9 @@ function TeamManagementPage() {
                                             </td>
                                             <td className="px-10 py-8 text-right">
                                                 <div className="flex items-center justify-end gap-3">
-                                                    {isEditing ? (
+                                                    {user.email === 'dheerajkumar8179@gmail.com' ? (
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-300 italic pr-4 select-none">Protected</span>
+                                                    ) : isEditing ? (
                                                         <>
                                                             <Button 
                                                                 size="icon" 
