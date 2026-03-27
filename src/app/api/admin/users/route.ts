@@ -41,11 +41,13 @@ export async function PATCH(req: NextRequest) {
         // 1. Update public.users
         const { data: userData, error: fetchError } = await supabaseAdmin
             .from("users")
-            .select("email")
+            .select("email, role")
             .eq("id", userId)
             .single();
 
         if (fetchError) throw fetchError;
+
+        const oldRole = userData.role;
 
         const { error: dbError } = await supabaseAdmin
             .from("users")
@@ -57,6 +59,7 @@ export async function PATCH(req: NextRequest) {
         // 2. Cross-table synchronization
         const isActive = status === 'active';
 
+        // Handle Coordinator role synchronization
         if (role === 'coordinator') {
             const { data: coord } = await supabaseAdmin.from("coordinators").select("id").eq("user_id", userId).single();
             if (!coord) {
@@ -75,7 +78,16 @@ export async function PATCH(req: NextRequest) {
                 }).eq("user_id", userId);
                 if (syncError) throw syncError;
             }
-        } else if (role === 'hotel') {
+        } else if (oldRole === 'coordinator') {
+            // If they were a coordinator but are no longer, remove them from coordinators table
+            await supabaseAdmin.from("coordinators").delete().eq("user_id", userId);
+            
+            // Also unassign them from any guests where they were the primary coordinator
+            await supabaseAdmin.from("guests").update({ coordinator_id: null }).eq("coordinator_id", userId);
+        }
+
+        // Handle Hotel role synchronization
+        if (role === 'hotel') {
             const { data: hotel } = await supabaseAdmin.from("hotels").select("id").eq("user_id", userId).single();
             if (!hotel) {
                 const { error: syncError } = await supabaseAdmin.from("hotels").insert({
@@ -93,6 +105,15 @@ export async function PATCH(req: NextRequest) {
                 }).eq("user_id", userId);
                 if (syncError) throw syncError;
             }
+        } else if (oldRole === 'hotel') {
+            // If they were a hotel but are no longer, remove them from hotels table
+            await supabaseAdmin.from("hotels").delete().eq("user_id", userId);
+            
+            // Also clear their email from any assigned events
+            await supabaseAdmin.from("events").update({ 
+                assigned_hotel_email: null,
+                assigned_hotel_name: null
+            }).eq("assigned_hotel_email", userData.email);
         }
 
         // 3. Update auth.user metadata
