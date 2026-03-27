@@ -991,7 +991,7 @@ function CoordinatorDashboard() {
                             variant="outline"
                             size="icon"
                             onClick={() => setIsAddGuestModalOpen(true)}
-                            className="rounded-xl shadow-sm h-10 w-10 bg-indigo-50 text-indigo-600 border-indigo-100"
+                            className="rounded-xl shadow-sm h-10 w-10 bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all"
                         >
                             <UserPlus size={18} />
                         </Button>
@@ -999,11 +999,11 @@ function CoordinatorDashboard() {
                             variant="outline"
                             size="icon"
                             onClick={handleExportExcel}
-                            className="rounded-xl shadow-sm h-10 w-10 border-emerald-100 hover:bg-emerald-50 text-emerald-600"
+                            className="rounded-xl shadow-sm h-10 w-10 border-emerald-100 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-emerald-600 transition-all"
                         >
                             <FileSpreadsheet size={18} />
                         </Button>
-                        <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isRefreshing} className="rounded-xl shadow-sm h-10 w-10">
+                        <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isRefreshing} className="rounded-xl shadow-sm h-10 w-10 border-zinc-200 text-zinc-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all">
                             <RefreshCw size={18} className={cn(isRefreshing && "animate-spin")} />
                         </Button>
                     </div>
@@ -1031,7 +1031,7 @@ function CoordinatorDashboard() {
                                 <Button
                                     variant="outline"
                                     onClick={handleExportExcel}
-                                    className="rounded-2xl border-emerald-200 text-emerald-600 font-bold hover:bg-emerald-50 h-12 px-6 gap-2"
+                                    className="rounded-2xl border-emerald-200 text-emerald-600 font-bold hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all h-12 px-6 gap-2"
                                 >
                                     <FileSpreadsheet size={18} />
                                     Export Excel
@@ -1040,7 +1040,7 @@ function CoordinatorDashboard() {
                                     variant="outline"
                                     onClick={handleRefresh}
                                     disabled={isRefreshing}
-                                    className="rounded-2xl border-zinc-200 text-zinc-600 font-bold hover:bg-zinc-50 h-12 w-12 p-0 flex items-center justify-center"
+                                    className="rounded-2xl border-zinc-200 text-zinc-600 font-bold hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all h-12 w-12 p-0 flex items-center justify-center"
                                 >
                                     <RefreshCw size={18} className={cn(isRefreshing && "animate-spin")} />
                                 </Button>
