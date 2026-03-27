@@ -210,9 +210,6 @@ function TeamManagementPage() {
                                         <tr key={user.id} className="group hover:bg-zinc-50/50 transition-colors">
                                             <td className="px-10 py-8">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-white group-hover:shadow-md transition-all border border-transparent group-hover:border-zinc-100 shrink-0 capitalize text-lg font-black">
-                                                        {user.full_name?.[0] || <User size={20} />}
-                                                    </div>
                                                     <div className="flex flex-col min-w-0">
                                                         {isEditing ? (
                                                             <Input 
