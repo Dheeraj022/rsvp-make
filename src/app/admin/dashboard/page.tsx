@@ -255,84 +255,143 @@ function AdminDashboard() {
                         </Link>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-zinc-50/50 text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em] border-y border-zinc-100/50">
-                                    <th className="px-6 md:px-10 py-6">Identity</th>
-                                    <th className="hidden md:table-cell px-6 py-6 font-black">Timeline</th>
-                                    <th className="hidden lg:table-cell px-6 py-6 font-black">Destination</th>
-                                    <th className="hidden sm:table-cell px-6 py-6 font-black">Guest List</th>
-                                    <th className="hidden xl:table-cell px-6 py-6 font-black">Admin</th>
-                                    <th className="px-6 md:px-10 py-6 text-right font-black">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-zinc-100/50">
-                                {filteredEvents.map((event) => (
-                                    <tr key={event.id} className="group hover:bg-blue-50/30 transition-all duration-300">
-                                        <td className="px-6 md:px-10 py-8">
-                                            <div className="flex items-center gap-3 md:gap-5">
-                                                <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white shadow-sm flex flex-col items-center justify-center border border-zinc-100 group-hover:border-blue-200 group-hover:shadow-blue-500/10 transition-all duration-300 shrink-0">
-                                                    <span className="text-[9px] md:text-[10px] uppercase font-black text-zinc-400 group-hover:text-blue-400 transition-colors uppercase tracking-widest">{format(new Date(event.date), "MMM")}</span>
-                                                    <span className="text-lg md:text-xl font-black text-zinc-900 group-hover:text-blue-600 transition-colors leading-none mt-1">{format(new Date(event.date), "dd")}</span>
-                                                </div>
-                                                <div className="flex flex-col min-w-0">
-                                                    <span className="text-base md:text-lg font-bold text-zinc-900 truncate group-hover:text-blue-600 transition-colors">{event.name}</span>
-                                                    <span className="text-[10px] md:text-xs font-bold text-zinc-400 mt-1 uppercase tracking-wider">
-                                                        {format(new Date(event.date), "MMM d, yyyy")}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="hidden md:table-cell px-6 py-8">
-                                            <div className="text-sm font-bold text-zinc-700">
-                                                {format(new Date(event.date), "EEE, MMM d, yyyy")}
-                                            </div>
-                                        </td>
-                                        <td className="hidden lg:table-cell px-6 py-8">
-                                            <div className="flex items-center gap-2 text-zinc-500 group-hover:text-zinc-700 transition-colors">
-                                                <MapPin size={16} className="text-zinc-300 group-hover:text-blue-400 transition-colors" />
-                                                <span className="text-sm font-semibold">{event.location}</span>
-                                            </div>
-                                        </td>
-                                        <td className="hidden sm:table-cell px-6 py-8">
-                                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 group-hover:bg-blue-100 text-zinc-600 group-hover:text-blue-700 transition-all duration-300">
-                                                <Users size={14} className="opacity-70" />
-                                                <span className="text-[13px] font-black">{event.guest_count}</span>
-                                            </div>
-                                        </td>
-                                        <td className="hidden xl:table-cell px-6 py-8">
-                                            <div className="flex flex-col gap-1">
-                                                <div className="text-xs font-black text-zinc-900 uppercase tracking-widest">
-                                                    {event.created_by_name || "Admin"}
-                                                </div>
-                                                <div className="text-[10px] font-bold text-zinc-400 lowercase">
-                                                    {event.created_by_email || "N/A"}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 md:px-10 py-8 text-right">
-                                            <div className="flex items-center justify-end gap-3">
-                                                <Link href={`/admin/events/${event.id}`}>
-                                                    <Button size="sm" className="bg-zinc-900 text-white hover:bg-black rounded-xl px-4 md:px-5 h-10 text-[10px] md:text-xs font-black gap-2 border-none shadow-lg shadow-zinc-900/10 hover:shadow-zinc-900/20 transition-all">
-                                                        <span className="hidden xs:inline">Manage</span>
-                                                        <ArrowUpRight size={14} />
-                                                    </Button>
-                                                </Link>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon" 
-                                                    className="h-10 w-10 rounded-xl text-zinc-300 hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-95"
-                                                    onClick={() => setActionEvent(event)}
-                                                >
-                                                    <MoreVertical size={18} />
-                                                </Button>
-                                            </div>
-                                        </td>
+                    <div className="overflow-hidden">
+                        {/* Desktop View */}
+                        <div className="hidden lg:block overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-zinc-50/50 text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em] border-y border-zinc-100/50">
+                                        <th className="px-6 md:px-10 py-6">Identity</th>
+                                        <th className="hidden md:table-cell px-6 py-6 font-black">Timeline</th>
+                                        <th className="hidden lg:table-cell px-6 py-6 font-black">Destination</th>
+                                        <th className="hidden sm:table-cell px-6 py-6 font-black">Guest List</th>
+                                        <th className="hidden xl:table-cell px-6 py-6 font-black">Admin</th>
+                                        <th className="px-6 md:px-10 py-6 text-right font-black">Action</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-zinc-100/50">
+                                    {filteredEvents.map((event) => (
+                                        <tr key={event.id} className="group hover:bg-blue-50/30 transition-all duration-300">
+                                            <td className="px-6 md:px-10 py-8">
+                                                <div className="flex items-center gap-3 md:gap-5">
+                                                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white shadow-sm flex flex-col items-center justify-center border border-zinc-100 group-hover:border-blue-200 group-hover:shadow-blue-500/10 transition-all duration-300 shrink-0">
+                                                        <span className="text-[9px] md:text-[10px] uppercase font-black text-zinc-400 group-hover:text-blue-400 transition-colors uppercase tracking-widest">{format(new Date(event.date), "MMM")}</span>
+                                                        <span className="text-lg md:text-xl font-black text-zinc-900 group-hover:text-blue-600 transition-colors leading-none mt-1">{format(new Date(event.date), "dd")}</span>
+                                                    </div>
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="text-base md:text-lg font-bold text-zinc-900 truncate group-hover:text-blue-600 transition-colors">{event.name}</span>
+                                                        <span className="text-[10px] md:text-xs font-bold text-zinc-400 mt-1 uppercase tracking-wider">
+                                                            {format(new Date(event.date), "MMM d, yyyy")}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="hidden md:table-cell px-6 py-8">
+                                                <div className="text-sm font-bold text-zinc-700">
+                                                    {format(new Date(event.date), "EEE, MMM d, yyyy")}
+                                                </div>
+                                            </td>
+                                            <td className="hidden lg:table-cell px-6 py-8">
+                                                <div className="flex items-center gap-2 text-zinc-500 group-hover:text-zinc-700 transition-colors">
+                                                    <MapPin size={16} className="text-zinc-300 group-hover:text-blue-400 transition-colors" />
+                                                    <span className="text-sm font-semibold">{event.location}</span>
+                                                </div>
+                                            </td>
+                                            <td className="hidden sm:table-cell px-6 py-8">
+                                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 group-hover:bg-blue-100 text-zinc-600 group-hover:text-blue-700 transition-all duration-300">
+                                                    <Users size={14} className="opacity-70" />
+                                                    <span className="text-[13px] font-black">{event.guest_count}</span>
+                                                </div>
+                                            </td>
+                                            <td className="hidden xl:table-cell px-6 py-8">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="text-xs font-black text-zinc-900 uppercase tracking-widest">
+                                                        {event.created_by_name || "Admin"}
+                                                    </div>
+                                                    <div className="text-[10px] font-bold text-zinc-400 lowercase">
+                                                        {event.created_by_email || "N/A"}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 md:px-10 py-8 text-right">
+                                                <div className="flex items-center justify-end gap-3">
+                                                    <Link href={`/admin/events/${event.id}`}>
+                                                        <Button size="sm" className="bg-zinc-900 text-white hover:bg-black rounded-xl px-4 md:px-5 h-10 text-[10px] md:text-xs font-black gap-2 border-none shadow-lg shadow-zinc-900/10 hover:shadow-zinc-900/20 transition-all">
+                                                            <span className="hidden xs:inline">Manage</span>
+                                                            <ArrowUpRight size={14} />
+                                                        </Button>
+                                                    </Link>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="h-10 w-10 rounded-xl text-zinc-300 hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-95"
+                                                        onClick={() => setActionEvent(event)}
+                                                    >
+                                                        <MoreVertical size={18} />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="lg:hidden divide-y divide-zinc-100/50">
+                            {filteredEvents.map((event) => (
+                                <div key={event.id} className="p-6 space-y-5 hover:bg-blue-50/30 transition-all duration-300">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex flex-col items-center justify-center border border-zinc-100 shrink-0">
+                                                <span className="text-[9px] uppercase font-black text-zinc-400 tracking-widest">{format(new Date(event.date), "MMM")}</span>
+                                                <span className="text-lg font-black text-zinc-900 leading-none mt-0.5">{format(new Date(event.date), "dd")}</span>
+                                            </div>
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-base font-bold text-zinc-900 truncate leading-snug">{event.name}</span>
+                                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mt-0.5">
+                                                    {format(new Date(event.date), "EEE, MMM d, yyyy")}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-100 text-zinc-600 shrink-0">
+                                            <Users size={12} className="opacity-70" />
+                                            <span className="text-[11px] font-black">{event.guest_count}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-x-6 gap-y-3">
+                                        {event.location && (
+                                            <div className="flex items-center gap-2 text-zinc-500">
+                                                <MapPin size={14} className="text-zinc-300" />
+                                                <span className="text-[11px] font-bold uppercase tracking-wider">{event.location}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-2 text-zinc-500">
+                                            <UserCog size={14} className="text-zinc-300" />
+                                            <span className="text-[11px] font-bold uppercase tracking-wider">{event.created_by_name || "Admin"}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 pt-2">
+                                        <Link href={`/admin/events/${event.id}`} className="flex-1">
+                                            <Button className="w-full bg-zinc-900 text-white hover:bg-black rounded-xl h-12 text-xs font-black gap-2 shadow-lg shadow-zinc-900/10 transition-all">
+                                                Manage Event
+                                                <ArrowUpRight size={16} />
+                                            </Button>
+                                        </Link>
+                                        <Button 
+                                            variant="outline" 
+                                            size="icon" 
+                                            className="h-12 w-12 rounded-xl text-zinc-400 hover:bg-zinc-100 border-zinc-100 transition-all shrink-0"
+                                            onClick={() => setActionEvent(event)}
+                                        >
+                                            <MoreVertical size={20} />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
