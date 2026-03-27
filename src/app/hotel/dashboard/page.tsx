@@ -67,7 +67,12 @@ function HotelDashboard() {
                         </h1>
                         <p className="text-xs text-zinc-500">{userEmail}</p>
                     </div>
-                    <Button size="sm" variant="ghost" onClick={handleLogout}>
+                    <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={handleLogout}
+                        className="hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-all font-bold"
+                    >
                         <LogOut className="mr-2 h-4 w-4" />
                         Sign Out
                     </Button>

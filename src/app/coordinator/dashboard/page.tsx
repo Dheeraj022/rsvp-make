@@ -919,7 +919,7 @@ function CoordinatorDashboard() {
                     <Button
                         variant="outline"
                         onClick={handleLogout}
-                        className="w-full rounded-2xl border-zinc-200 text-zinc-600 font-bold hover:bg-zinc-50 dark:hover:bg-zinc-800 gap-2 h-11"
+                        className="w-full rounded-2xl border-zinc-200 text-zinc-600 font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/20 dark:hover:border-red-900/30 transition-all gap-2 h-11"
                     >
                         <LogOut size={16} />
                         Logout
@@ -963,7 +963,7 @@ function CoordinatorDashboard() {
                             <Button
                                 variant="outline"
                                 onClick={handleLogout}
-                                className="w-full rounded-2xl font-bold gap-2 h-12 border-zinc-200"
+                                className="w-full rounded-2xl font-bold gap-2 h-12 border-zinc-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/20 dark:hover:border-red-900/30 transition-all"
                             >
                                 <LogOut size={18} />
                                 Logout
