@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   return (
@@ -37,7 +38,7 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-40 pb-20 px-6">
+      <section className="relative pt-32 md:pt-40 pb-20 px-6">
         <div className="max-w-7xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -53,7 +54,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-5xl md:text-7xl font-black text-foreground mb-8 leading-[1.1] tracking-tight"
+            className="text-4xl sm:text-5xl md:text-7xl font-black text-foreground mb-8 leading-[1.1] tracking-tight"
           >
             Master Your Events <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600">
@@ -65,7 +66,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-12"
+            className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-12"
           >
             A premium ecosystem designed for seamless RSVP tracking, hotel coordination,
             and real-time event management. Elegant. Efficient. Effortless.
@@ -75,7 +76,7 @@ export default function Home() {
 
       {/* Entry Roles Cards */}
       <section className="py-12 px-6">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {[
             {
               title: "Administrators",
@@ -109,7 +110,10 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className="group relative p-8 rounded-3xl glass-card hover:border-primary/30 transition-all duration-500 overflow-hidden"
+              className={cn(
+                "group relative p-8 rounded-3xl glass-card hover:border-primary/30 transition-all duration-500 overflow-hidden",
+                i === 2 && "sm:col-span-2 lg:col-span-1"
+              )}
             >
               <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${role.color} opacity-10 blur-3xl group-hover:opacity-20 transition-opacity`} />
 
@@ -136,7 +140,7 @@ export default function Home() {
       {/* Features Stats */}
       <section className="py-24 px-6 border-t border-white/5">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 text-center">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 text-center">
             {[
               { icon: Users, label: "Guest Management", value: "Unlimited" },
               { icon: BarChart3, label: "Real-time Reports", value: "Instant" },
@@ -147,8 +151,8 @@ export default function Home() {
                 <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
                   <stat.icon size={24} />
                 </div>
-                <h4 className="text-3xl font-black text-foreground">{stat.value}</h4>
-                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                <h4 className="text-2xl sm:text-3xl font-black text-foreground">{stat.value}</h4>
+                <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">{stat.label}</p>
               </div>
             ))}
           </div>
