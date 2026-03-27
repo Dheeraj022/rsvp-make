@@ -1134,7 +1134,7 @@ function CoordinatorDashboard() {
                                 {activeTab === "arrived" ? (
                                     /* ARRIVED LIST */
                                     <div className="w-full overflow-hidden">
-                                        <div className="hidden md:block">
+                                        <div className="hidden lg:block">
                                             <table className="w-full text-left">
                                                 <thead>
                                                     <tr className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-400 text-[10px] font-black uppercase tracking-widest border-b border-zinc-100 dark:border-zinc-800">
@@ -1291,8 +1291,8 @@ function CoordinatorDashboard() {
                                             </table>
                                         </div>
 
-                                        {/* Mobile View Card Layout */}
-                                        <div className="md:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
+                                        {/* Tablet & Mobile View Card Layout */}
+                                        <div className="lg:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
                                             {flattenedGuests.length === 0 ? (
                                                 <div className="p-20 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No guests found</div>
                                             ) : (
@@ -1423,7 +1423,7 @@ function CoordinatorDashboard() {
                                 ) : (
                                     /* DEPARTURE LIST */
                                     <div className="w-full overflow-hidden">
-                                        <div className="hidden md:block">
+                                        <div className="hidden lg:block">
                                             <table className="w-full text-left">
                                                 <thead>
                                                     <tr className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-400 text-[10px] font-black uppercase tracking-widest border-b border-zinc-100 dark:border-zinc-800">
@@ -1583,8 +1583,8 @@ function CoordinatorDashboard() {
                                             </table>
                                         </div>
 
-                                        {/* Mobile View Card Layout for Departure */}
-                                        <div className="md:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
+                                        {/* Tablet & Mobile View Card Layout for Departure */}
+                                        <div className="lg:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
                                             {flattenedGuests.length === 0 ? (
                                                 <div className="p-20 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">No records found</div>
                                             ) : (
