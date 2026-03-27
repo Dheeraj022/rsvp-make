@@ -245,122 +245,194 @@ function CoordinatorsPage() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="bg-[#f8f9fa] text-zinc-700 text-[10px] md:text-xs font-black uppercase tracking-widest border-b border-zinc-100">
-                                <th className="px-4 md:px-6 py-4">Coordinator Info</th>
-                                <th className="hidden lg:table-cell px-6 py-4">Credentials</th>
-                                <th className="hidden md:table-cell px-6 py-4 text-left">Assigned Event</th>
-                                <th className="hidden sm:table-cell px-6 py-4 text-left">Status</th>
-                                <th className="hidden xl:table-cell px-6 py-4 text-left">Created Date</th>
-                                <th className="px-4 md:px-6 py-4 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-100">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={5} className="p-20 text-center">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <Loader2 size={24} className="animate-spin text-zinc-400" />
-                                            <span className="text-zinc-500 font-medium">Loading...</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : filteredCoordinators.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="p-20 text-center">
-                                        <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-300">
-                                            <UserCog size={32} />
-                                        </div>
-                                        <h4 className="text-lg font-semibold text-zinc-900">No coordinators found</h4>
-                                        <p className="text-zinc-500 mt-1 uppercase text-xs font-bold tracking-wider">Start by creating your first coordinator</p>
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredCoordinators.map((c) => (
-                                    <tr key={c.id} className="hover:bg-zinc-50/50 transition-colors group">
-                                        <td className="px-4 md:px-6 py-5">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 border border-zinc-200">
-                                                    <User size={16} />
+            <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+                {loading ? (
+                    <div className="p-20 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                            <Loader2 size={24} className="animate-spin text-zinc-400" />
+                            <span className="text-zinc-500 font-medium tracking-wider text-xs uppercase font-black">Loading...</span>
+                        </div>
+                    </div>
+                ) : filteredCoordinators.length === 0 ? (
+                    <div className="p-20 text-center">
+                        <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-300">
+                            <UserCog size={32} />
+                        </div>
+                        <h4 className="text-lg font-semibold text-zinc-900">No coordinators found</h4>
+                        <p className="text-zinc-500 mt-1 uppercase text-xs font-bold tracking-wider">Start by creating your first coordinator</p>
+                    </div>
+                ) : (
+                    <>
+                        {/* Desktop View */}
+                        <div className="hidden lg:block overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="bg-[#f8f9fa] text-zinc-700 text-[10px] md:text-xs font-black uppercase tracking-widest border-b border-zinc-100">
+                                        <th className="px-4 md:px-6 py-4">Coordinator Info</th>
+                                        <th className="px-6 py-4">Credentials</th>
+                                        <th className="px-6 py-4 text-left">Assigned Event</th>
+                                        <th className="px-6 py-4 text-left">Status</th>
+                                        <th className="hidden xl:table-cell px-6 py-4 text-left">Created Date</th>
+                                        <th className="px-4 md:px-6 py-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-zinc-100">
+                                    {filteredCoordinators.map((c) => (
+                                        <tr key={c.id} className="hover:bg-zinc-50/50 transition-colors group">
+                                            <td className="px-4 md:px-6 py-5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 border border-zinc-200">
+                                                        <User size={16} />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-zinc-900 text-sm">{c.name}</span>
+                                                        <span className="text-[10px] text-zinc-500 mt-0.5">{c.username}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-zinc-900 text-sm">{c.name}</span>
-                                                    <span className="sm:hidden text-[10px] text-zinc-500 mt-0.5">{c.username}</span>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-2 text-zinc-600">
+                                                        <User size={14} className="text-zinc-400" />
+                                                        <span className="text-sm font-medium">{c.username}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-zinc-500">
+                                                        <Mail size={14} className="text-zinc-400" />
+                                                        <span className="text-xs">{c.email || "N/A"}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="hidden lg:table-cell px-6 py-5">
-                                            <div className="flex flex-col gap-1">
-                                                <div className="flex items-center gap-2 text-zinc-600">
-                                                    <User size={14} className="text-zinc-400" />
-                                                    <span className="text-sm font-medium">{c.username}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-zinc-500">
-                                                    <Mail size={14} className="text-zinc-400" />
-                                                    <span className="text-xs">{c.email || "N/A"}</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="hidden md:table-cell px-6 py-5">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                                                {c.events?.name || "No event"}
-                                            </span>
-                                        </td>
-                                        <td className="hidden sm:table-cell px-6 py-5">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${c.is_active
-                                                ? "bg-green-50 text-green-700 border-green-100"
-                                                : "bg-yellow-50 text-yellow-700 border-yellow-100"
-                                                }`}>
-                                                {c.is_active ? "Active" : "Pending"}
-                                            </span>
-                                        </td>
-                                        <td className="hidden xl:table-cell px-6 py-5 text-sm text-zinc-600">
-                                            {new Date(c.created_at).toLocaleDateString()}
-                                        </td>
-                                        <td className="px-4 md:px-6 py-5 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                {!c.is_active && (
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                                    {c.events?.name || "No event"}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${c.is_active
+                                                    ? "bg-green-50 text-green-700 border-green-100"
+                                                    : "bg-yellow-50 text-yellow-700 border-yellow-100"
+                                                    }`}>
+                                                    {c.is_active ? "Active" : "Pending"}
+                                                </span>
+                                            </td>
+                                            <td className="hidden xl:table-cell px-6 py-5 text-sm text-zinc-600">
+                                                {new Date(c.created_at).toLocaleDateString()}
+                                            </td>
+                                            <td className="px-4 md:px-6 py-5 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    {!c.is_active && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 transition-colors"
+                                                            title="Activate Coordinator"
+                                                            onClick={() => handleToggleActivation(c.id, c.is_active, c.name)}
+                                                        >
+                                                            <UserCheck size={18} />
+                                                        </Button>
+                                                    )}
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 transition-colors"
-                                                        title="Activate Coordinator"
-                                                        onClick={() => handleToggleActivation(c.id, c.is_active, c.name)}
+                                                        className="h-8 w-8 text-zinc-400 hover:text-zinc-900 transition-colors"
+                                                        onClick={() => {
+                                                            setEditingCoordinator(c);
+                                                            setEditEventId(c.event_id || "");
+                                                            setIsEditModalOpen(true);
+                                                        }}
                                                     >
-                                                        <UserCheck size={18} />
+                                                        <Pencil size={16} />
                                                     </Button>
-                                                )}
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-zinc-400 hover:text-zinc-900 transition-colors"
-                                                    onClick={() => {
-                                                        setEditingCoordinator(c);
-                                                        setEditEventId(c.event_id || "");
-                                                        setIsEditModalOpen(true);
-                                                    }}
-                                                >
-                                                    <Pencil size={16} />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-zinc-400 hover:text-red-600 transition-colors"
-                                                    onClick={() => handleDeleteCoordinator(c.id, c.name)}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-zinc-400 hover:text-red-600 transition-colors"
+                                                        onClick={() => handleDeleteCoordinator(c.id, c.name)}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile View */}
+                        <div className="lg:hidden divide-y divide-zinc-100 overflow-hidden">
+                            {filteredCoordinators.map((c) => (
+                                <div key={c.id} className="p-5 space-y-4 hover:bg-zinc-50/50 transition-colors">
+                                    <div className="flex justify-between items-start gap-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="w-10 h-10 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-400 border border-zinc-100 shrink-0">
+                                                <User size={18} />
                                             </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="font-bold text-zinc-900 text-sm truncate">{c.name}</span>
+                                                <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">{c.username}</span>
+                                            </div>
+                                        </div>
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shrink-0 ${c.is_active
+                                            ? "bg-green-50 text-green-700 border-green-100"
+                                            : "bg-yellow-50 text-yellow-700 border-yellow-100"
+                                            }`}>
+                                            {c.is_active ? "Active" : "Pending"}
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4 py-1">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Email Address</span>
+                                            <span className="text-xs text-zinc-600 font-medium truncate">{c.email || "N/A"}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1 items-end text-right">
+                                            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Assigned Event</span>
+                                            <span className="text-[10px] font-bold text-blue-600">{c.events?.name || "Unassigned"}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-2 border-t border-zinc-50">
+                                        <span className="text-[10px] text-zinc-400 font-medium italic">Added: {new Date(c.created_at).toLocaleDateString()}</span>
+                                        <div className="flex items-center gap-2">
+                                            {!c.is_active && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-8 text-green-600 border-green-100 hover:bg-green-50 px-3 gap-1.5"
+                                                    onClick={() => handleToggleActivation(c.id, c.is_active, c.name)}
+                                                >
+                                                    <UserCheck size={14} />
+                                                    <span className="text-[10px] font-bold uppercase">Activate</span>
+                                                </Button>
+                                            )}
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-zinc-400 hover:text-zinc-900"
+                                                onClick={() => {
+                                                    setEditingCoordinator(c);
+                                                    setEditEventId(c.event_id || "");
+                                                    setIsEditModalOpen(true);
+                                                }}
+                                            >
+                                                <Pencil size={15} />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-zinc-400 hover:text-red-600"
+                                                onClick={() => handleDeleteCoordinator(c.id, c.name)}
+                                            >
+                                                <Trash2 size={15} />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Create Modal */}
