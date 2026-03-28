@@ -22,7 +22,9 @@ import {
     MapPin,
     Users,
     ChevronDown,
-    Check
+    Check,
+    Pencil,
+    X
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -138,6 +140,13 @@ function EventDetails() {
     const [newGuestEmail, setNewGuestEmail] = useState("");
     const [newGuestPhone, setNewGuestPhone] = useState("");
     const [addGuestLoading, setAddGuestLoading] = useState(false);
+    
+    // Name Editing State
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [editableName, setEditableName] = useState("");
+    const [nameUpdateLoading, setNameUpdateLoading] = useState(false);
+    const [showNameUpdateModal, setShowNameUpdateModal] = useState(false);
+    const [nameUpdatePassword, setNameUpdatePassword] = useState("");
 
     const eventId = params.id as string;
 
@@ -159,6 +168,7 @@ function EventDetails() {
             setHotelEmail(eventData.assigned_hotel_email || "");
             setHotelName(eventData.assigned_hotel_name || "");
             setDropLocationsText(eventData.drop_locations?.join(", ") || "");
+            setEditableName(eventData.name || "");
 
             // Fetch Guests
             const { data: guestData, error: guestError } = await supabase
@@ -241,6 +251,58 @@ function EventDetails() {
             alert("Error updating drop locations: " + error.message);
         } finally {
             setDropLocationsLoading(false);
+        }
+    };
+
+    const handleUpdateName = () => {
+        if (!editableName.trim()) return;
+        setShowNameUpdateModal(true);
+    };
+
+    const executeUpdateName = async () => {
+        if (!nameUpdatePassword) {
+            alert("Please enter your password to confirm.");
+            return;
+        }
+
+        setNameUpdateLoading(true);
+        try {
+            // Verify Password
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user || !user.email) throw new Error("User not found");
+
+            const { error: authError } = await supabase.auth.signInWithPassword({
+                email: user.email,
+                password: nameUpdatePassword
+            });
+
+            if (authError) throw new Error("Incorrect password. Please try again.");
+
+            const newSlug = editableName.trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9]/g, "-")
+                .replace(/-+/g, "-")
+                .replace(/^-|-$/g, "");
+
+            const { error } = await supabase
+                .from("events")
+                .update({ 
+                    name: editableName.trim(),
+                    slug: newSlug
+                })
+                .eq("id", eventId);
+
+            if (error) throw error;
+
+            setEvent(prev => prev ? ({ ...prev, name: editableName.trim(), slug: newSlug }) : null);
+            setIsEditingName(false);
+            setShowNameUpdateModal(false);
+            setNameUpdatePassword("");
+            alert("Event name and slug updated successfully.");
+        } catch (error: any) {
+            alert(error.message);
+        } finally {
+            setNameUpdateLoading(false);
         }
     };
 
@@ -373,21 +435,29 @@ function EventDetails() {
             if (authError) throw new Error("Incorrect password. Please try again.");
 
             // 1. Delete all companions first (linked via parent_id)
-            const { error: companionError } = await supabase
-                .from("guests")
-                .delete()
-                .eq("parent_id", guestToDelete!);
-            
-            if (companionError) throw companionError;
+            try {
+                const { error: companionError } = await supabase
+                    .from("guests")
+                    .delete()
+                    .eq("parent_id", guestToDelete!);
+                
+                if (companionError) {
+                    console.warn("Companion deletion failed (possibly column missing):", companionError);
+                    // We continue anyway to try and delete the primary guest
+                }
+            } catch (err) {
+                console.error("Error attempting companion delete:", err);
+            }
 
             // 2. Delete the primary guest
-            const { error } = await supabase.from("guests").delete().eq("id", guestToDelete!);
-            if (error) throw error;
+            const { error: primaryError } = await supabase.from("guests").delete().eq("id", guestToDelete!);
+            if (primaryError) throw primaryError;
 
             // Update local state: remove the primary guest AND any linked companions
             setGuests(prev => prev.filter(g => g.id !== guestToDelete && g.parent_id !== guestToDelete));
             setShowGuestDeleteModal(false);
             setGuestToDelete(null);
+            alert("Guest and associated companions deleted successfully.");
         } catch (err: any) {
             alert(err.message);
         } finally {
@@ -666,9 +736,53 @@ function EventDetails() {
                             <ArrowLeft className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
                             Back to Dashboard
                         </Link>
-                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
-                            {event?.name}
-                        </h1>
+                        <div className="flex items-center gap-3 group">
+                            {isEditingName ? (
+                                <div className="flex items-center gap-2 flex-1 max-w-xl">
+                                    <Input
+                                        value={editableName}
+                                        onChange={(e) => setEditableName(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") handleUpdateName();
+                                            if (e.key === "Escape") setIsEditingName(false);
+                                        }}
+                                        className="h-11 bg-white dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-xl px-4 focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all font-black text-xl sm:text-2xl"
+                                        autoFocus
+                                    />
+                                    <div className="flex items-center gap-1">
+                                        <Button 
+                                            size="icon" 
+                                            onClick={handleUpdateName} 
+                                            disabled={nameUpdateLoading}
+                                            className="h-11 w-11 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/10 transition-all shrink-0"
+                                        >
+                                            {nameUpdateLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-5 h-5" />}
+                                        </Button>
+                                        <Button 
+                                            size="icon" 
+                                            variant="ghost"
+                                            onClick={() => setIsEditingName(false)} 
+                                            className="h-11 w-11 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 shrink-0"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
+                                        {event?.name}
+                                    </h1>
+                                    <button 
+                                        onClick={() => setIsEditingName(true)}
+                                        className="opacity-0 group-hover:opacity-100 p-2 rounded-lg text-zinc-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200"
+                                        title="Edit Event Name"
+                                    >
+                                        <Pencil size={18} />
+                                    </button>
+                                </>
+                            )}
+                        </div>
                         <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400 font-medium">
                             {event && format(new Date(event.date), "MMMM d, yyyy • h:mm a")} | {event?.location}
                         </p>
@@ -1357,6 +1471,61 @@ function EventDetails() {
                                         setShowGuestDeleteModal(false);
                                         setGuestToDelete(null);
                                         setGuestDeletePassword("");
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Name Update Confirmation Modal */}
+            {showNameUpdateModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowNameUpdateModal(false)} />
+                    <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl relative animate-in zoom-in slide-in-from-bottom-8 duration-300 border border-zinc-100 dark:border-white/10">
+                        <div className="p-8 md:p-10 space-y-8">
+                            <div className="space-y-4 text-center">
+                                <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-2 border border-blue-500/20 text-blue-600 dark:text-blue-400">
+                                    <Pencil size={28} />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">Update Event Identity?</h3>
+                                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                                        Changing the name will also regenerate the URL slug. Existing invite links will break.
+                                    </p>
+                                </div>
+                            </div>
+    
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Admin Validation</Label>
+                                <Input
+                                    type="password"
+                                    placeholder="Enter password to confirm"
+                                    value={nameUpdatePassword}
+                                    onChange={(e) => setNameUpdatePassword(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && executeUpdateName()}
+                                    className="h-14 bg-zinc-50 dark:bg-white/5 border-zinc-100 dark:border-white/10 rounded-2xl px-6 focus-visible:ring-4 focus-visible:ring-blue-500/10 transition-all font-bold"
+                                    autoFocus
+                                />
+                            </div>
+    
+                            <div className="flex flex-col gap-2">
+                                <Button 
+                                    className="h-14 rounded-2xl bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 font-black transition-all"
+                                    onClick={executeUpdateName} 
+                                    disabled={nameUpdateLoading}
+                                >
+                                    {nameUpdateLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Confirm Update"}
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    className="h-14 rounded-2xl font-black text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                                    onClick={() => {
+                                        setShowNameUpdateModal(false);
+                                        setNameUpdatePassword("");
                                     }}
                                 >
                                     Cancel

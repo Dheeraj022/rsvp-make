@@ -10,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
 
 function CreateEvent() {
     const router = useRouter();
@@ -19,7 +18,6 @@ function CreateEvent() {
         name: "",
         date: "",
         location: "",
-        description: "",
         slug: "",
         drop_locations: "",
     });
@@ -27,15 +25,14 @@ function CreateEvent() {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => {
-            // Auto-generate slug from name if slug isn't manually edited
-            if (name === "name" && !prev.slug) {
-                return {
-                    ...prev,
-                    name: value,
-                    slug: value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
-                };
+            const next = { ...prev, [name]: value };
+            if (name === "name") {
+                next.slug = value
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/(^-|-$)/g, "");
             }
-            return { ...prev, [name]: value };
+            return next;
         });
     };
 
@@ -47,19 +44,17 @@ function CreateEvent() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("No user found");
 
-            // Use date only
             const datetime = new Date(formData.date);
 
             const { error } = await supabase.from("events").insert({
                 name: formData.name,
                 date: datetime.toISOString(),
                 location: formData.location,
-                description: formData.description,
                 slug: formData.slug,
                 admin_id: user.id,
                 created_by_name: user.user_metadata?.full_name || "Admin",
                 created_by_email: user.email,
-                drop_locations: formData.drop_locations.split(',').map(s => s.trim()).filter(s => s !== ""),
+                drop_locations: formData.drop_locations.split(',').map(s => s.trim()).filter(s => s !== "")
             });
 
             if (error) throw error;
@@ -73,104 +68,119 @@ function CreateEvent() {
     };
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-black p-6">
-            <div className="mx-auto max-w-2xl">
-                <div className="mb-6">
-                    <Link href="/admin/dashboard" className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-50 flex items-center">
-                        <ArrowLeft className="mr-1 h-4 w-4" />
-                        Back to Dashboard
-                    </Link>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                    <h1 className="mb-6 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <div className="bg-[#F8F9FA] dark:bg-black p-2 md:p-8 flex items-start justify-center animate-in fade-in duration-700 overflow-hidden">
+            <div className="w-full max-w-4xl bg-white dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-white/10 shadow-sm p-5 md:p-6 mt-1 md:mt-4">
+                <div className="mb-4">
+                    <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
                         Create New Event
                     </h1>
+                </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="name">Event Name</Label>
+                <form onSubmit={handleSubmit} className="space-y-3">
+                    <div className="space-y-3">
+                        {/* Event Name - Full Width */}
+                        <div className="space-y-1">
+                            <Label htmlFor="name" className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider pl-1">
+                                Event Name
+                            </Label>
                             <Input
                                 id="name"
                                 name="name"
-                                placeholder="Summer Gala 2024"
+                                placeholder="Event Name"
                                 value={formData.name}
                                 onChange={handleChange}
+                                className="h-10 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-md focus:border-zinc-400 focus:ring-0 transition-all font-medium text-sm"
                                 required
                             />
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="date">Date</Label>
-                            <Input
-                                id="date"
-                                name="date"
-                                type="date"
-                                value={formData.date}
-                                onChange={handleChange}
-                                required
-                            />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="location">Location</Label>
-                            <Input
-                                id="location"
-                                name="location"
-                                placeholder="123 Venue St, City"
-                                value={formData.location}
-                                onChange={handleChange}
-                                required
-                            />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="slug">Event URL Slug</Label>
-                            <div className="flex items-center">
-                                <span className="mr-2 text-sm text-zinc-500 whitespace-nowrap">
-                                    rsvp.com/r/
-                                </span>
+                        {/* Date, Local (Location), and Slug - Side by Side */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="space-y-1">
+                                <Label htmlFor="date" className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider pl-1">
+                                    Date
+                                </Label>
                                 <Input
-                                    id="slug"
-                                    name="slug"
-                                    placeholder="summer-gala-2024"
-                                    value={formData.slug}
+                                    id="date"
+                                    name="date"
+                                    type="date"
+                                    value={formData.date}
                                     onChange={handleChange}
+                                    className="h-10 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-md focus:border-zinc-400 focus:ring-0 transition-all font-medium text-sm"
                                     required
                                 />
                             </div>
+
+                            <div className="space-y-1">
+                                <Label htmlFor="location" className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider pl-1">
+                                    Location
+                                </Label>
+                                <Input
+                                    id="location"
+                                    name="location"
+                                    placeholder="Location"
+                                    value={formData.location}
+                                    onChange={handleChange}
+                                    className="h-10 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-md focus:border-zinc-400 focus:ring-0 transition-all font-medium text-sm"
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <Label htmlFor="slug" className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider pl-1">
+                                    Slug
+                                </Label>
+                                <div className="relative flex items-center group">
+                                    <div className="absolute left-3 text-[10px] font-bold text-zinc-400 dark:text-zinc-600 pointer-events-none group-focus-within:text-zinc-500/50 transition-colors">
+                                        r/
+                                    </div>
+                                    <Input
+                                        id="slug"
+                                        name="slug"
+                                        placeholder="Slug"
+                                        value={formData.slug}
+                                        onChange={handleChange}
+                                        className="h-10 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-md focus:border-zinc-400 focus:ring-0 transition-all font-medium text-sm pl-6"
+                                        required
+                                    />
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="description">Description (Optional)</Label>
-                            <Textarea
-                                id="description"
-                                name="description"
-                                placeholder="Join us for a night of celebration..."
-                                value={formData.description}
-                                onChange={handleChange}
-                                rows={3}
-                            />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="drop_locations">Drop Locations / Hotels (Comma-separated)</Label>
-                            <Textarea
+                        {/* Hotel (Drop Locations) - Full Width */}
+                        <div className="space-y-1 pt-1">
+                            <Label htmlFor="drop_locations" className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider pl-1">
+                                Hotel / Drop Locations
+                            </Label>
+                            <Input
                                 id="drop_locations"
                                 name="drop_locations"
-                                placeholder="Grand Hyatt Goa, Taj Exotica, The Leela..."
+                                placeholder="e.g. Grand Hyatt, Taj Resort, The Leela (Comma-separated)"
                                 value={formData.drop_locations}
                                 onChange={handleChange}
-                                rows={2}
+                                className="h-10 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-md focus:border-zinc-400 focus:ring-0 transition-all font-medium text-sm"
                             />
-                            <p className="text-xs text-zinc-500">Provide a list of hotels or locations for guests to choose from in the transport form.</p>
+                            <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-tight pl-1 opacity-70">Locations for the transport form</p>
+                            
+                            <hr className="mt-4 border-zinc-100 dark:border-zinc-900" />
                         </div>
+                    </div>
 
-                        <Button type="submit" className="w-full" disabled={loading}>
-                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Create Event"}
+                    <div className="pt-2">
+                        <Button 
+                            type="submit" 
+                            className="w-full h-11 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-900 transition-all font-bold text-sm rounded-md shadow-sm" 
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <div className="flex items-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <span>Creating...</span>
+                                </div>
+                            ) : "Create Event"}
                         </Button>
-                    </form>
-                </div>
+                    </div>
+                </form>
             </div>
         </div>
     );
