@@ -99,40 +99,40 @@ function SettingsPage() {
         <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
             {/* Header */}
             <div>
-                <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">Settings</h2>
-                <p className="text-zinc-500 mt-1">Manage your account and coordinator access.</p>
+                <h2 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">Settings</h2>
+                <p className="text-zinc-500 dark:text-zinc-400 mt-1">Manage your account and coordinator access.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Password Change Section */}
-                <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden p-8 space-y-6">
+                <div className="bg-white dark:bg-white/5 rounded-3xl border border-zinc-200 dark:border-white/10 shadow-sm overflow-hidden p-8 space-y-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                             <Lock size={20} />
                         </div>
-                        <h3 className="text-xl font-bold text-zinc-900">Security</h3>
+                        <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Security</h3>
                     </div>
 
                     <form onSubmit={handlePasswordUpdate} className="space-y-4">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-700">New Password</label>
+                            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">New Password</label>
                             <Input
                                 type="password"
                                 required
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
-                                className="rounded-xl h-11"
+                                className="rounded-xl h-11 dark:bg-white/5 dark:border-white/10 dark:text-zinc-100 placeholder:text-zinc-400"
                                 placeholder="••••••••"
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-700">Confirm Password</label>
+                            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Confirm Password</label>
                             <Input
                                 type="password"
                                 required
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="rounded-xl h-11"
+                                className="rounded-xl h-11 dark:bg-white/5 dark:border-white/10 dark:text-zinc-100 placeholder:text-zinc-400"
                                 placeholder="••••••••"
                             />
                         </div>
@@ -140,7 +140,7 @@ function SettingsPage() {
                         {passwordMessage && (
                             <p className={cn(
                                 "text-sm p-3 rounded-xl",
-                                passwordMessage.type === 'success' ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                                passwordMessage.type === 'success' ? "bg-green-50 dark:bg-emerald-950/30 text-green-700 dark:text-emerald-400" : "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400"
                             )}>
                                 {passwordMessage.text}
                             </p>
@@ -148,7 +148,7 @@ function SettingsPage() {
 
                         <Button
                             type="submit"
-                            className="w-full bg-zinc-900 text-white hover:bg-zinc-800 h-11 rounded-xl"
+                            className="w-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 h-11 rounded-xl"
                             disabled={updatingPassword}
                         >
                             {updatingPassword ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Update Password"}
@@ -157,41 +157,41 @@ function SettingsPage() {
                 </div>
 
                 {/* Coordinator Access Management */}
-                <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden p-8 space-y-6 flex flex-col">
+                <div className="bg-white dark:bg-white/5 rounded-3xl border border-zinc-200 dark:border-white/10 shadow-sm overflow-hidden p-8 space-y-6 flex flex-col">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 flex items-center justify-center">
                                 <Users size={20} />
                             </div>
-                            <h3 className="text-xl font-bold text-zinc-900">Coordinator Access</h3>
+                            <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Coordinator Access</h3>
                         </div>
-                        <span className="text-xs font-bold text-zinc-400 bg-zinc-50 px-2 py-1 rounded-lg">
+                        <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-white/5 px-2 py-1 rounded-lg">
                             {coordinators.length} TOTAL
                         </span>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto max-h-[300px] space-y-3 pr-2 scrollbar-thin scrollbar-thumb-zinc-200">
+                    <div className="flex-1 overflow-y-auto max-h-[300px] space-y-3 pr-2 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800">
                         {loading ? (
-                            <div className="flex flex-col items-center justify-center py-10 opacity-50">
+                            <div className="flex flex-col items-center justify-center py-10 opacity-50 text-zinc-500 dark:text-zinc-400">
                                 <Loader2 className="animate-spin mb-2" size={20} />
                                 <span className="text-sm">Fetching...</span>
                             </div>
                         ) : coordinators.length === 0 ? (
-                            <p className="text-center py-10 text-zinc-400 text-sm italic">No coordinators found.</p>
+                            <p className="text-center py-10 text-zinc-400 dark:text-zinc-500 text-sm italic">No coordinators found.</p>
                         ) : (
                             coordinators.map((c) => (
-                                <div key={c.id} className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100 group transition-all hover:border-zinc-200">
+                                <div key={c.id} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-white/5 rounded-2xl border border-zinc-100 dark:border-white/5 group transition-all hover:border-zinc-200 dark:hover:border-white/10">
                                     <div className="flex flex-col">
-                                        <span className="font-bold text-zinc-900">{c.name}</span>
-                                        <span className="text-xs text-zinc-500">@{c.username}</span>
+                                        <span className="font-bold text-zinc-900 dark:text-zinc-100">{c.name}</span>
+                                        <span className="text-xs text-zinc-500 dark:text-zinc-400">@{c.username}</span>
                                     </div>
                                     <button
                                         onClick={() => toggleCoordinatorStatus(c.id, c.is_active)}
                                         className={cn(
                                             "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all",
                                             c.is_active
-                                                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                                                : "bg-red-100 text-red-700 hover:bg-red-200"
+                                                ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-950/50"
+                                                : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-950/50"
                                         )}
                                     >
                                         <Power size={14} />
@@ -205,14 +205,14 @@ function SettingsPage() {
             </div>
 
             {/* Quick Summary Section */}
-            <div className="bg-zinc-900 rounded-[2rem] p-8 text-white flex flex-col sm:flex-row items-center justify-between gap-6 overflow-hidden relative grayscale-[0.5] hover:grayscale-0 transition-all">
+            <div className="bg-zinc-900 dark:bg-white/5 rounded-[2rem] p-8 text-white flex flex-col sm:flex-row items-center justify-between gap-6 overflow-hidden relative grayscale-[0.5] hover:grayscale-0 transition-all border dark:border-white/10">
                 <div className="relative z-10 flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-white backdrop-blur-md">
                         <Shield size={24} />
                     </div>
                     <div>
                         <h4 className="text-lg font-bold">Admin Privileges</h4>
-                        <p className="text-zinc-400 text-sm">You have full control over all modules and user access.</p>
+                        <p className="text-zinc-400 dark:text-zinc-500 text-sm">You have full control over all modules and user access.</p>
                     </div>
                 </div>
                 <div className="relative z-10 text-right">
