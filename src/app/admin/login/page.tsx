@@ -5,9 +5,10 @@ import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { useEffect } from "react";
 
 export default function AdminLogin() {
     const [email, setEmail] = useState("");
@@ -15,6 +16,16 @@ export default function AdminLogin() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
+
+    useEffect(() => {
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                router.replace("/admin/dashboard");
+            }
+        };
+        checkSession();
+    }, [router]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -87,10 +98,20 @@ export default function AdminLogin() {
                         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sign In"}
                     </Button>
 
-                    <div className="text-center text-sm">
-                        <Link href="/admin/signup" className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 underline">
+                    <div className="text-center space-y-4 pt-2">
+                        <Link href="/admin/signup" className="block text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4 transition-colors">
                             First time here? Create an Account
                         </Link>
+                        
+                        <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                            <Link 
+                                href="/" 
+                                className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all group"
+                            >
+                                <ArrowLeft size={12} className="group-hover:-translate-x-1 transition-transform" />
+                                Back to Website
+                            </Link>
+                        </div>
                     </div>
                 </form>
             </div>
