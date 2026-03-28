@@ -651,7 +651,7 @@ function EventDetails() {
                     <div className="flex flex-wrap items-center gap-3">
                         <Button
                             variant="outline"
-                            className="bg-white/50 dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 hover:bg-zinc-100 dark:hover:bg-white/10"
+                            className="bg-white/50 dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-900 hover:text-white dark:hover:bg-white dark:hover:text-zinc-900 transition-all shadow-sm"
                             onClick={() => {
                                 const url = `${window.location.origin}/r/${event?.slug}`;
                                 navigator.clipboard.writeText(url);
@@ -664,7 +664,7 @@ function EventDetails() {
                         </Button>
                         <Button 
                             variant="outline"
-                            className="bg-white/50 dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 hover:bg-zinc-100 dark:hover:bg-white/10"
+                            className="bg-white/50 dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-900 hover:text-white dark:hover:bg-white dark:hover:text-zinc-900 transition-all shadow-sm"
                             onClick={() => setShowHotelModal(true)}
                         >
                             <Hotel className="h-4 w-4" />
@@ -672,7 +672,7 @@ function EventDetails() {
                         </Button>
                         <Button 
                             variant="outline"
-                            className="bg-white/50 dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 hover:bg-zinc-100 dark:hover:bg-white/10"
+                            className="bg-white/50 dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-900 hover:text-white dark:hover:bg-white dark:hover:text-zinc-900 transition-all shadow-sm"
                             onClick={() => setShowDropLocationsModal(true)}
                         >
                             <MapPin className="h-4 w-4" />
@@ -680,7 +680,7 @@ function EventDetails() {
                         </Button>
                         <Button 
                             variant="outline"
-                            className="bg-white/50 dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 hover:bg-zinc-100 dark:hover:bg-white/10"
+                            className="bg-white/50 dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-900 hover:text-white dark:hover:bg-white dark:hover:text-zinc-900 transition-all shadow-sm"
                             onClick={handleExport}
                         >
                             <Download className="h-4 w-4" />
