@@ -51,10 +51,10 @@ export default function withRoleAuth(Component: any, allowedRole: string) {
 
         if (loading) {
             return (
-                <div className="flex h-screen w-full items-center justify-center bg-zinc-50">
+                <div className="flex h-screen w-full items-center justify-center bg-zinc-50 dark:bg-zinc-950 transition-colors duration-300">
                     <div className="flex flex-col items-center gap-4">
                         <Loader2 className="h-10 w-10 animate-spin text-zinc-400" />
-                        <span className="text-zinc-400 font-bold uppercase tracking-widest text-xs">Verifying access...</span>
+                        <span className="text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-widest text-xs">Verifying access...</span>
                     </div>
                 </div>
             );

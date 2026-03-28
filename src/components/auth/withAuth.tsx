@@ -43,7 +43,7 @@ export default function withAuth(Component: any, options: { loginPath?: string, 
 
         if (loading) {
             return (
-                <div className="flex h-screen w-full items-center justify-center bg-zinc-50 dark:bg-black">
+                <div className="flex h-screen w-full items-center justify-center bg-zinc-50 dark:bg-zinc-950 transition-colors duration-300">
                     <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
                 </div>
             );
