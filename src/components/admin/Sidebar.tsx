@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { motion, AnimatePresence } from "framer-motion";
 
 const menuItems = [
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -25,11 +26,22 @@ const menuItems = [
     { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+    isOpen: boolean;
+    setIsOpen: (isOpen: boolean) => void;
+}
+
+export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     const pathname = usePathname();
-    const [isOpen, setIsOpen] = useState(true);
     const [userRole, setUserRole] = useState<string | null>(null);
     const [userName, setUserName] = useState("User");
+
+    // Auto-close sidebar on mobile when pathname changes
+    useEffect(() => {
+        if (window.innerWidth < 1024) {
+            setIsOpen(false);
+        }
+    }, [pathname, setIsOpen]);
 
     useEffect(() => {
         const fetchUserRole = async () => {
@@ -53,13 +65,18 @@ export default function Sidebar() {
 
     return (
         <>
-            {/* Mobile Toggle */}
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="lg:hidden fixed bottom-4 right-4 z-50 p-3 rounded-full bg-black text-white shadow-lg"
-            >
-                {isOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            {/* Sidebar Overlay for Mobile */}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"
+                        onClick={() => setIsOpen(false)}
+                    />
+                )}
+            </AnimatePresence>
 
             {/* Sidebar */}
             <aside

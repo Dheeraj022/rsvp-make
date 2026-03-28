@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Plus, Search } from "lucide-react";
+import { LogOut, Plus, Search, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
@@ -8,9 +8,11 @@ import Link from "next/link";
 
 interface AdminHeaderProps {
     title: string;
+    isSidebarOpen: boolean;
+    setIsSidebarOpen: (open: boolean) => void;
 }
 
-export default function AdminHeader({ title }: AdminHeaderProps) {
+export default function AdminHeader({ title, isSidebarOpen, setIsSidebarOpen }: AdminHeaderProps) {
     const router = useRouter();
 
     const handleLogout = async () => {
@@ -21,6 +23,14 @@ export default function AdminHeader({ title }: AdminHeaderProps) {
     return (
         <header className="h-16 border-b border-zinc-200/50 dark:border-white/10 bg-white/30 dark:bg-black/20 backdrop-blur-xl sticky top-0 z-30 px-4 md:px-8 flex items-center justify-between shadow-sm dark:shadow-none">
             <div className="flex items-center gap-4 overflow-hidden">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                    className="h-10 w-10 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-xl"
+                >
+                    {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+                </Button>
                 <span className="text-[10px] md:text-sm font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em] truncate">{title}</span>
             </div>
 
