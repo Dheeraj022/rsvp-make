@@ -372,10 +372,20 @@ function EventDetails() {
             });
             if (authError) throw new Error("Incorrect password. Please try again.");
 
+            // 1. Delete all companions first (linked via parent_id)
+            const { error: companionError } = await supabase
+                .from("guests")
+                .delete()
+                .eq("parent_id", guestToDelete!);
+            
+            if (companionError) throw companionError;
+
+            // 2. Delete the primary guest
             const { error } = await supabase.from("guests").delete().eq("id", guestToDelete!);
             if (error) throw error;
 
-            setGuests(prev => prev.filter(g => g.id !== guestToDelete));
+            // Update local state: remove the primary guest AND any linked companions
+            setGuests(prev => prev.filter(g => g.id !== guestToDelete && g.parent_id !== guestToDelete));
             setShowGuestDeleteModal(false);
             setGuestToDelete(null);
         } catch (err: any) {

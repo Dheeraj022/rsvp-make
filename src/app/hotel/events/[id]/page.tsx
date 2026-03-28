@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import withHotelAuth from "@/components/hotel/withHotelAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, ArrowLeft, Download, Eye, Search } from "lucide-react";
+import { Loader2, ArrowLeft, Download, Eye, Search, Users } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import Papa from "papaparse";
 import GuestDetailsModal from "@/components/admin/GuestDetailsModal";
+import { cn } from "@/lib/utils";
 
 type Event = {
     id: string;
@@ -32,6 +33,7 @@ type Guest = {
     status: "pending" | "accepted" | "declined";
     attending_count: number;
     attendees_data?: any[];
+    parent_id?: string | null;
 };
 
 function HotelEventDetails() {
@@ -99,10 +101,68 @@ function HotelEventDetails() {
         document.body.removeChild(link);
     };
 
-    const filteredGuests = guests.filter(g =>
-        g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        g.email?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const flattenedGuests = useMemo(() => {
+        const query = searchQuery.toLowerCase();
+        const result: any[] = [];
+        
+        // Map to hold linked companions by their parent_id
+        const linkedCompanionsMap: Record<string, Guest[]> = {};
+        guests.forEach(g => {
+            if (g.parent_id) {
+                if (!linkedCompanionsMap[g.parent_id]) linkedCompanionsMap[g.parent_id] = [];
+                linkedCompanionsMap[g.parent_id].push(g);
+            }
+        });
+
+        guests.forEach(guest => {
+            if (guest.parent_id) return;
+
+            const primaryEntry = {
+                ...guest,
+                isPrimary: true,
+                displayName: guest.name,
+                actualName: guest.name,
+                uniqueKey: `primary-${guest.id}`
+            };
+
+            const attendeeCompanions = (guest.attendees_data || []).map((m: any, i) => {
+                if (m.name === guest.name) return null;
+                return {
+                    ...guest,
+                    ...m,
+                    isPrimary: false,
+                    displayName: guest.name,
+                    actualName: m.name,
+                    uniqueKey: `companion-${guest.id}-${i}`,
+                };
+            }).filter(Boolean);
+
+            const linkedCompanions = (linkedCompanionsMap[guest.id] || []).map((lg) => {
+                return {
+                    ...lg,
+                    isPrimary: false,
+                    displayName: guest.name,
+                    actualName: lg.name,
+                    uniqueKey: `linked-${lg.id}`,
+                };
+            });
+
+            const allEntries = [primaryEntry, ...attendeeCompanions, ...linkedCompanions];
+
+            const matchesSearch = (g: any) => 
+                g.actualName.toLowerCase().includes(query) ||
+                g.email?.toLowerCase().includes(query) ||
+                g.phone?.includes(query);
+
+            const anyMatch = allEntries.some(matchesSearch);
+
+            if (!query || anyMatch) {
+                result.push(...allEntries);
+            }
+        });
+
+        return result;
+    }, [guests, searchQuery]);
 
     const stats = {
         total: guests.length,
@@ -178,33 +238,53 @@ function HotelEventDetails() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                                {filteredGuests.length === 0 ? (
+                                {flattenedGuests.length === 0 ? (
                                     <tr>
                                         <td colSpan={4} className="px-6 py-8 text-center text-zinc-500">
                                             No guests found.
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredGuests.map((guest) => {
+                                    flattenedGuests.map((guest) => {
                                         const docCount = guest.attendees_data?.filter((a: any) => a.id_front || a.id_back).length || 0;
                                         return (
-                                            <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                                <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{guest.name}</td>
+                                            <tr key={guest.uniqueKey || guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group">
                                                 <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium capitalize 
-                                                ${guest.status === 'accepted' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                                            guest.status === 'declined' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                                                'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                                                    <div className="flex items-center gap-3">
+                                                        {!guest.isPrimary && <div className="w-4 h-px bg-zinc-200 dark:bg-zinc-800 shrink-0"></div>}
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium text-zinc-900 dark:text-zinc-100">{guest.actualName || guest.name}</span>
+                                                            {!guest.isPrimary && (
+                                                                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-tight">
+                                                                    Companion of {guest.displayName}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium capitalize",
+                                                        guest.status === 'accepted' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                        guest.status === 'declined' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                                        'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'
+                                                    )}>
                                                         {guest.status}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-zinc-500">
-                                                    {docCount > 0 && (
-                                                        <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                                                            {docCount} Docs
-                                                        </span>
-                                                    )}
-                                                    {docCount === 0 && <span className="text-zinc-400">-</span>}
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-col gap-1">
+                                                        {docCount > 0 && (
+                                                            <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 w-fit">
+                                                                {docCount} Docs
+                                                            </span>
+                                                        )}
+                                                        {guest.isPrimary && (
+                                                            <div className="flex items-center gap-1.5 text-zinc-400 text-xs">
+                                                                <Users size={12} />
+                                                                <span>Party of {guest.allowed_guests}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => setSelectedGuest(guest)}>
