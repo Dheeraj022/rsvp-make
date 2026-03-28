@@ -4,17 +4,20 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, User } from "lucide-react";
+import { Loader2, User, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
 export default function CoordinatorLogin() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [mode, setMode] = useState<"login" | "forgot">("login");
     const [resetEmail, setResetEmail] = useState("");
+    const [otp, setOtp] = useState("");
+    const [resetStep, setResetStep] = useState<"email" | "otp">("email");
     const [resetSent, setResetSent] = useState(false);
     const router = useRouter();
 
@@ -53,7 +56,7 @@ export default function CoordinatorLogin() {
         }
     };
 
-    const handleForgotPassword = async (e: React.FormEvent) => {
+    const handleSendOTP = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
@@ -63,7 +66,27 @@ export default function CoordinatorLogin() {
                 redirectTo: `${window.location.origin}/coordinator/reset-password`,
             });
             if (error) throw error;
-            setResetSent(true);
+            setResetStep("otp");
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerifyOTP = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+
+        try {
+            const { error } = await supabase.auth.verifyOtp({
+                email: resetEmail,
+                token: otp,
+                type: 'recovery',
+            });
+            if (error) throw error;
+            router.push("/auth/reset-password");
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -100,15 +123,24 @@ export default function CoordinatorLogin() {
                                 required
                                 className="bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 h-11"
                             />
-                            <Input
-                                type="password"
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                disabled={loading}
-                                required
-                                className="bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 h-11"
-                            />
+                            <div className="relative">
+                                <Input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    disabled={loading}
+                                    required
+                                    className="bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 h-11 pr-10"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                                >
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
                             <div className="text-right">
                                 <button
                                     type="button"
@@ -143,12 +175,8 @@ export default function CoordinatorLogin() {
                     </form>
                 ) : (
                     <div className="space-y-4">
-                        {resetSent ? (
-                            <div className="text-sm text-green-600 text-center bg-green-50 dark:bg-green-900/20 p-4 rounded-xl border border-green-100 dark:border-green-900/30">
-                                ✅ Password reset link sent! Please check your email inbox.
-                            </div>
-                        ) : (
-                            <form onSubmit={handleForgotPassword} className="space-y-4">
+                        {resetStep === "email" ? (
+                            <form onSubmit={handleSendOTP} className="space-y-4">
                                 <Input
                                     type="email"
                                     placeholder="Your email address"
@@ -170,8 +198,48 @@ export default function CoordinatorLogin() {
                                     className="w-full bg-blue-600 hover:bg-blue-700 text-white h-11 rounded-lg font-medium transition-all shadow-lg shadow-blue-500/10"
                                     disabled={loading}
                                 >
-                                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Send Reset Link"}
+                                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Send OTP Code"}
                                 </Button>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleVerifyOTP} className="space-y-4">
+                                <div className="space-y-2">
+                                    <p className="text-xs text-center text-zinc-500 dark:text-zinc-400">
+                                        We sent a verification code to <span className="font-semibold text-zinc-900 dark:text-zinc-100">{resetEmail}</span>
+                                    </p>
+                                    <Input
+                                        type="text"
+                                        placeholder="Enter code"
+                                        value={otp}
+                                        onChange={(e) => setOtp(e.target.value)}
+                                        disabled={loading}
+                                        required
+                                        maxLength={8}
+                                        className="bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 h-11 text-center font-bold text-lg tracking-widest"
+                                    />
+                                </div>
+
+                                {error && (
+                                    <div className="text-sm text-red-500 text-center bg-red-50 dark:bg-red-900/20 p-2 rounded-md">
+                                        {error}
+                                    </div>
+                                )}
+
+                                <Button
+                                    type="submit"
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white h-11 rounded-lg font-medium transition-all shadow-lg shadow-blue-500/10"
+                                    disabled={loading}
+                                >
+                                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Verify OTP"}
+                                </Button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setResetStep("email")}
+                                    className="w-full text-xs text-blue-600 hover:underline font-medium py-1"
+                                >
+                                    Change Email
+                                </button>
                             </form>
                         )}
 
