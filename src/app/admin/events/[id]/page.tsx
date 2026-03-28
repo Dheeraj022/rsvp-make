@@ -20,13 +20,16 @@ import {
     Copy,
     Hotel,
     MapPin,
-    Users
+    Users,
+    ChevronDown,
+    Check
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import Papa from "papaparse";
 import GuestDetailsModal from "@/components/admin/GuestDetailsModal";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Event = {
     id: string;
@@ -111,6 +114,8 @@ function EventDetails() {
     const [guests, setGuests] = useState<Guest[]>([]);
     const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
     const [coordinators, setCoordinators] = useState<Record<string, string>>({});
+    const [allHotels, setAllHotels] = useState<{ name: string; email: string }[]>([]);
+    const [isHotelDropdownOpen, setIsHotelDropdownOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -176,6 +181,16 @@ function EventDetails() {
                     return acc;
                 }, {});
                 setCoordinators(coordMap);
+            }
+
+            // Fetch All Hotels for the dropdown
+            const { data: hotelsData } = await supabase
+                .from("hotels")
+                .select("name, email")
+                .order("name");
+            
+            if (hotelsData) {
+                setAllHotels(hotelsData);
             }
 
         } catch (error) {
@@ -1395,29 +1410,89 @@ function EventDetails() {
                             </div>
     
                             <div className="grid gap-6">
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Partner Organization</Label>
-                                    <Input
-                                        placeholder="e.g. Grand Hyatt Goa"
-                                        value={hotelName}
-                                        onChange={(e) => setHotelName(e.target.value)}
-                                        className="h-14 bg-zinc-50 dark:bg-white/5 border-zinc-100 dark:border-white/10 rounded-2xl px-6 focus-visible:ring-4 focus-visible:ring-blue-500/10 transition-all font-bold"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Authorization Email</Label>
-                                    <Input
-                                        type="email"
-                                        placeholder="partner@hotel.com"
-                                        value={hotelEmail}
-                                        onChange={(e) => setHotelEmail(e.target.value)}
-                                        className="h-14 bg-zinc-50 dark:bg-white/5 border-zinc-100 dark:border-white/10 rounded-2xl px-6 focus-visible:ring-4 focus-visible:ring-blue-500/10 transition-all font-bold"
-                                    />
+                                <div className="space-y-2 relative">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Select Hospitality Partner</Label>
+                                    
+                                    {/* Custom Dropdown */}
+                                    <div className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsHotelDropdownOpen(!isHotelDropdownOpen)}
+                                            className="w-full flex items-center justify-between h-14 rounded-2xl border border-zinc-100 dark:border-white/10 bg-zinc-50 dark:bg-white/5 px-6 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer group"
+                                        >
+                                            <span className={cn(
+                                                "truncate",
+                                                !hotelName ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-900 dark:text-zinc-50"
+                                            )}>
+                                                {hotelName ? `${hotelName} (${hotelEmail})` : "Choose a hospitality partner..."}
+                                            </span>
+                                            <ChevronDown className={cn(
+                                                "w-4 h-4 text-zinc-400 transition-transform duration-300",
+                                                isHotelDropdownOpen ? "rotate-180" : ""
+                                            )} />
+                                        </button>
+
+                                        <AnimatePresence>
+                                            {isHotelDropdownOpen && (
+                                                <>
+                                                    <motion.div
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        className="fixed inset-0 z-10"
+                                                        onClick={() => setIsHotelDropdownOpen(false)}
+                                                    />
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        transition={{ duration: 0.2, ease: "easeOut" }}
+                                                        className="absolute top-full left-0 right-0 mt-2 z-20 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-white/10 rounded-[1.5rem] shadow-2xl shadow-zinc-900/10 dark:shadow-none overflow-hidden"
+                                                    >
+                                                        <div className="max-h-60 overflow-y-auto p-2 space-y-1">
+                                                            {allHotels.length === 0 ? (
+                                                                <div className="p-4 text-center text-zinc-500 text-xs font-medium">
+                                                                    No hotels found. Register hotels in the Hotels section.
+                                                                </div>
+                                                            ) : (
+                                                                allHotels.map((h) => (
+                                                                    <button
+                                                                        key={h.email}
+                                                                        type="button"
+                                                                        className={cn(
+                                                                            "w-full flex items-center justify-between px-4 py-3 rounded-xl text-left text-sm font-bold transition-all group",
+                                                                            hotelEmail === h.email 
+                                                                                ? "bg-blue-500/10 text-blue-600 dark:bg-white/10 dark:text-white" 
+                                                                                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-zinc-50"
+                                                                        )}
+                                                                        onClick={() => {
+                                                                            setHotelName(h.name);
+                                                                            setHotelEmail(h.email);
+                                                                            setIsHotelDropdownOpen(false);
+                                                                        }}
+                                                                    >
+                                                                        <div className="flex flex-col min-w-0">
+                                                                            <span className="truncate">{h.name}</span>
+                                                                            <span className="text-[10px] opacity-60 font-medium truncate">{h.email}</span>
+                                                                        </div>
+                                                                        {hotelEmail === h.email && (
+                                                                            <Check className="w-4 h-4 shrink-0" />
+                                                                        )}
+                                                                    </button>
+                                                                ))
+                                                            )}
+                                                        </div>
+                                                    </motion.div>
+                                                </>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                    
                                     {event?.assigned_hotel_email && (
                                         <div className="flex items-center gap-2 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 mt-2">
                                             <Hotel size={14} />
                                             <span className="text-[10px] font-black uppercase tracking-widest truncate">
-                                                Active: {event.assigned_hotel_name || event.assigned_hotel_email}
+                                                Currently Assigned: {event.assigned_hotel_name || event.assigned_hotel_email}
                                             </span>
                                         </div>
                                     )}
