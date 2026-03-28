@@ -125,17 +125,14 @@ function HotelsPage() {
 
         setIsSaving(hotelId);
         try {
-            // 1. Clear previous assignments for this hotel email from all events
-            await supabase
-                .from("events")
-                .update({ assigned_hotel_email: null })
-                .eq("assigned_hotel_email", hotelEmail);
-
-            // 2. Assign to the new event if one is selected
+            // Assign to the new event if one is selected (Additive)
             if (selectedEventId !== "none") {
                 const { error } = await supabase
                     .from("events")
-                    .update({ assigned_hotel_email: hotelEmail })
+                    .update({ 
+                        assigned_hotel_email: hotelEmail,
+                        assigned_hotel_name: hotelName
+                    })
                     .eq("id", selectedEventId);
 
                 if (error) throw error;
@@ -148,6 +145,25 @@ function HotelsPage() {
             alert("Failed to update assignment: " + error.message);
         } finally {
             setIsSaving(null);
+        }
+    };
+
+    const handleUnassign = async (eventId: string, eventName: string, hotelName: string) => {
+        if (!confirm(`Unassign ${hotelName} from event: ${eventName}?`)) return;
+        
+        try {
+            const { error } = await supabase
+                .from("events")
+                .update({ 
+                    assigned_hotel_email: null,
+                    assigned_hotel_name: null
+                })
+                .eq("id", eventId);
+
+            if (error) throw error;
+            await fetchData();
+        } catch (error: any) {
+            alert("Failed to unassign: " + error.message);
         }
     };
 
@@ -175,7 +191,10 @@ function HotelsPage() {
             // Unassign from events first
             await supabase
                 .from("events")
-                .update({ assigned_hotel_email: null })
+                .update({ 
+                    assigned_hotel_email: null,
+                    assigned_hotel_name: null
+                })
                 .eq("assigned_hotel_email", hotelToDelete.email);
 
             // Delete the hotel
@@ -197,10 +216,10 @@ function HotelsPage() {
     };
 
     const getAssignmentStatus = (email: string) => {
-        const event = events.find(e => e.assigned_hotel_email === email);
+        const assignedEvents = events.filter(e => e.assigned_hotel_email === email);
         return {
-            status: event ? "Assigned" : "Unassigned",
-            event: event
+            status: assignedEvents.length > 0 ? "Assigned" : "Unassigned",
+            assignedEvents: assignedEvents
         };
     };
 
@@ -267,7 +286,7 @@ function HotelsPage() {
                                 </thead>
                                 <tbody className="divide-y divide-zinc-100 dark:divide-white/5">
                                     {filteredHotels.map((hotel) => {
-                                        const { status, event } = getAssignmentStatus(hotel.email);
+                                        const { status, assignedEvents } = getAssignmentStatus(hotel.email);
                                         const isEditing = editingHotelId === hotel.id;
 
                                         return (
@@ -293,12 +312,25 @@ function HotelsPage() {
                                                             ))}
                                                         </select>
                                                     ) : (
-                                                        <div className="flex items-center gap-2">
-                                                            <div className={cn("px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider border", 
-                                                                event ? "bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-900" 
-                                                                      : "bg-zinc-50 text-zinc-400 border-zinc-100 dark:bg-white/5 dark:text-zinc-600 dark:border-white/5 italic")}>
-                                                                {event ? event.name : "None"}
-                                                            </div>
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            {assignedEvents.length > 0 ? (
+                                                                assignedEvents.map(ev => (
+                                                                    <div key={ev.id} className="group/badge px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-900 shadow-sm flex items-center gap-1.5 transition-all hover:pr-1">
+                                                                        <span className="truncate max-w-[150px]">{ev.name}</span>
+                                                                        <button 
+                                                                            onClick={() => handleUnassign(ev.id, ev.name, hotel.name)}
+                                                                            className="opacity-0 group-hover/badge:opacity-100 hover:text-red-500 transition-all p-0.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30"
+                                                                            title="Unassign"
+                                                                        >
+                                                                            <X size={10} strokeWidth={3} />
+                                                                        </button>
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <div className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border bg-zinc-50 text-zinc-400 border-zinc-100 dark:bg-white/5 dark:text-zinc-600 dark:border-white/5 italic">
+                                                                    None
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </td>
@@ -339,7 +371,7 @@ function HotelsPage() {
                                                                     className="h-10 w-10 rounded-xl text-zinc-500 dark:text-zinc-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white transition-all shadow-sm active:scale-95"
                                                                     onClick={() => {
                                                                         setEditingHotelId(hotel.id);
-                                                                        setTempAssignment({ ...tempAssignment, [hotel.id]: event?.id || "none" });
+                                                                        setTempAssignment({ ...tempAssignment, [hotel.id]: "none" });
                                                                     }}
                                                                 >
                                                                     <Edit2 size={18} />
@@ -366,7 +398,7 @@ function HotelsPage() {
                         {/* Mobile View */}
                         <div className="lg:hidden divide-y divide-zinc-100 dark:divide-white/5">
                             {filteredHotels.map((hotel) => {
-                                const { status, event } = getAssignmentStatus(hotel.email);
+                                const { status, assignedEvents } = getAssignmentStatus(hotel.email);
                                 const isEditing = editingHotelId === hotel.id;
 
                                 return (
@@ -425,21 +457,36 @@ function HotelsPage() {
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="flex items-center justify-between p-3 rounded-2xl bg-zinc-50 dark:bg-white/5 border border-zinc-100 dark:border-white/10">
-                                                        <span className={cn("text-xs font-black uppercase tracking-tight", 
-                                                            event ? "text-blue-600 dark:text-blue-400" : "text-zinc-400 dark:text-zinc-600 italic")}>
-                                                            {event ? event.name : "None assigned"}
-                                                        </span>
-                                                        <div className="flex items-center gap-1">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-9 w-9 text-zinc-300 hover:text-blue-600"
-                                                                onClick={() => {
-                                                                    setEditingHotelId(hotel.id);
-                                                                    setTempAssignment({ ...tempAssignment, [hotel.id]: event?.id || "none" });
-                                                                }}
-                                                            >
+                                                        <div className="flex flex-wrap items-center gap-2 p-3 rounded-2xl bg-zinc-50 dark:bg-white/5 border border-zinc-100 dark:border-white/10">
+                                                            {assignedEvents.length > 0 ? (
+                                                                assignedEvents.map(ev => (
+                                                                    <div key={ev.id} className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                                                                        <span className="text-[10px] font-black uppercase tracking-tight text-blue-600 dark:text-blue-400">
+                                                                            {ev.name}
+                                                                        </span>
+                                                                        <button 
+                                                                            onClick={() => handleUnassign(ev.id, ev.name, hotel.name)}
+                                                                            className="text-blue-400 hover:text-red-500 transition-colors"
+                                                                        >
+                                                                            <X size={12} strokeWidth={3} />
+                                                                        </button>
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <span className="text-xs font-black uppercase tracking-tight text-zinc-400 dark:text-zinc-600 italic">
+                                                                    None assigned
+                                                                </span>
+                                                            )}
+                                                            <div className="flex items-center gap-1 ml-auto">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-9 w-9 text-zinc-300 hover:text-blue-600"
+                                                                    onClick={() => {
+                                                                        setEditingHotelId(hotel.id);
+                                                                        setTempAssignment({ ...tempAssignment, [hotel.id]: "none" });
+                                                                    }}
+                                                                >
                                                                 <Edit2 size={16} />
                                                             </Button>
                                                             <Button
