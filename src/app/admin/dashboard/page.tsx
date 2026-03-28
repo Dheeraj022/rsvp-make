@@ -19,12 +19,14 @@ import {
     Download,
     Trash2,
     Copy,
-    Check
+    Check,
+    Loader2
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Papa from "papaparse";
 import { saveAs } from "file-saver";
 
@@ -64,6 +66,12 @@ function AdminDashboard() {
         totalGuests: 0,
         coordinators: 0,
     });
+
+    // Delete Modal State
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deletePassword, setDeletePassword] = useState("");
+    const [deleteLoadingState, setDeleteLoadingState] = useState(false);
+    const [eventToDelete, setEventToDelete] = useState<{ id: string, name: string } | null>(null);
 
     useEffect(() => {
         fetchDashboardData();
@@ -130,17 +138,51 @@ function AdminDashboard() {
         }
     };
 
-    const handleDeleteEvent = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete "${name}"? This will also remove all guest RSVPs for this event.`)) return;
+    const handleDeleteEvent = (id: string, name: string) => {
+        setEventToDelete({ id, name });
+        setShowDeleteModal(true);
+    };
 
+    const executeDeleteEvent = async () => {
+        if (!eventToDelete || !deletePassword) {
+            alert("Please enter your password to confirm.");
+            return;
+        }
+
+        setDeleteLoadingState(true);
         try {
-            const { error } = await supabase.from("events").delete().eq("id", id);
+            // Verify Password
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user || !user.email) throw new Error("User not found");
+
+            const { error: authError } = await supabase.auth.signInWithPassword({
+                email: user.email,
+                password: deletePassword
+            });
+
+            if (authError) throw new Error("Incorrect password. Please try again.");
+
+            // 1. Delete associated guests first
+            const { error: guestsError } = await supabase.from("guests").delete().eq("event_id", eventToDelete.id);
+            if (guestsError) throw guestsError;
+
+            // 2. Unassign coordinators
+            await supabase.from("coordinators").update({ event_id: null }).eq("event_id", eventToDelete.id);
+
+            // 3. Delete event
+            const { error } = await supabase.from("events").delete().eq("id", eventToDelete.id);
             if (error) throw error;
-            setEvents(prev => prev.filter(e => e.id !== id));
-            alert("Event deleted successfully.");
+
+            setEvents(prev => prev.filter(e => e.id !== eventToDelete.id));
+            setShowDeleteModal(false);
+            setEventToDelete(null);
+            setDeletePassword("");
+            setActionEvent(null);
+            alert("Event and all associated data deleted successfully.");
         } catch (error: any) {
-            console.error("Error deleting event:", error);
-            alert("Failed to delete event: " + error.message);
+            alert(error.message);
+        } finally {
+            setDeleteLoadingState(false);
         }
     };
 
@@ -231,6 +273,7 @@ function AdminDashboard() {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-12 bg-white/50 dark:bg-white/5 border-white/80 dark:border-white/10 rounded-2xl h-14 focus-visible:ring-4 focus-visible:ring-blue-500/10 transition-all font-medium"
+                                autoComplete="off"
                             />
                         </div>
                     </div>
@@ -443,7 +486,6 @@ function AdminDashboard() {
                                 <button
                                     onClick={() => {
                                         handleDeleteEvent(actionEvent.id, actionEvent.name);
-                                        setActionEvent(null);
                                     }}
                                     className="flex items-center gap-4 p-5 rounded-2xl bg-red-50 dark:bg-red-950/20 hover:bg-red-500 dark:hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white dark:hover:text-white transition-all group w-full text-left"
                                 >
@@ -464,6 +506,60 @@ function AdminDashboard() {
                             >
                                 Close Actions
                             </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showDeleteModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowDeleteModal(false)} />
+                    <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl relative animate-in zoom-in slide-in-from-bottom-8 duration-300 border border-zinc-100 dark:border-white/10">
+                        <div className="p-8 md:p-10 space-y-8">
+                            <div className="space-y-4 text-center">
+                                <div className="w-20 h-20 bg-rose-500/10 rounded-3xl flex items-center justify-center mx-auto mb-2 border border-rose-500/20">
+                                    <Trash2 className="text-rose-600 dark:text-rose-400" size={32} />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">Destroy Event?</h3>
+                                    <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">This action is permanent. All guest data, RSVPs, and coordination records for <span className="text-zinc-900 dark:text-zinc-50 font-bold">"{eventToDelete?.name}"</span> will be purged.</p>
+                                </div>
+                            </div>
+    
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Administrative Credential</Label>
+                                <Input
+                                    type="password"
+                                    placeholder="Enter password to confirm"
+                                    value={deletePassword}
+                                    onChange={(e) => setDeletePassword(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && executeDeleteEvent()}
+                                    className="h-14 bg-zinc-50 dark:bg-white/5 border-zinc-100 dark:border-white/10 rounded-2xl px-6 focus-visible:ring-4 focus-visible:ring-rose-500/10 transition-all font-bold"
+                                    autoFocus
+                                    autoComplete="new-password"
+                                />
+                            </div>
+    
+                            <div className="flex flex-col gap-3">
+                                <Button 
+                                    variant="destructive" 
+                                    className="h-14 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black transition-all shadow-xl shadow-rose-900/20"
+                                    onClick={executeDeleteEvent} 
+                                    disabled={deleteLoadingState}
+                                >
+                                    {deleteLoadingState ? <Loader2 className="w-5 h-5 animate-spin" /> : "Purge Everything"}
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    className="h-14 rounded-2xl font-black text-zinc-500 dark:text-zinc-400 hover:bg-blue-600 hover:text-white transition-all transform active:scale-95"
+                                    onClick={() => {
+                                        setShowDeleteModal(false);
+                                        setDeletePassword("");
+                                    }}
+                                >
+                                    Keep Event
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>

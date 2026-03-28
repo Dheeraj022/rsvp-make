@@ -1412,7 +1412,7 @@ function EventDetails() {
                                 </Button>
                                 <Button 
                                     variant="ghost" 
-                                    className="h-14 rounded-2xl font-black text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                                    className="h-14 rounded-2xl font-black text-zinc-500 dark:text-zinc-400 hover:bg-blue-600 hover:text-white transition-all transform active:scale-95"
                                     onClick={() => {
                                         setShowDeleteModal(false);
                                         setDeletePassword("");
@@ -1452,6 +1452,7 @@ function EventDetails() {
                                     onKeyDown={(e) => e.key === "Enter" && executeDeleteGuest()}
                                     className="h-14 bg-zinc-50 dark:bg-white/5 border-zinc-100 dark:border-white/10 rounded-2xl px-6 focus-visible:ring-4 focus-visible:ring-rose-500/10 transition-all font-bold"
                                     autoFocus
+                                    autoComplete="new-password"
                                 />
                             </div>
     
@@ -1466,7 +1467,7 @@ function EventDetails() {
                                 </Button>
                                 <Button 
                                     variant="ghost" 
-                                    className="h-14 rounded-2xl font-black text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                                    className="h-14 rounded-2xl font-black text-zinc-500 dark:text-zinc-400 hover:bg-blue-600 hover:text-white transition-all transform active:scale-95"
                                     onClick={() => {
                                         setShowGuestDeleteModal(false);
                                         setGuestToDelete(null);
@@ -1509,6 +1510,7 @@ function EventDetails() {
                                     onKeyDown={(e) => e.key === "Enter" && executeUpdateName()}
                                     className="h-14 bg-zinc-50 dark:bg-white/5 border-zinc-100 dark:border-white/10 rounded-2xl px-6 focus-visible:ring-4 focus-visible:ring-blue-500/10 transition-all font-bold"
                                     autoFocus
+                                    autoComplete="new-password"
                                 />
                             </div>
     
@@ -1522,7 +1524,7 @@ function EventDetails() {
                                 </Button>
                                 <Button 
                                     variant="ghost" 
-                                    className="h-14 rounded-2xl font-black text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                                    className="h-14 rounded-2xl font-black text-zinc-500 dark:text-zinc-400 hover:bg-blue-600 hover:text-white transition-all transform active:scale-95"
                                     onClick={() => {
                                         setShowNameUpdateModal(false);
                                         setNameUpdatePassword("");
