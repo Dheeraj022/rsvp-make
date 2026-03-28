@@ -610,7 +610,7 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                 <div className="p-8 md:p-10 border-t border-zinc-100 dark:border-white/5 bg-zinc-50 dark:bg-zinc-900 flex flex-col sm:flex-row justify-end gap-3">
                     <Button 
                         variant="ghost" 
-                        className="h-14 rounded-2xl px-8 font-black text-zinc-900 dark:text-zinc-50 hover:bg-zinc-200 dark:hover:bg-white/10 transition-all border border-zinc-200 dark:border-white/10"
+                        className="h-14 rounded-full px-8 font-black text-zinc-700 dark:text-zinc-300 hover:bg-zinc-900 hover:text-white dark:hover:bg-white dark:hover:text-zinc-900 transition-all border border-zinc-200 dark:border-white/10"
                         onClick={handleDownloadPDF} 
                         disabled={downloading}
                     >
@@ -618,7 +618,7 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                         Export PDF Dossier
                     </Button>
                     <Button 
-                        className="h-14 rounded-2xl px-12 font-black bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 hover:opacity-90 transition-all shadow-xl shadow-zinc-900/20 dark:shadow-none"
+                        className="h-14 rounded-full px-12 font-black bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 hover:opacity-90 transition-all shadow-xl shadow-zinc-900/20 dark:shadow-none"
                         onClick={onClose}
                     >
                         Close Portal

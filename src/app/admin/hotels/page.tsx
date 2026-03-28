@@ -213,7 +213,7 @@ function HotelsPage() {
                     <p className="text-zinc-500 dark:text-zinc-400 mt-1 font-medium">Manage registered hotels and their assignment locations.</p>
                 </div>
                 <Button
-                    className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl px-5 h-10 transition-all font-bold text-xs uppercase tracking-widest gap-2 shrink-0 shadow-lg shadow-zinc-900/10 active:scale-95"
+                    className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-xl px-5 h-10 transition-all font-bold text-xs uppercase tracking-widest gap-2 shrink-0 shadow-lg shadow-zinc-900/10 active:scale-95"
                     onClick={() => setIsCreateModalOpen(true)}
                 >
                     <Hotel size={16} />
@@ -336,7 +336,7 @@ function HotelsPage() {
                                                                 <Button
                                                                     size="icon"
                                                                     variant="ghost"
-                                                                    className="h-10 w-10 rounded-xl text-zinc-300 dark:text-zinc-600 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white transition-all shadow-sm active:scale-95"
+                                                                    className="h-10 w-10 rounded-xl text-zinc-500 dark:text-zinc-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white transition-all shadow-sm active:scale-95"
                                                                     onClick={() => {
                                                                         setEditingHotelId(hotel.id);
                                                                         setTempAssignment({ ...tempAssignment, [hotel.id]: event?.id || "none" });
@@ -347,7 +347,7 @@ function HotelsPage() {
                                                                 <Button
                                                                     size="icon"
                                                                     variant="ghost"
-                                                                    className="h-10 w-10 rounded-xl text-zinc-300 dark:text-zinc-600 hover:bg-red-500 dark:hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
+                                                                    className="h-10 w-10 rounded-xl text-zinc-500 dark:text-zinc-400 hover:bg-red-500 dark:hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
                                                                     onClick={() => handleDeleteHotel(hotel, hotel.name)}
                                                                 >
                                                                     <Trash2 size={18} />
