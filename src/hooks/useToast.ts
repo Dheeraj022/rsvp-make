@@ -1,38 +1,27 @@
-"use client";
-
-import { useState, useCallback } from "react";
-import { ToastType } from "@/components/ui/toast";
-
-interface Toast {
-    id: string;
-    message: string;
-    type: ToastType;
-}
+import { useUI } from "@/components/providers/UIProvider";
 
 export function useToast() {
-    const [toasts, setToasts] = useState<Toast[]>([]);
+    const { showToast, showAlert } = useUI();
 
-    const showToast = useCallback((message: string, type: ToastType = "info") => {
-        const id = Math.random().toString(36).substring(7);
-        setToasts((prev) => [...prev, { id, message, type }]);
-    }, []);
+    const success = (message: string) => showToast(message, "success");
+    const error = (message: string) => showToast(message, "error");
+    const warning = (message: string) => showToast(message, "warning");
+    const info = (message: string) => showToast(message, "info");
 
-    const removeToast = useCallback((id: string) => {
-        setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, []);
+    const alert = (title: string, description: string, type: any = "info") => 
+        showAlert({ title, description, type, showCancel: false });
 
-    const success = useCallback((message: string) => showToast(message, "success"), [showToast]);
-    const error = useCallback((message: string) => showToast(message, "error"), [showToast]);
-    const warning = useCallback((message: string) => showToast(message, "warning"), [showToast]);
-    const info = useCallback((message: string) => showToast(message, "info"), [showToast]);
+    const confirm = (title: string, description: string, type: any = "warning") => 
+        showAlert({ title, description, type, showCancel: true, confirmText: "Confirm", cancelText: "Cancel" });
 
     return {
-        toasts,
         showToast,
-        removeToast,
+        showAlert,
         success,
         error,
         warning,
-        info
+        info,
+        alert,
+        confirm
     };
 }

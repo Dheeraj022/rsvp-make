@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import jsPDF from "jspdf";
 import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/useToast";
 
 type GuestDetailsModalProps = {
     guest: any;
@@ -17,6 +18,7 @@ type GuestDetailsModalProps = {
 };
 
 export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, eventName, eventDate }: GuestDetailsModalProps) {
+    const toast = useToast();
     const [downloading, setDownloading] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
     const [addingLoader, setAddingLoader] = useState(false);
@@ -75,7 +77,7 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
 
     const handleAddMember = async () => {
         if (!newMemberName.trim()) {
-            alert("Please enter a member name.");
+            toast.warning("Please enter a member name.");
             return;
         }
 
@@ -139,7 +141,7 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
 
             if (error) throw error;
 
-            alert("Member added successfully!");
+            toast.success("Member added successfully!");
             setIsAdding(false);
             setNewMemberName("");
             setFrontFile(null);
@@ -148,7 +150,7 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
 
         } catch (error: any) {
             console.error("Error adding member:", error);
-            alert("Failed to add member: " + error.message);
+            toast.error("Failed to add member: " + error.message);
         } finally {
             setAddingLoader(false);
         }
@@ -156,7 +158,8 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
 
 
     const handleDeleteMember = async (index: number) => {
-        if (!confirm("Are you sure you want to delete this member? This cannot be undone.")) return;
+        const confirmed = await toast.confirm("Delete Member", "Are you sure you want to delete this member? This cannot be undone.");
+        if (!confirmed) return;
 
         try {
             const updatedAttendees = [...(guest.attendees_data || [])];
@@ -172,12 +175,12 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
 
             if (error) throw error;
 
-            alert("Member deleted successfully.");
+            toast.success("Member deleted successfully.");
             if (onUpdate) onUpdate();
 
         } catch (error: any) {
             console.error("Error deleting member:", error);
-            alert("Failed to delete member: " + error.message);
+            toast.error("Failed to delete member: " + error.message);
         }
     };
 
@@ -312,7 +315,7 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
 
         } catch (error) {
             console.error("Error generating PDF:", error);
-            alert("Failed to generate PDF");
+            toast.error("Failed to generate PDF");
         } finally {
             setDownloading(false);
         }

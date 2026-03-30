@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import Papa from "papaparse";
 import GuestDetailsModal from "@/components/admin/GuestDetailsModal";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/hooks/useToast";
 
 type Event = {
     id: string;
@@ -118,6 +119,7 @@ function EventDetails() {
 
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const toast = useToast();
 
     const [event, setEvent] = useState<Event | null>(null);
     const [guests, setGuests] = useState<Guest[]>([]);
@@ -308,9 +310,9 @@ function EventDetails() {
             setIsEditingName(false);
             setShowNameUpdateModal(false);
             setNameUpdatePassword("");
-            alert("Event name and slug updated successfully.");
+            toast.success("Event name and slug updated successfully.");
         } catch (error: any) {
-            alert(error.message);
+            toast.error(error.message);
         } finally {
             setNameUpdateLoading(false);
         }
@@ -328,8 +330,9 @@ function EventDetails() {
 
             if (error) throw error;
             setEvent(prev => prev ? ({ ...prev, is_whatsapp_enabled: nextStatus }) : null);
+            toast.success(`WhatsApp invites ${nextStatus ? 'enabled' : 'disabled'} successfully.`);
         } catch (error: any) {
-            alert("Error updating WhatsApp preference: " + error.message);
+            toast.error("Error updating WhatsApp preference: " + error.message);
         } finally {
             setWhatsappUpdateLoading(false);
         }
@@ -360,17 +363,17 @@ function EventDetails() {
             const result = await response.json();
             if (response.ok) {
                 if (result.successes > 0) {
-                    alert("WhatsApp invitation sent successfully!");
+                    toast.success("WhatsApp invitation sent successfully!");
                 } else if (result.errors && result.errors.length > 0) {
-                    alert(`Failed to send WhatsApp:\n- ${result.errors.join('\n- ')}`);
+                    toast.error(`Failed to send WhatsApp:\n- ${result.errors.join('\n- ')}`);
                 } else {
-                    alert("WhatsApp invitation failed. Please check the logs.");
+                    toast.warning("WhatsApp invitation failed. Please check the logs.");
                 }
             } else {
-                alert(`Error: ${result.error || "Failed to send WhatsApp"}`);
+                toast.error(`Error: ${result.error || "Failed to send WhatsApp"}`);
             }
         } catch (error: any) {
-            alert("Failed to trigger WhatsApp invite: " + error.message);
+            toast.error("Failed to trigger WhatsApp invite: " + error.message);
         } finally {
             setSendingWhatsApp(prev => ({ ...prev, [guest.id]: false }));
         }
@@ -381,13 +384,12 @@ function EventDetails() {
         
         const guestsWithPhone = guests.filter(g => g.phone);
         if (guestsWithPhone.length === 0) {
-            alert("No guests with phone numbers found.");
+            toast.info("No guests with phone numbers found.");
             return;
         }
 
-        if (!confirm(`Are you sure you want to send WhatsApp invitations to all ${guestsWithPhone.length} guests with phone numbers?`)) {
-            return;
-        }
+        const confirmed = await toast.confirm("Bulk Invitation", `Are you sure you want to send WhatsApp invitations to all ${guestsWithPhone.length} guests?`);
+        if (!confirmed) return;
 
         setSendingAllWhatsApp(true);
         try {
@@ -406,12 +408,12 @@ function EventDetails() {
                 if (result.errors && result.errors.length > 0) {
                     statusMsg += `\n\nErrors:\n- ${result.errors.join('\n- ')}`;
                 }
-                alert(statusMsg);
+                toast.alert("Bulk WhatsApp Summary", statusMsg, result.failures > 0 ? "warning" : "success");
             } else {
-                alert(`Error: ${result.error || "Failed to send bulk WhatsApp"}`);
+                toast.error(`Error: ${result.error || "Failed to send bulk WhatsApp"}`);
             }
         } catch (error: any) {
-            alert("Failed to trigger bulk WhatsApp invites: " + error.message);
+            toast.error("Failed to trigger bulk WhatsApp invites: " + error.message);
         } finally {
             setSendingAllWhatsApp(false);
         }
@@ -558,7 +560,7 @@ function EventDetails() {
 
     const executeDeleteGuest = async () => {
         if (!guestDeletePassword) {
-            alert("Please enter your password to confirm.");
+            toast.warning("Please enter your password to confirm.");
             return;
         }
         setGuestDeleteLoading(true);
@@ -595,9 +597,10 @@ function EventDetails() {
             setGuests(prev => prev.filter(g => g.id !== guestToDelete && g.parent_id !== guestToDelete));
             setShowGuestDeleteModal(false);
             setGuestToDelete(null);
-            alert("Guest and associated companions deleted successfully.");
-        } catch (err: any) {
-            alert(err.message);
+            toast.success("Guest and companions deleted successfully.");
+        } catch (error: any) {
+            console.error("Error deleting guest:", error);
+            toast.error("Failed to delete guest: " + error.message);
         } finally {
             setGuestDeleteLoading(false);
         }
