@@ -329,10 +329,10 @@ function EventDetails() {
                             return null;
                         };
 
-                        const name = getValue(["name", "full name", "guest name"]);
-                        const email = getValue(["email", "e-mail", "mail"]);
-                        const phone = getValue(["phone", "mobile", "contact", "cell"]);
-                        const guests = getValue(["guests", "guest", "allowed", "count", "number of guests"]);
+                        const name = getValue(["name", "full name", "guest name", "primary guest", "guest"]);
+                        const email = getValue(["email", "e-mail", "mail", "email address"]);
+                        const phone = getValue(["phone", "mobile", "contact", "cell", "phone number", "mobile number", "contact number", "mobile no", "phone no"]);
+                        const guests = getValue(["guests", "guest", "allowed", "count", "number of guests", "additional guests", "no of guests"]);
 
                         return {
                             event_id: eventId,
@@ -353,6 +353,33 @@ function EventDetails() {
                     if (error) throw error;
 
                     alert(`Successfully imported ${parsedGuests.length} guests.`);
+                    
+                    // Trigger WhatsApp Invites
+                    if (confirm(`Do you want to send WhatsApp invites to the ${parsedGuests.length} newly imported guests?`)) {
+                        try {
+                            const response = await fetch('/api/whatsapp/invite', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    guests: parsedGuests,
+                                    event: event
+                                })
+                            });
+                            const result = await response.json();
+                            if (response.ok) {
+                                let statusMsg = `WhatsApp Invitation Status: ${result.message}`;
+                                if (result.errors && result.errors.length > 0) {
+                                    statusMsg += `\n\nErrors:\n- ${result.errors.join('\n- ')}`;
+                                }
+                                alert(statusMsg);
+                            } else {
+                                console.error("WhatsApp Invite Error:", result.error);
+                            }
+                        } catch (error) {
+                            console.error("Failed to trigger WhatsApp invites:", error);
+                        }
+                    }
+
                     fetchEventData(); // Refresh list
                 } catch (error: any) {
                     alert("Error importing guests: " + error.message);

@@ -743,6 +743,20 @@ export default function PublicEventPage() {
                     setArrivalTravelers(travelers.map(t => ({ ...t })));
                     setDepartureTravelers(travelers.map(t => ({ ...t })));
                 }
+                
+                // Trigger Confirmation WhatsApp after RSVP
+                try {
+                    await fetch('/api/whatsapp/confirm', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            guest: { ...selectedGuest, phone: phone },
+                            event: event
+                        })
+                    });
+                } catch (err) {
+                    console.error("Failed to send RSVP confirmation WhatsApp:", err);
+                }
 
                 // Switch to transport section
                 setActiveSection("transport");
@@ -750,6 +764,20 @@ export default function PublicEventPage() {
                 success("RSVP submitted successfully! Please provide your travel details.");
             } else {
                 // Show success screen if declined
+                // Trigger Confirmation WhatsApp for Decline as well
+                try {
+                    await fetch('/api/whatsapp/confirm', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            guest: { ...selectedGuest, phone: phone },
+                            event: event
+                        })
+                    });
+                } catch (err) {
+                    console.error("Failed to send RSVP acknowledgment WhatsApp:", err);
+                }
+
                 clearDraft();
                 setStep("success");
             }
