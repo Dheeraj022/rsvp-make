@@ -50,7 +50,17 @@ export const sendWhatsAppMessage = async ({
 
         if (!response.ok) {
             console.error("AiSensy API Error:", data);
-            const errorMsg = data.message || data.error || data.msg || (data.errors && data.errors[0]) || JSON.stringify(data);
+            
+            // Extract the most human-readable error possible
+            let errorMsg = "Failed to send message";
+            
+            if (data.errorMessage) errorMsg = data.errorMessage;
+            else if (data.message) errorMsg = data.message;
+            else if (data.error) errorMsg = data.error;
+            else if (data.msg) errorMsg = data.msg;
+            else if (data.errors && data.errors[0]) errorMsg = data.errors[0];
+            else if (typeof data === 'string') errorMsg = data;
+
             return { success: false, error: errorMsg };
         }
 

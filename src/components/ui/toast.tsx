@@ -37,17 +37,17 @@ export function Toast({ message, type = "info", duration = 3000, onClose }: Toas
 
     return (
         <div
-            className={`fixed top-4 right-4 z-50 flex items-center gap-3 rounded-lg border-2 px-4 py-3 shadow-lg backdrop-blur-sm animate-in slide-in-from-top-5 ${styles[type]} max-w-md`}
+            className={`flex items-center gap-4 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-md animate-in slide-in-from-top-2 duration-300 ${styles[type]} max-w-sm w-full overflow-hidden`}
         >
             <div className="flex-shrink-0">
                 {icons[type]}
             </div>
-            <p className="flex-1 text-sm font-medium">
+            <p className="flex-1 text-sm font-medium leading-snug">
                 {message}
             </p>
             <button
                 onClick={onClose}
-                className="flex-shrink-0 rounded-md p-1 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                className="flex-shrink-0 rounded-md p-1 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
             >
                 <X className="h-4 w-4" />
             </button>
