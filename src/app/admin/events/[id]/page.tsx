@@ -943,10 +943,10 @@ function EventDetails() {
                             variant="outline"
                             onClick={handleToggleWhatsApp}
                             disabled={whatsappUpdateLoading}
-                            className={`rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 transition-all shadow-sm ${
+                            className={`rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 transition-all shadow-sm border ${
                                 event?.is_whatsapp_enabled 
-                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-500/30 dark:text-emerald-400' 
-                                : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-500/30 dark:text-red-400'
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 dark:bg-emerald-900/20 dark:border-emerald-500/30 dark:text-emerald-400 dark:hover:bg-emerald-500 dark:hover:text-white' 
+                                : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-600 hover:text-white hover:border-red-600 dark:bg-red-900/20 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500 dark:hover:text-white'
                             }`}
                         >
                             {whatsappUpdateLoading ? (
@@ -1071,7 +1071,7 @@ function EventDetails() {
                                         <Button 
                                             onClick={handleSendAllInvites}
                                             disabled={sendingAllWhatsApp || guests.filter(g => g.phone).length === 0}
-                                            className="h-12 px-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-md shadow-emerald-500/10"
+                                            className="h-12 px-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-md shadow-emerald-500/10 dark:bg-emerald-900/20 dark:border-emerald-500/30 dark:text-emerald-400 dark:hover:bg-emerald-500 dark:hover:text-white"
                                         >
                                             {sendingAllWhatsApp ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
                                             SEND ALL INVITES
@@ -1159,7 +1159,7 @@ function EventDetails() {
                                                             <Button
                                                                 size="sm"
                                                                 variant="ghost"
-                                                                className="h-9 w-9 rounded-xl p-0 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+                                                                className="h-9 w-9 rounded-xl p-0 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm dark:text-emerald-400 dark:hover:bg-emerald-500 dark:hover:text-white"
                                                                 onClick={() => handleSendIndividualWhatsApp(guest)}
                                                                 disabled={sendingWhatsApp[guest.id] || !guest.phone}
                                                                 title={guest.phone ? "Send WhatsApp Invite" : "No phone number"}
