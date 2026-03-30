@@ -12,7 +12,6 @@ import { Loader2, MapPin, Calendar, Check, Search, ArrowRight, ArrowLeft, Upload
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/useToast";
-import { ToastContainer } from "@/components/ui/toast";
 
 type Event = {
     id: string;
@@ -127,7 +126,7 @@ const StepWrapper = ({
 export default function PublicEventPage() {
     const params = useParams();
     const slug = params.slug as string;
-    const { toasts, removeToast, success, error, warning, info } = useToast();
+    const toast = useToast();
 
     const [event, setEvent] = useState<Event | null>(null);
     const [loading, setLoading] = useState(true);
@@ -524,8 +523,12 @@ export default function PublicEventPage() {
 
             if (error) throw error;
             setEvent(data);
-        } catch (error) {
-            console.error("Error fetching event:", error);
+            toast.success("RSVP details saved successfully!");
+            setStep("success");
+            localStorage.removeItem(DRAFT_KEY);
+        } catch (error: any) {
+            console.error("Error submitting RSVP:", error);
+            toast.error("An error occurred while saving your RSVP.");
         } finally {
             setLoading(false);
         }
@@ -761,7 +764,7 @@ export default function PublicEventPage() {
                 // Switch to transport section
                 setActiveSection("transport");
                 setIsEditingRSVP(false);
-                success("RSVP submitted successfully! Please provide your travel details.");
+                toast.success("RSVP submitted successfully! Please provide your travel details.");
             } else {
                 // Show success screen if declined
                 // Trigger Confirmation WhatsApp for Decline as well
@@ -782,7 +785,7 @@ export default function PublicEventPage() {
                 setStep("success");
             }
         } catch (error: any) {
-            alert("Error submitting RSVP: " + error.message);
+            toast.error("Error submitting RSVP: " + error.message);
         } finally {
             setSubmitting(false);
         }
@@ -816,7 +819,7 @@ export default function PublicEventPage() {
             }
 
         } catch (error: any) {
-            alert("Ticket upload failed: " + error.message);
+            toast.error("Ticket upload failed: " + error.message);
         } finally {
             setUploadingTicket(null);
         }
@@ -868,15 +871,15 @@ export default function PublicEventPage() {
 
             if (transportType === "arrival" && isArrivalApplicable !== false) {
                 setTransportType("departure");
-                success("Arrival details saved! Please add departure details.");
+                toast.success("Arrival details saved! Please add departure details.");
             } else {
-                success("Transport details submitted successfully!");
+                toast.success("Transport details submitted successfully!");
                 setIsEditingTransport(false);
                 clearDraft();
                 setStep("success");
             }
         } catch (err: any) {
-            error("Error submitting transport details: " + err.message);
+            toast.error("Error submitting transport details: " + err.message);
         } finally {
             setSubmittingTransport(false);
         }
@@ -894,7 +897,6 @@ export default function PublicEventPage() {
 
     return (
         <>
-            <ToastContainer toasts={toasts} onRemove={removeToast} />
             <div className="min-h-screen bg-zinc-50 dark:bg-black flex flex-col items-center justify-center p-2 font-sans">
                 <div className="w-full max-w-lg my-2">
                     <AnimatePresence mode="wait">

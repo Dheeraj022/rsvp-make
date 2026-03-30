@@ -37,7 +37,6 @@ import { format } from "date-fns";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { useToast } from "@/hooks/useToast";
-import { ToastContainer } from "@/components/ui/toast";
 import withAuth from "@/components/auth/withAuth";
 
 // Types
@@ -128,7 +127,7 @@ function CoordinatorDashboard() {
     const router = useRouter();
 
     // Toast Hook
-    const { toasts, removeToast, success: toastSuccess, error: toastError } = useToast();
+    const toast = useToast();
 
     useEffect(() => {
         fetchCoordinatorAndGuests();
@@ -490,12 +489,12 @@ function CoordinatorDashboard() {
 
             if (error) throw error;
 
-            toastSuccess("Driver assigned successfully");
+            toast.success("Driver assigned successfully");
             setIsDriverModalOpen(false);
             fetchCoordinatorAndGuests(); // Refresh data
         } catch (error: any) {
             console.error("Detailed error updating driver:", error);
-            toastError(`Failed to assign driver: ${error.message || "Unknown error"}`);
+            toast.error(`Failed to assign driver: ${error.message || "Unknown error"}`);
         } finally {
             setIsUpdatingDriver(false);
         }
@@ -555,12 +554,12 @@ function CoordinatorDashboard() {
 
             if (error) throw error;
 
-            toastSuccess("Note saved successfully");
+            toast.success("Note saved successfully");
             setIsNoteModalOpen(false);
             fetchCoordinatorAndGuests();
         } catch (error: any) {
             console.error("Error saving note:", error);
-            toastError("Failed to save note");
+            toast.error("Failed to save note");
         } finally {
             setIsUpdatingNote(false);
         }
@@ -570,7 +569,8 @@ function CoordinatorDashboard() {
         if (!selectedGuestForNote) return;
         
         // Ask for confirmation
-        if (!confirm("Are you sure you want to remove this note?")) return;
+        const confirmed = await toast.confirm("Remove Note", "Are you sure you want to remove this note?");
+        if (!confirmed) return;
 
         setIsUpdatingNote(true);
         try {
@@ -613,12 +613,12 @@ function CoordinatorDashboard() {
 
             if (error) throw error;
 
-            toastSuccess("Note removed successfully");
+            toast.success("Note removed successfully");
             setIsNoteModalOpen(false);
             fetchCoordinatorAndGuests();
         } catch (error: any) {
             console.error("Error removing note:", error);
-            toastError("Failed to remove note");
+            toast.error("Failed to remove note");
         } finally {
             setIsUpdatingNote(false);
         }
@@ -676,7 +676,7 @@ function CoordinatorDashboard() {
             );
         } catch (error: any) {
             console.error("Error updating check-in status:", error);
-            toastError(`Failed to update status: ${error.message || "Please try again."}`);
+            toast.error(`Failed to update status: ${error.message || "Please try again."}`);
         }
     };
 
@@ -695,14 +695,14 @@ function CoordinatorDashboard() {
             );
         } catch (error: any) {
             console.error("Error updating departure status:", error);
-            toastError(`Failed to update status: ${error.message || "Please try again."}`);
+            toast.error(`Failed to update status: ${error.message || "Please try again."}`);
         }
     };
 
     const handleAddGuest = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newGuestName.trim()) {
-            toastError("Please enter a guest name.");
+            toast.error("Please enter a guest name.");
             return;
         }
 
@@ -772,7 +772,7 @@ function CoordinatorDashboard() {
                 throw new Error(result.error || "Failed to add guest through server-side handler.");
             }
 
-            toastSuccess("Guest added successfully!");
+            toast.success("Guest added successfully!");
             setIsAddGuestModalOpen(false);
             
             // Reset state
@@ -793,7 +793,7 @@ function CoordinatorDashboard() {
             fetchCoordinatorAndGuests();
         } catch (error: any) {
             console.error("Error adding guest:", error);
-            toastError(`Failed to add guest: ${error.message}`);
+            toast.error(`Failed to add guest: ${error.message}`);
         } finally {
             setIsAddingGuest(false);
         }
@@ -1698,8 +1698,6 @@ function CoordinatorDashboard() {
                     </div>
                 </div>
             </main>
-
-            <ToastContainer toasts={toasts} onRemove={removeToast} />
 
             {/* Driver Assignment Modal */}
             {isDriverModalOpen && selectedGuestForDriver && (

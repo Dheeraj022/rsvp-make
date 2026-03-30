@@ -21,6 +21,7 @@ import {
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/useToast";
 
 // Types
 type TeamUser = {
@@ -33,6 +34,7 @@ type TeamUser = {
 };
 
 function TeamManagementPage() {
+    const toast = useToast();
     const [users, setUsers] = useState<TeamUser[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<TeamUser[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -109,19 +111,21 @@ function TeamManagementPage() {
             if (response.ok) {
                 setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...editForm } : u));
                 setEditingUserId(null);
+                toast.success("User updated successfully");
             } else {
                 const data = await response.json();
                 throw new Error(data.error);
             }
         } catch (error: any) {
-            alert("Failed to update user: " + error.message);
+            toast.error("Failed to update user: " + error.message);
         } finally {
             setIsSaving(null);
         }
     };
 
     const handleDeleteUser = async (userId: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete user "${name}"? This action cannot be undone.`)) return;
+        const confirmed = await toast.confirm("Delete User", `Are you sure you want to delete user "${name}"? This action cannot be undone.`);
+        if (!confirmed) return;
 
         try {
             const response = await fetch(`/api/admin/users?userId=${userId}`, {
@@ -130,12 +134,13 @@ function TeamManagementPage() {
 
             if (response.ok) {
                 setUsers(prev => prev.filter(u => u.id !== userId));
+                toast.success("User deleted successfully");
             } else {
                 const data = await response.json();
                 throw new Error(data.error);
             }
         } catch (error: any) {
-            alert("Failed to delete user: " + error.message);
+            toast.error("Failed to delete user: " + error.message);
         }
     };
 
