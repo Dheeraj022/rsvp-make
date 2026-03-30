@@ -17,6 +17,11 @@ export async function POST(request) {
             return NextResponse.json({ error: "Event details provided are required" }, { status: 400 });
         }
 
+        // Check if WhatsApp is enabled for this event
+        if (event.is_whatsapp_enabled === false) {
+            return NextResponse.json({ message: "WhatsApp is disabled for this event. Skipping message." });
+        }
+
         const campaignName = process.env.AISENSY_CONFIRM_CAMPAIGN || "RSVP_CONFIRM_TEMPLATE";
         
         // Format the date for the WhatsApp message

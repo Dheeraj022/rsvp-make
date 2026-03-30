@@ -24,7 +24,13 @@ import {
     ChevronDown,
     Check,
     Pencil,
-    X
+    X,
+    MessageCircle,
+    Smartphone,
+    SmartphoneNfc,
+    SmartphoneCharging,
+    MessageSquare,
+    MessageSquareOff
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -42,6 +48,7 @@ type Event = {
     assigned_hotel_email?: string;
     assigned_hotel_name?: string;
     drop_locations?: string[];
+    is_whatsapp_enabled?: boolean;
 };
 
 type Guest = {
@@ -145,6 +152,9 @@ function EventDetails() {
     const [isEditingName, setIsEditingName] = useState(false);
     const [editableName, setEditableName] = useState("");
     const [nameUpdateLoading, setNameUpdateLoading] = useState(false);
+    const [whatsappUpdateLoading, setWhatsappUpdateLoading] = useState(false);
+    const [sendingWhatsApp, setSendingWhatsApp] = useState<Record<string, boolean>>({});
+    const [sendingAllWhatsApp, setSendingAllWhatsApp] = useState(false);
     const [showNameUpdateModal, setShowNameUpdateModal] = useState(false);
     const [nameUpdatePassword, setNameUpdatePassword] = useState("");
 
@@ -306,6 +316,107 @@ function EventDetails() {
         }
     };
 
+    const handleToggleWhatsApp = async () => {
+        if (!event) return;
+        setWhatsappUpdateLoading(true);
+        try {
+            const nextStatus = !event.is_whatsapp_enabled;
+            const { error } = await supabase
+                .from("events")
+                .update({ is_whatsapp_enabled: nextStatus })
+                .eq("id", eventId);
+
+            if (error) throw error;
+            setEvent(prev => prev ? ({ ...prev, is_whatsapp_enabled: nextStatus }) : null);
+        } catch (error: any) {
+            alert("Error updating WhatsApp preference: " + error.message);
+        } finally {
+            setWhatsappUpdateLoading(false);
+        }
+    };
+
+    const handleSendIndividualWhatsApp = async (guest: any) => {
+        if (!guest.phone) {
+            alert("This guest does not have a phone number.");
+            return;
+        }
+
+        if (!event) {
+            alert("Event data not loaded.");
+            return;
+        }
+
+        setSendingWhatsApp(prev => ({ ...prev, [guest.id]: true }));
+        try {
+            const response = await fetch('/api/whatsapp/invite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    guests: [guest],
+                    event: event
+                })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                if (result.successes > 0) {
+                    alert("WhatsApp invitation sent successfully!");
+                } else if (result.errors && result.errors.length > 0) {
+                    alert(`Failed to send WhatsApp:\n- ${result.errors.join('\n- ')}`);
+                } else {
+                    alert("WhatsApp invitation failed. Please check the logs.");
+                }
+            } else {
+                alert(`Error: ${result.error || "Failed to send WhatsApp"}`);
+            }
+        } catch (error: any) {
+            alert("Failed to trigger WhatsApp invite: " + error.message);
+        } finally {
+            setSendingWhatsApp(prev => ({ ...prev, [guest.id]: false }));
+        }
+    };
+
+    const handleSendAllInvites = async () => {
+        if (!event) return;
+        
+        const guestsWithPhone = guests.filter(g => g.phone);
+        if (guestsWithPhone.length === 0) {
+            alert("No guests with phone numbers found.");
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to send WhatsApp invitations to all ${guestsWithPhone.length} guests with phone numbers?`)) {
+            return;
+        }
+
+        setSendingAllWhatsApp(true);
+        try {
+            const response = await fetch('/api/whatsapp/invite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    guests: guestsWithPhone,
+                    event: event
+                })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                let statusMsg = `Bulk WhatsApp Status: ${result.message}`;
+                if (result.errors && result.errors.length > 0) {
+                    statusMsg += `\n\nErrors:\n- ${result.errors.join('\n- ')}`;
+                }
+                alert(statusMsg);
+            } else {
+                alert(`Error: ${result.error || "Failed to send bulk WhatsApp"}`);
+            }
+        } catch (error: any) {
+            alert("Failed to trigger bulk WhatsApp invites: " + error.message);
+        } finally {
+            setSendingAllWhatsApp(false);
+        }
+    };
+
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -354,8 +465,8 @@ function EventDetails() {
 
                     alert(`Successfully imported ${parsedGuests.length} guests.`);
                     
-                    // Trigger WhatsApp Invites
-                    if (confirm(`Do you want to send WhatsApp invites to the ${parsedGuests.length} newly imported guests?`)) {
+                    // Trigger WhatsApp Invites only if enabled for this event
+                    if (event?.is_whatsapp_enabled && confirm(`Do you want to send WhatsApp invites to the ${parsedGuests.length} newly imported guests?`)) {
                         try {
                             const response = await fetch('/api/whatsapp/invite', {
                                 method: 'POST',
@@ -828,6 +939,27 @@ function EventDetails() {
                             <span className="hidden sm:inline">Copy Invite Link</span>
                             <span className="sm:hidden">Share</span>
                         </Button>
+                        <Button
+                            variant="outline"
+                            onClick={handleToggleWhatsApp}
+                            disabled={whatsappUpdateLoading}
+                            className={`rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 transition-all shadow-sm ${
+                                event?.is_whatsapp_enabled 
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-500/30 dark:text-emerald-400' 
+                                : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-500/30 dark:text-red-400'
+                            }`}
+                        >
+                            {whatsappUpdateLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : event?.is_whatsapp_enabled ? (
+                                <MessageSquare className="h-4 w-4" />
+                            ) : (
+                                <MessageSquareOff className="h-4 w-4" />
+                            )}
+                            <span className="hidden sm:inline">
+                                WhatsApp: {event?.is_whatsapp_enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </Button>
                         <Button 
                             variant="outline"
                             className="bg-white/50 dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-900 hover:text-white dark:hover:bg-white dark:hover:text-zinc-900 transition-all shadow-sm"
@@ -929,13 +1061,23 @@ function EventDetails() {
                                     />
                                     <Button 
                                         onClick={() => fileInputRef.current?.click()} 
-                                        disabled={uploading} 
-                                        variant="outline"
-                                        className="h-12 px-6 rounded-2xl border-zinc-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-zinc-50 dark:hover:bg-white/10 text-xs font-black uppercase tracking-widest gap-2"
+                                        disabled={uploading}
+                                        className="h-12 px-6 rounded-2xl bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm"
                                     >
-                                        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                                        Import
+                                        {uploading ? <Loader2 className="w-4 h-4 animate-spin text-blue-500" /> : <Upload className="w-4 h-4 text-blue-500" />}
+                                        IMPORT
                                     </Button>
+                                    {event?.is_whatsapp_enabled && (
+                                        <Button 
+                                            onClick={handleSendAllInvites}
+                                            disabled={sendingAllWhatsApp || guests.filter(g => g.phone).length === 0}
+                                            className="h-12 px-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-md shadow-emerald-500/10"
+                                        >
+                                            {sendingAllWhatsApp ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+                                            SEND ALL INVITES
+                                        </Button>
+                                    )}
+
                                     <Button 
                                         onClick={() => setShowAddGuestModal(true)}
                                         className="h-12 px-6 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90 text-xs font-black uppercase tracking-widest gap-2 shadow-xl shadow-zinc-900/10"
@@ -1013,7 +1155,21 @@ function EventDetails() {
                                                         </div>
                                                     </td>
                                                     <td className="px-10 py-6 text-right">
-                                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                        <div className="flex items-center justify-end gap-2 duration-300">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                className="h-9 w-9 rounded-xl p-0 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+                                                                onClick={() => handleSendIndividualWhatsApp(guest)}
+                                                                disabled={sendingWhatsApp[guest.id] || !guest.phone}
+                                                                title={guest.phone ? "Send WhatsApp Invite" : "No phone number"}
+                                                            >
+                                                                {sendingWhatsApp[guest.id] ? (
+                                                                    <Loader2 size={16} className="animate-spin" />
+                                                                ) : (
+                                                                    <MessageSquare size={16} />
+                                                                )}
+                                                            </Button>
                                                             <Button
                                                                 size="sm"
                                                                 variant="ghost"
