@@ -17,6 +17,7 @@ import {
     Calendar,
     LayoutDashboard
 } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
 import { Input } from "@/components/ui/input";
 
 // Types
@@ -35,6 +36,7 @@ type EventType = {
 };
 
 function HotelsPage() {
+    const toast = useToast();
     const [hotels, setHotels] = useState<HotelType[]>([]);
     const [events, setEvents] = useState<EventType[]>([]);
     const [filteredHotels, setFilteredHotels] = useState<HotelType[]>([]);
@@ -111,9 +113,10 @@ function HotelsPage() {
             setNewHotelName("");
             setNewHotelManager("");
             setNewHotelEmail("");
-            alert("Hotel profile created successfully!");
+            setNewHotelEmail("");
+            toast.success("Hotel profile created successfully!");
         } catch (error: any) {
-            alert("Failed to create hotel: " + error.message);
+            toast.error("Failed to create hotel: " + error.message);
         } finally {
             setIsCreating(false);
         }
@@ -140,16 +143,17 @@ function HotelsPage() {
 
             await fetchData();
             setEditingHotelId(null);
-            alert(`Assignment updated for ${hotelName}`);
+            toast.success(`Assignment updated for ${hotelName}`);
         } catch (error: any) {
-            alert("Failed to update assignment: " + error.message);
+            toast.error("Failed to update assignment: " + error.message);
         } finally {
             setIsSaving(null);
         }
     };
 
     const handleUnassign = async (eventId: string, eventName: string, hotelName: string) => {
-        if (!confirm(`Unassign ${hotelName} from event: ${eventName}?`)) return;
+        const confirmed = await toast.confirm("Unassign Hotel", `Unassign ${hotelName} from event: ${eventName}?`);
+        if (!confirmed) return;
         
         try {
             const { error } = await supabase
@@ -163,7 +167,7 @@ function HotelsPage() {
             if (error) throw error;
             await fetchData();
         } catch (error: any) {
-            alert("Failed to unassign: " + error.message);
+            toast.error("Failed to unassign: " + error.message);
         }
     };
 
@@ -207,7 +211,7 @@ function HotelsPage() {
 
             await fetchData();
             setIsDeleteModalOpen(false);
-            alert("Hotel deleted successfully.");
+            toast.success("Hotel deleted successfully.");
         } catch (error: any) {
             setVerificationError(error.message);
         } finally {

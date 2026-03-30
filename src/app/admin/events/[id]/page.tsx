@@ -612,7 +612,7 @@ function EventDetails() {
 
     const executeDelete = async () => {
         if (!deletePassword) {
-            alert("Please enter your password to confirm.");
+            toast.error("Please enter your password to confirm.");
             return;
         }
 
@@ -649,7 +649,7 @@ function EventDetails() {
 
             router.push("/admin/dashboard");
         } catch (error: any) {
-            alert(error.message);
+            toast.error(error.message);
             setDeleteLoading(false);
         }
     };
@@ -748,7 +748,8 @@ function EventDetails() {
     };
 
     const handleDeleteDepartureDetails = async (guestId: string) => {
-        if (!confirm("Are you sure you want to delete this guest's transport details?")) return;
+        const confirmed = await toast.confirm("Delete Transport Details", "Are you sure you want to delete this guest's transport details?");
+        if (!confirmed) return;
 
         try {
             const { error } = await supabase
@@ -760,9 +761,9 @@ function EventDetails() {
 
             // Refresh the guest list
             await fetchEventData();
-            alert("Transport details deleted successfully.");
+            toast.success("Transport details deleted successfully.");
         } catch (error: any) {
-            alert("Error deleting transport details: " + error.message);
+            toast.error("Error deleting transport details: " + error.message);
         }
     };
 
@@ -935,7 +936,7 @@ function EventDetails() {
                             onClick={() => {
                                 const url = `${window.location.origin}/r/${event?.slug}`;
                                 navigator.clipboard.writeText(url);
-                                alert("Invite link copied to clipboard!");
+                                toast.success("Invite link copied to clipboard!");
                             }}
                         >
                             <Copy className="h-4 w-4" />
@@ -1879,7 +1880,8 @@ function EventDetails() {
                                         variant="ghost"
                                         className="h-14 rounded-2xl px-6 font-black text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white transition-all"
                                         onClick={async () => {
-                                            if (!confirm("Revoke hospitaly partner access?")) return;
+                                            const confirmed = await toast.confirm("Revoke Access", "Are you sure you want to revoke hospitality partner access?");
+                                            if (!confirmed) return;
                                             setAssignLoading(true);
                                             try {
                                                 const { error } = await supabase.from("events").update({ assigned_hotel_email: null, assigned_hotel_name: null }).eq("id", eventId);
@@ -1888,8 +1890,9 @@ function EventDetails() {
                                                 setHotelEmail("");
                                                 setHotelName("");
                                                 setShowHotelModal(false);
+                                                toast.success("Access revoked successfully.");
                                             } catch (e: any) {
-                                                alert(e.message);
+                                                toast.error(e.message);
                                             } finally {
                                                 setAssignLoading(false);
                                             }

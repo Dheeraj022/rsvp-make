@@ -16,6 +16,7 @@ import {
     Users,
     Power
 } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
 
 type Coordinator = {
@@ -26,6 +27,7 @@ type Coordinator = {
 };
 
 function SettingsPage() {
+    const toast = useToast();
     const [coordinators, setCoordinators] = useState<Coordinator[]>([]);
     const [loading, setLoading] = useState(true);
     const [updatingPassword, setUpdatingPassword] = useState(false);
@@ -89,9 +91,9 @@ function SettingsPage() {
             setCoordinators(prev =>
                 prev.map(c => c.id === coordId ? { ...c, is_active: !currentStatus } : c)
             );
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error toggling status:", error);
-            alert("Failed to update status.");
+            toast.error("Failed to update status: " + (error.message || "Unknown error"));
         }
     };
 

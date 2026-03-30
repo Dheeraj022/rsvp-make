@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
 
 export default function withAuth(Component: any, options: { loginPath?: string, requiredRole?: string } = {}) {
     const { loginPath = "/admin/login", requiredRole } = options;
 
     return function ProtectedRoute(props: any) {
+        const toast = useToast();
         const router = useRouter();
         const [loading, setLoading] = useState(true);
 
@@ -29,7 +31,7 @@ export default function withAuth(Component: any, options: { loginPath?: string, 
 
                 if (error || !userData || userData.status === 'inactive' || (requiredRole && userData.role !== requiredRole)) {
                     if (userData?.status === 'inactive') {
-                        alert("Your account has been disabled. Please contact the administrator.");
+                        toast.error("Your account has been disabled. Please contact the administrator.");
                     }
                     await supabase.auth.signOut();
                     router.replace(loginPath);

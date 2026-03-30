@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
 
 export default function withRoleAuth(Component: any, allowedRole: string) {
     return function ProtectedRoute(props: any) {
+        const toast = useToast();
         const router = useRouter();
         const [loading, setLoading] = useState(true);
 
@@ -32,14 +34,14 @@ export default function withRoleAuth(Component: any, allowedRole: string) {
                 }
 
                 if (userData.status === 'inactive') {
-                    alert("Your account has been disabled.");
+                    toast.error("Your account has been disabled.");
                     await supabase.auth.signOut();
                     router.replace("/admin/login");
                     return;
                 }
 
                 if (userData.role !== allowedRole) {
-                    alert(`Unauthorized access. Only ${allowedRole}s are allowed.`);
+                    toast.error(`Unauthorized access. Only ${allowedRole}s are allowed.`);
                     router.replace("/admin/dashboard");
                     return;
                 }

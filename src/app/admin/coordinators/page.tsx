@@ -17,6 +17,7 @@ import {
     UserCheck,
     CheckCircle
 } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
 import { Input } from "@/components/ui/input";
 
 // Types
@@ -39,6 +40,7 @@ type Event = {
 };
 
 function CoordinatorsPage() {
+    const toast = useToast();
     const [coordinators, setCoordinators] = useState<Coordinator[]>([]);
     const [filteredCoordinators, setFilteredCoordinators] = useState<Coordinator[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -142,9 +144,10 @@ function CoordinatorsPage() {
             setNewEmail("");
             setNewPassword("");
             setSelectedEventId("");
-            alert("Coordinator created successfully! If you were logged out, please log back in.");
+            setSelectedEventId("");
+            toast.success("Coordinator created successfully! If you were logged out, please log back in.");
         } catch (error: any) {
-            alert("Failed to create coordinator: " + error.message);
+            toast.error("Failed to create coordinator: " + error.message);
         } finally {
             setIsCreating(false);
         }
@@ -160,17 +163,16 @@ function CoordinatorsPage() {
             if (error) throw error;
 
             setCoordinators(prev => prev.map(c => c.id === id ? { ...c, is_active: !currentStatus } : c));
-            alert(`Coordinator "${name}" ${!currentStatus ? 'activated' : 'deactivated'} successfully.`);
+            toast.success(`Coordinator "${name}" ${!currentStatus ? 'activated' : 'deactivated'} successfully.`);
         } catch (error: any) {
             console.error("Error toggling activation:", error.message || error);
-            alert("Failed to update activation status: " + error.message);
+            toast.error("Failed to update activation status: " + error.message);
         }
     };
 
     const handleDeleteCoordinator = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete coordinator "${name}"? This action cannot be undone.`)) {
-            return;
-        }
+        const confirmed = await toast.confirm("Delete Coordinator", `Are you sure you want to delete coordinator "${name}"? This action cannot be undone.`);
+        if (!confirmed) return;
 
         try {
             const { error } = await supabase
@@ -181,10 +183,10 @@ function CoordinatorsPage() {
             if (error) throw error;
 
             setCoordinators(prev => prev.filter(c => c.id !== id));
-            alert("Coordinator deleted successfully.");
+            toast.success("Coordinator deleted successfully.");
         } catch (error: any) {
             console.error("Error deleting coordinator:", error.message || error);
-            alert("Failed to delete coordinator: " + error.message);
+            toast.error("Failed to delete coordinator: " + error.message);
         }
     };
 
@@ -207,9 +209,9 @@ function CoordinatorsPage() {
 
             await fetchCoordinators();
             setIsEditModalOpen(false);
-            alert("Event assigned successfully!");
+            toast.success("Event assigned successfully!");
         } catch (error: any) {
-            alert("Failed to assign event: " + error.message);
+            toast.error("Failed to assign event: " + error.message);
         } finally {
             setIsUpdating(false);
         }

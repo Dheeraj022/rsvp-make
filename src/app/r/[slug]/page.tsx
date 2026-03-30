@@ -646,7 +646,7 @@ export default function PublicEventPage() {
             });
 
         } catch (error: any) {
-            alert("Upload failed: " + error.message);
+            toast.error("Upload failed: " + error.message);
         } finally {
             setUploading(null);
         }
@@ -661,13 +661,13 @@ export default function PublicEventPage() {
         try {
             // Validation
             if (!email) {
-                alert("Please enter your email address.");
+                toast.error("Please enter your email address.");
                 setSubmitting(false);
                 return;
             }
 
             if (!phone) {
-                alert("Please enter your phone number.");
+                toast.error("Please enter your phone number.");
                 setSubmitting(false);
                 return;
             }
@@ -676,7 +676,7 @@ export default function PublicEventPage() {
                 for (let i = 0; i < attendees.length; i++) {
                     const a = attendees[i];
                     if (!a.name || !a.age || !a.id_front) {
-                        alert(`Please fill all required details for Guest ${i + 1} (Name, Age, and Front ID image).`);
+                        toast.error(`Please fill all required details for Guest ${i + 1} (Name, Age, and Front ID image).`);
                         setSubmitting(false);
                         return;
                     }

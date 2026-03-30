@@ -823,7 +823,7 @@ function CoordinatorDashboard() {
             ));
         } catch (error: any) {
             console.error("Error updating sub-member check-in:", error.message);
-            toastError(`Failed to update companion: ${error.message || "Please try again."}`);
+            toast.error(`Failed to update companion: ${error.message || "Please try again."}`);
         }
     };
 
@@ -851,7 +851,7 @@ function CoordinatorDashboard() {
             ));
         } catch (error: any) {
             console.error("Error updating sub-member departure:", error.message);
-            toastError(`Failed to update companion: ${error.message || "Please try again."}`);
+            toast.error(`Failed to update companion: ${error.message || "Please try again."}`);
         }
     };
 
