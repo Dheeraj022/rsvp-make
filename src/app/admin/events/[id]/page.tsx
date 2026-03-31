@@ -99,6 +99,7 @@ type Guest = {
                 ticket_url?: string;
             }>;
         };
+        transport_number?: string;
         message?: string;
         // Legacy fields for backward compatibility
         arrival_date?: string;
@@ -1263,6 +1264,7 @@ function EventDetails() {
                                         <th className="px-6 py-3 font-medium">Time</th>
                                         <th className="px-6 py-3 font-medium">Station/Airport</th>
                                         <th className="px-6 py-3 font-medium">Travel Mode</th>
+                                        <th className="px-6 py-3 font-medium">Flight/Train No</th>
                                         <th className="px-6 py-3 font-medium">Ticket</th>
                                         <th className="px-6 py-3 font-medium text-right">Actions</th>
                                     </tr>
@@ -1274,7 +1276,7 @@ function EventDetails() {
                                         if (guestsWithArrival.length === 0) {
                                             return (
                                                 <tr>
-                                                    <td colSpan={7} className="px-6 py-8 text-center text-zinc-500">
+                                                    <td colSpan={8} className="px-6 py-8 text-center text-zinc-500">
                                                         No arrival details found.
                                                     </td>
                                                 </tr>
@@ -1304,6 +1306,7 @@ function EventDetails() {
                                                         <td className="px-6 py-4 text-zinc-500">{arrivalData?.arrival_time || "-"}</td>
                                                         <td className="px-6 py-4 text-zinc-500">{arrivalData?.arrival_location || "-"}</td>
                                                         <td className="px-6 py-4 text-zinc-500">{arrivalData?.arrival_mode || "-"}</td>
+                                                        <td className="px-6 py-4 text-zinc-500">{arrivalData?.transport_number || "-"}</td>
                                                         <td className="px-6 py-4 text-zinc-400 italic text-xs">No Ticket</td>
                                                         <td className="px-6 py-4 text-right">
                                                             <div className="flex items-center justify-end gap-2">
@@ -1345,6 +1348,9 @@ function EventDetails() {
                                                             }`}>
                                                             {traveler.mode_of_travel || arrivalData?.arrival_mode || "-"}
                                                         </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-zinc-500">
+                                                        {traveler.transport_number || arrivalData?.transport_number || "-"}
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         {traveler.ticket_url ? (
@@ -1409,6 +1415,7 @@ function EventDetails() {
                                         <th className="px-6 py-3 font-medium">Time</th>
                                         <th className="px-6 py-3 font-medium">Station/Airport</th>
                                         <th className="px-6 py-3 font-medium">Travel Mode</th>
+                                        <th className="px-6 py-3 font-medium">Flight/Train No</th>
                                         <th className="px-6 py-3 font-medium">Ticket</th>
                                         <th className="px-6 py-3 font-medium text-right">Actions</th>
                                     </tr>
@@ -1420,7 +1427,7 @@ function EventDetails() {
                                         if (guestsWithDeparture.length === 0) {
                                             return (
                                                 <tr>
-                                                    <td colSpan={7} className="px-6 py-8 text-center text-zinc-500">
+                                                    <td colSpan={8} className="px-6 py-8 text-center text-zinc-500">
                                                         No departure details submitted yet.
                                                     </td>
                                                 </tr>
@@ -1445,6 +1452,7 @@ function EventDetails() {
                                                                 </div>
                                                             )}
                                                         </td>
+                                                        <td className="px-6 py-4 text-zinc-500 italic">Not Applicable</td>
                                                         <td className="px-6 py-4 text-zinc-500 italic">Not Applicable</td>
                                                         <td className="px-6 py-4 text-zinc-500 italic">Not Applicable</td>
                                                         <td className="px-6 py-4 text-zinc-500 italic">Not Applicable</td>
@@ -1487,6 +1495,7 @@ function EventDetails() {
                                                         </td>
                                                         <td className="px-6 py-4 text-zinc-500">{departureData?.departure_location || "-"}</td>
                                                         <td className="px-6 py-4 text-zinc-500">{departureData?.departure_mode || "-"}</td>
+                                                        <td className="px-6 py-4 text-zinc-500">{departureData?.transport_number || "-"}</td>
                                                         <td className="px-6 py-4 text-right">
                                                             <div className="flex items-center justify-end gap-2">
                                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
@@ -1529,6 +1538,9 @@ function EventDetails() {
                                                             }`}>
                                                             {traveler.mode_of_travel || "-"}
                                                         </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-zinc-500">
+                                                        {traveler.transport_number || departureData?.transport_number || "-"}
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         {traveler.ticket_url ? (
