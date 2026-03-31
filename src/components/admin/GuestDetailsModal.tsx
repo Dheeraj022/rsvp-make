@@ -408,6 +408,16 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                                                         {t.contact_number || "N/A"}
                                                     </div>
                                                 </div>
+                                                {t.ticket_url && (
+                                                    <a 
+                                                        href={t.ticket_url} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer" 
+                                                        className="mt-2 block w-full text-center py-2 rounded-xl bg-white/20 hover:bg-white/30 text-[10px] font-black uppercase tracking-widest transition-all"
+                                                    >
+                                                        View Ticket
+                                                    </a>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -444,6 +454,16 @@ export default function GuestDetailsModal({ guest, onClose, onUpdate, readonly, 
                                                         {t.contact_number || "N/A"}
                                                     </div>
                                                 </div>
+                                                {t.ticket_url && (
+                                                    <a 
+                                                        href={t.ticket_url} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer" 
+                                                        className="mt-2 block w-full text-center py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 p-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-center"
+                                                    >
+                                                        View Ticket
+                                                    </a>
+                                                )}
                                             </div>
                                         ))}
                                     </div>

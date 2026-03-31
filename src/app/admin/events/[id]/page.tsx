@@ -694,7 +694,8 @@ function EventDetails() {
                 "Pax": traveler.number_of_pax || "1",
                 "Bags": traveler.number_of_bags || "0",
                 "Vehicles": traveler.number_of_vehicles || "1",
-                "Drop Location": traveler.drop_location || "-"
+                "Drop Location": traveler.drop_location || "-",
+                "Ticket URL": traveler.ticket_url || "-"
             }));
         });
         const csv = Papa.unparse(exportData);
@@ -732,7 +733,8 @@ function EventDetails() {
                 "Pax": traveler.number_of_pax || "1",
                 "Bags": traveler.number_of_bags || "0",
                 "Vehicles": traveler.number_of_vehicles || "1",
-                "Drop Location": traveler.drop_location || "-"
+                "Drop Location": traveler.drop_location || "-",
+                "Ticket URL": traveler.ticket_url || "-"
             }));
         });
 
@@ -1259,21 +1261,64 @@ function EventDetails() {
                                         <th className="px-6 py-3 font-medium">Time</th>
                                         <th className="px-6 py-3 font-medium">Station/Airport</th>
                                         <th className="px-6 py-3 font-medium">Travel Mode</th>
+                                        <th className="px-6 py-3 font-medium">Ticket</th>
                                         <th className="px-6 py-3 font-medium text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                                    {filteredGuests.filter(g => g.departure_details?.arrival?.date || g.departure_details?.arrival_date).length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className="px-6 py-8 text-center text-zinc-500">
-                                                No arrival details found.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        filteredGuests.filter(g => g.departure_details?.arrival?.date || g.departure_details?.arrival_date).map((guest) => {
-                                            const arrival = guest.departure_details?.arrival;
+                                    {(() => {
+                                        const guestsWithArrival = filteredGuests.filter(g => g.departure_details?.arrival?.date || g.departure_details?.arrival_date);
+                                        
+                                        if (guestsWithArrival.length === 0) {
                                             return (
-                                                <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                                <tr>
+                                                    <td colSpan={7} className="px-6 py-8 text-center text-zinc-500">
+                                                        No arrival details found.
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }
+
+                                        return guestsWithArrival.flatMap((guest) => {
+                                            const arrivalData = guest.departure_details;
+                                            const arrival = arrivalData?.arrival;
+                                            const travelers = arrival?.travelers || [];
+
+                                            if (travelers.length === 0) {
+                                                return (
+                                                    <tr key={guest.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                                        <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
+                                                            <div>{guest.name}</div>
+                                                            {guest.coordinator_id && coordinators[guest.coordinator_id] && (
+                                                                <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-normal mt-0.5 flex items-center gap-1">
+                                                                    <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
+                                                                    {coordinators[guest.coordinator_id]}
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-zinc-500">
+                                                            {arrivalData?.arrival_date ? format(new Date(arrivalData.arrival_date), "MMM d, yyyy") : "-"}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-zinc-500">{arrivalData?.arrival_time || "-"}</td>
+                                                        <td className="px-6 py-4 text-zinc-500">{arrivalData?.arrival_location || "-"}</td>
+                                                        <td className="px-6 py-4 text-zinc-500">{arrivalData?.arrival_mode || "-"}</td>
+                                                        <td className="px-6 py-4 text-zinc-400 italic text-xs">No Ticket</td>
+                                                        <td className="px-6 py-4 text-right">
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-red-600" onClick={() => handleDeleteDepartureDetails(guest.id)}>
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            }
+
+                                            return travelers.map((traveler: any, idx: number) => (
+                                                <tr key={`${guest.id}-${idx}`} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                                                     <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
                                                         <div>{guest.name}</div>
                                                         {guest.coordinator_id && coordinators[guest.coordinator_id] && (
@@ -1285,26 +1330,47 @@ function EventDetails() {
                                                     </td>
                                                     <td className="px-6 py-4 text-zinc-500">
                                                         {arrival?.date ? format(new Date(arrival.date), "MMM d, yyyy") :
-                                                            guest.departure_details?.arrival_date ? format(new Date(guest.departure_details.arrival_date), "MMM d, yyyy") : "-"}
+                                                            arrivalData?.arrival_date ? format(new Date(arrivalData.arrival_date), "MMM d, yyyy") : "-"}
                                                     </td>
-                                                    <td className="px-6 py-4 text-zinc-500">{arrival?.time || guest.departure_details?.arrival_time || "-"}</td>
+                                                    <td className="px-6 py-4 text-zinc-500">{arrival?.time || arrivalData?.arrival_time || "-"}</td>
                                                     <td className="px-6 py-4 text-zinc-500">
-                                                        {arrival?.travelers?.[0]?.station_airport || guest.departure_details?.arrival_location || "-"}
+                                                        {traveler.station_airport || arrivalData?.arrival_location || "-"}
                                                     </td>
-                                                    <td className="px-6 py-4 text-zinc-500">
-                                                        {arrival?.travelers?.[0]?.mode_of_travel || guest.departure_details?.arrival_mode || "-"}
+                                                    <td className="px-6 py-4">
+                                                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${(traveler.mode_of_travel || arrivalData?.arrival_mode) === "By Air" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
+                                                            (traveler.mode_of_travel || arrivalData?.arrival_mode) === "Train" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                                                                "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
+                                                            }`}>
+                                                            {traveler.mode_of_travel || arrivalData?.arrival_mode || "-"}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {traveler.ticket_url ? (
+                                                            <a href={traveler.ticket_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 text-xs font-medium">
+                                                                View Ticket
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-zinc-400 text-xs">No ticket</span>
+                                                        )}
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
                                                         <div className="flex items-center justify-end gap-2">
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
-                                                                <Eye className="h-4 w-4" />
-                                                            </Button>
+                                                            {idx === 0 && (
+                                                                <>
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => setSelectedGuest(guest)}>
+                                                                        <Eye className="h-4 w-4" />
+                                                                    </Button>
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-red-600" onClick={() => handleDeleteDepartureDetails(guest.id)}>
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>
-                                            );
-                                        })
-                                    )}
+                                            ));
+                                        });
+                                    })()}
                                 </tbody>
                             </table>
                         </div>
