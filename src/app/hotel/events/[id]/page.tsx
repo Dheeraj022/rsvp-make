@@ -34,6 +34,7 @@ type Guest = {
     attending_count: number;
     attendees_data?: any[];
     parent_id?: string | null;
+    groupSize?: number;
 };
 
 function HotelEventDetails() {
@@ -148,6 +149,9 @@ function HotelEventDetails() {
             });
 
             const allEntries = [primaryEntry, ...attendeeCompanions, ...linkedCompanions];
+
+            // Add groupSize to primary entry for display
+            (primaryEntry as any).groupSize = allEntries.length;
 
             const matchesSearch = (g: any) => 
                 g.actualName.toLowerCase().includes(query) ||
@@ -281,7 +285,7 @@ function HotelEventDetails() {
                                                         {guest.isPrimary && (
                                                             <div className="flex items-center gap-1.5 text-zinc-400 text-xs">
                                                                 <Users size={12} />
-                                                                <span>Party of {guest.allowed_guests}</span>
+                                                                <span>Total Guest: {guest.groupSize || 1}</span>
                                                             </div>
                                                         )}
                                                     </div>
