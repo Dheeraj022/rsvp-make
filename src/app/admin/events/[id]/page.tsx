@@ -237,9 +237,9 @@ function EventDetails() {
 
             setEvent(prev => prev ? ({ ...prev, assigned_hotel_email: hotelEmail, assigned_hotel_name: hotelName }) : null);
             setShowHotelModal(false);
-            alert("Hotel assigned successfully.");
+            toast.success("Hotel assigned successfully.");
         } catch (error: any) {
-            alert("Error assigning hotel: " + error.message);
+            toast.error("Error assigning hotel: " + error.message);
         } finally {
             setAssignLoading(false);
         }
@@ -258,9 +258,9 @@ function EventDetails() {
 
             setEvent(prev => prev ? ({ ...prev, drop_locations: locations }) : null);
             setShowDropLocationsModal(false);
-            alert("Drop locations updated successfully.");
+            toast.success("Drop locations updated successfully.");
         } catch (error: any) {
-            alert("Error updating drop locations: " + error.message);
+            toast.error("Error updating drop locations: " + error.message);
         } finally {
             setDropLocationsLoading(false);
         }
@@ -273,7 +273,7 @@ function EventDetails() {
 
     const executeUpdateName = async () => {
         if (!nameUpdatePassword) {
-            alert("Please enter your password to confirm.");
+            toast.warning("Please enter your password to confirm.");
             return;
         }
 
@@ -340,12 +340,12 @@ function EventDetails() {
 
     const handleSendIndividualWhatsApp = async (guest: any) => {
         if (!guest.phone) {
-            alert("This guest does not have a phone number.");
+            toast.warning("This guest does not have a phone number.");
             return;
         }
 
         if (!event) {
-            alert("Event data not loaded.");
+            toast.error("Event data not loaded.");
             return;
         }
 
@@ -458,17 +458,18 @@ function EventDetails() {
                     }).filter((g: any) => g.name && g.name.trim() !== "");
 
                     if (parsedGuests.length === 0) {
-                        alert("No valid guests found in CSV. Please ensure there is a 'Name' column.");
+                        toast.warning("No valid guests found in CSV. Please ensure there is a 'Name' column.");
                         return;
                     }
 
                     const { error } = await supabase.from("guests").insert(parsedGuests);
                     if (error) throw error;
 
-                    alert(`Successfully imported ${parsedGuests.length} guests.`);
+                    toast.success(`Successfully imported ${parsedGuests.length} guests.`);
                     
                     // Trigger WhatsApp Invites only if enabled for this event
-                    if (event?.is_whatsapp_enabled && confirm(`Do you want to send WhatsApp invites to the ${parsedGuests.length} newly imported guests?`)) {
+                    const confirmed = await toast.confirm("Send Invites", `Do you want to send WhatsApp invites to the ${parsedGuests.length} newly imported guests?`);
+                    if (event?.is_whatsapp_enabled && confirmed) {
                         try {
                             const response = await fetch('/api/whatsapp/invite', {
                                 method: 'POST',
@@ -484,7 +485,7 @@ function EventDetails() {
                                 if (result.errors && result.errors.length > 0) {
                                     statusMsg += `\n\nErrors:\n- ${result.errors.join('\n- ')}`;
                                 }
-                                alert(statusMsg);
+                                toast.info(statusMsg);
                             } else {
                                 console.error("WhatsApp Invite Error:", result.error);
                             }
@@ -495,14 +496,14 @@ function EventDetails() {
 
                     fetchEventData(); // Refresh list
                 } catch (error: any) {
-                    alert("Error importing guests: " + error.message);
+                    toast.error("Error importing guests: " + error.message);
                 } finally {
                     setUploading(false);
                     if (fileInputRef.current) fileInputRef.current.value = "";
                 }
             },
             error: (error) => {
-                alert("CSV Parse Error: " + error.message);
+                toast.error("CSV Parse Error: " + error.message);
                 setUploading(false);
             }
         });
@@ -510,7 +511,7 @@ function EventDetails() {
 
     const handleAddGuest = async () => {
         if (!newGuestName.trim()) {
-            alert("Please enter a guest name.");
+            toast.warning("Please enter a guest name.");
             return;
         }
 
@@ -528,7 +529,7 @@ function EventDetails() {
 
             if (error) throw error;
 
-            alert("Guest added successfully!");
+            toast.success("Guest added successfully!");
             setShowAddGuestModal(false);
             setNewGuestName("");
             setNewGuestEmail("");
@@ -536,7 +537,7 @@ function EventDetails() {
             setSelectedPrimaryGuestId(null);
             fetchEventData(); // Refresh list
         } catch (error: any) {
-            alert("Error adding guest: " + error.message);
+            toast.error("Error adding guest: " + error.message);
         } finally {
             setAddGuestLoading(false);
         }
@@ -946,7 +947,7 @@ function EventDetails() {
                             {event && format(new Date(event.date), "MMMM d, yyyy • h:mm a")} | {event?.location}
                         </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
                         <Button
                             variant="outline"
                             className="bg-white/50 dark:bg-white/5 border-zinc-200 dark:border-white/10 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-900 hover:text-white dark:hover:bg-white dark:hover:text-zinc-900 transition-all shadow-sm"
@@ -1023,17 +1024,17 @@ function EventDetails() {
                         { label: "Declined RSVPs", value: stats.declined, color: "text-rose-600", bg: "bg-rose-600/10", border: "border-rose-100 dark:border-rose-900/30" },
                         { label: "Pending Response", value: stats.pending, color: "text-amber-600", bg: "bg-amber-600/10", border: "border-amber-100 dark:border-amber-900/30" },
                     ].map((stat) => (
-                        <div key={stat.label} className={cn("p-6 rounded-[2rem] border backdrop-blur-sm", stat.bg, stat.color, stat.border)}>
+                        <div key={stat.label} className={cn("p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border backdrop-blur-sm", stat.bg, stat.color, stat.border)}>
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-2 opacity-70">{stat.label}</p>
                             <p className="text-4xl font-black tracking-tighter">{stat.value}</p>
                         </div>
                     ))}
                 </div>
 
-                <div className="flex gap-2 bg-white/40 dark:bg-white/5 p-2 rounded-[1.5rem] border border-white/60 dark:border-white/10 backdrop-blur-md shadow-sm w-full sm:w-fit">
+                <div className="flex flex-col sm:flex-row gap-2 bg-white/40 dark:bg-white/5 p-2 rounded-[1.5rem] border border-white/60 dark:border-white/10 backdrop-blur-md shadow-sm w-full sm:w-fit">
                     <button
                         onClick={() => setActiveTab("guests")}
-                        className={cn("flex-1 sm:flex-none px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300", 
+                        className={cn("px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300", 
                             activeTab === "guests" ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 shadow-lg" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100")
                         }
                     >
@@ -1041,7 +1042,7 @@ function EventDetails() {
                     </button>
                     <button
                         onClick={() => setActiveTab("arrival")}
-                        className={cn("flex-1 sm:flex-none px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300", 
+                        className={cn("px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300", 
                             activeTab === "arrival" ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 shadow-lg" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100")
                         }
                     >
@@ -1049,7 +1050,7 @@ function EventDetails() {
                     </button>
                     <button
                         onClick={() => setActiveTab("departure")}
-                        className={cn("flex-1 sm:flex-none px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300", 
+                        className={cn("px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300", 
                             activeTab === "departure" ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 shadow-lg" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100")
                         }
                     >
@@ -1060,10 +1061,10 @@ function EventDetails() {
                 {/* Guest Management */}
                 {activeTab === "guests" && (
                     <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                        <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                        <div className="p-4 sm:p-6 border-b border-zinc-100 dark:border-zinc-800 flex flex-col lg:flex-row gap-4 justify-between items-stretch sm:items-center">
                             <h2 className="text-lg font-semibold">Guest List</h2>
-                            <div className="flex gap-2 w-full sm:w-auto">
-                                <div className="relative group flex-1 max-w-md">
+                            <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto">
+                                <div className="relative group w-full md:w-80">
                                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-blue-500 transition-colors" />
                                     <Input
                                         placeholder="Search by name, email or phone..."
@@ -1072,7 +1073,7 @@ function EventDetails() {
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                     />
                                 </div>
-                                <div className="flex items-center gap-3">
+                                <div className="grid grid-cols-2 md:flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                                     <input
                                         type="file"
                                         accept=".csv"
@@ -1083,16 +1084,25 @@ function EventDetails() {
                                     <Button 
                                         onClick={() => fileInputRef.current?.click()} 
                                         disabled={uploading}
-                                        className="h-12 px-6 rounded-2xl bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm"
+                                        className="h-11 sm:h-12 px-4 sm:px-6 rounded-2xl bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-white/10 transition-all font-bold text-[10px] sm:text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm"
                                     >
                                         {uploading ? <Loader2 className="w-4 h-4 animate-spin text-blue-500" /> : <Upload className="w-4 h-4 text-blue-500" />}
                                         IMPORT
                                     </Button>
+
+                                    <Button 
+                                        onClick={handleDownloadTemplate}
+                                        className="h-11 sm:h-12 px-4 sm:px-6 rounded-2xl bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-white/10 hover:border-blue-500/50 transition-all font-bold text-[10px] sm:text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm"
+                                    >
+                                        <Download className="w-4 h-4 text-blue-500" />
+                                        TEMPLATE
+                                    </Button>
+
                                     {event?.is_whatsapp_enabled && (
                                         <Button 
                                             onClick={handleSendAllInvites}
                                             disabled={sendingAllWhatsApp || guests.filter(g => g.phone).length === 0}
-                                            className="h-12 px-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-md shadow-emerald-500/10 dark:bg-emerald-900/20 dark:border-emerald-500/30 dark:text-emerald-400 dark:hover:bg-emerald-500 dark:hover:text-white"
+                                            className="col-span-2 h-11 sm:h-12 px-4 sm:px-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all font-bold text-[10px] sm:text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-md shadow-emerald-500/10 dark:bg-emerald-900/20 dark:border-emerald-500/30 dark:text-emerald-400 dark:hover:bg-emerald-500 dark:hover:text-white"
                                         >
                                             {sendingAllWhatsApp ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
                                             SEND ALL INVITES
@@ -1100,16 +1110,8 @@ function EventDetails() {
                                     )}
 
                                     <Button 
-                                        onClick={handleDownloadTemplate}
-                                        className="h-12 px-6 rounded-2xl bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-white/10 hover:border-blue-500/50 transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm"
-                                    >
-                                        <Download className="w-4 h-4 text-blue-500" />
-                                        TEMPLATE
-                                    </Button>
-
-                                    <Button 
                                         onClick={() => setShowAddGuestModal(true)}
-                                        className="h-12 px-6 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90 text-xs font-black uppercase tracking-widest gap-2 shadow-xl shadow-zinc-900/10"
+                                        className="col-span-2 h-11 sm:h-12 px-4 sm:px-6 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90 text-[10px] sm:text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl shadow-zinc-900/10"
                                     >
                                         <UserPlus className="h-4 w-4" />
                                         Add Guest
@@ -1118,15 +1120,15 @@ function EventDetails() {
                             </div>
                         </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
+                        <div className="overflow-x-auto scrollbar-hide">
+                            <table className="w-full text-sm text-left min-w-[800px] md:min-w-0">
                                 <thead className="bg-[#f8f9fa] dark:bg-white/5">
                                     <tr className="text-zinc-400 dark:text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] border-b border-zinc-100 dark:border-white/5">
-                                        <th className="px-10 py-6">Guest Identity</th>
-                                        <th className="px-6 py-6">Direct Contact</th>
-                                        <th className="px-6 py-6">RSVP Status</th>
-                                        <th className="px-6 py-6">Party Size</th>
-                                        <th className="px-10 py-6 text-right">Actions</th>
+                                        <th className="px-6 sm:px-10 py-4 sm:py-6 whitespace-nowrap">Guest Identity</th>
+                                        <th className="px-6 py-4 sm:py-6 whitespace-nowrap">Direct Contact</th>
+                                        <th className="px-6 py-4 sm:py-6 whitespace-nowrap">RSVP Status</th>
+                                        <th className="px-6 py-4 sm:py-6 whitespace-nowrap">Party Size</th>
+                                        <th className="px-6 sm:px-10 py-4 sm:py-6 text-right whitespace-nowrap">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -1492,8 +1494,7 @@ function EventDetails() {
                         </div>
                     </div>
                 )}
-            </div>
-
+            
             <GuestDetailsModal
                 guest={selectedGuest}
                 onClose={() => setSelectedGuest(null)}
@@ -1939,6 +1940,7 @@ function EventDetails() {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 }
