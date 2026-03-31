@@ -80,6 +80,7 @@ type Guest = {
                 number_of_bags?: string;
                 drop_location?: string;
                 number_of_vehicles?: string;
+                ticket_url?: string;
             }>;
         };
         departure?: {
@@ -95,6 +96,7 @@ type Guest = {
                 number_of_bags?: string;
                 drop_location?: string;
                 number_of_vehicles?: string;
+                ticket_url?: string;
             }>;
         };
         message?: string;
