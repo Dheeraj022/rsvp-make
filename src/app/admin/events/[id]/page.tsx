@@ -919,8 +919,8 @@ function EventDetails() {
         const totalGuestsInvited = flattenedGuests.length;
 
         const acceptedCount = flattenedGuests.filter(g => g.status === "accepted").length;
-        const declinedCount = guests.filter(g => !g.parent_id && g.status === "declined").length;
-        const pendingCount = guests.filter(g => !g.parent_id && g.status === "pending").length;
+        const declinedCount = flattenedGuests.filter(g => g.status === "declined").length;
+        const pendingCount = flattenedGuests.filter(g => g.status === "pending").length;
 
         return {
             invitations: invitationCount,
