@@ -685,9 +685,9 @@ function EventDetails() {
             const arrival = guest.departure_details?.arrival;
             const travelers = arrival?.travelers || [];
             if (travelers.length === 0) return [];
-            return travelers.map((traveler) => ({
+            return travelers.map((traveler: any, idx: number) => ({
                 "Main Guest": guest.name,
-                "Traveler Name": traveler.name,
+                "Traveler Name": idx === 0 ? traveler.name : `${traveler.name} (Companion of ${guest.name})`,
                 "Arrival Date": arrival?.date ? format(new Date(arrival.date), "MMM d, yyyy") : "-",
                 "Arrival Time": arrival?.time || "-",
                 "Station/Airport": traveler.station_airport || "-",
@@ -724,9 +724,9 @@ function EventDetails() {
 
             if (travelers.length === 0) return [];
 
-            return travelers.map((traveler: any) => ({
+            return travelers.map((traveler: any, idx: number) => ({
                 "Main Guest": guest.name,
-                "Traveler Name": traveler.name,
+                "Traveler Name": idx === 0 ? traveler.name : `${traveler.name} (Companion of ${guest.name})`,
                 "Departure Date": departure?.date ? format(new Date(departure.date), "MMM d, yyyy") : "-",
                 "Departure Time": departure?.time || "-",
                 "Station/Airport": traveler.station_airport || "-",
@@ -1149,8 +1149,8 @@ function EventDetails() {
                                                                     {guest.actualName || guest.name}
                                                                 </span>
                                                                 {!guest.isPrimary && (
-                                                                    <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mt-0.5">
-                                                                        Companion of {guest.displayName}
+                                                                    <span className="text-[10px] text-zinc-500 italic mt-0.5">
+                                                                        (Companion of {guest.displayName})
                                                                     </span>
                                                                 )}
                                                                 {guest.coordinator_id && coordinators[guest.coordinator_id] && (
@@ -1325,7 +1325,14 @@ function EventDetails() {
                                             return travelers.map((traveler: any, idx: number) => (
                                                 <tr key={`${guest.id}-${idx}`} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                                                     <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
-                                                        <div>{guest.name}</div>
+                                                        <div className="flex flex-col">
+                                                            <span>{traveler.name || guest.name}</span>
+                                                            {idx > 0 && (
+                                                                <span className="text-[10px] text-zinc-500 italic font-normal">
+                                                                    (Companion of {guest.name})
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         {guest.coordinator_id && coordinators[guest.coordinator_id] && (
                                                             <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-normal mt-0.5 flex items-center gap-1">
                                                                 <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
@@ -1513,7 +1520,14 @@ function EventDetails() {
                                             return travelers.map((traveler: any, idx: number) => (
                                                 <tr key={`${guest.id}-${idx}`} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                                                     <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
-                                                        <div>{guest.name}</div>
+                                                        <div className="flex flex-col">
+                                                            <span>{traveler.name || guest.name}</span>
+                                                            {idx > 0 && (
+                                                                <span className="text-[10px] text-zinc-500 italic font-normal">
+                                                                    (Companion of {guest.name})
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         {guest.coordinator_id && coordinators[guest.coordinator_id] && (
                                                             <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-normal mt-0.5 flex items-center gap-1">
                                                                 <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
