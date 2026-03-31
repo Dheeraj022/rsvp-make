@@ -78,14 +78,25 @@ function EventsPage() {
             if (eventsError) throw eventsError;
 
             const eventsWithStats = await Promise.all((eventsData || []).map(async (event) => {
-                const { count: guestCount } = await supabase
+                const { data: guestsData } = await supabase
                     .from("guests")
-                    .select("*", { count: 'exact', head: true })
+                    .select("id, parent_id, attendees_data")
                     .eq("event_id", event.id);
+
+                let totalHeadcount = 0;
+                if (guestsData) {
+                    guestsData.forEach(guest => {
+                        totalHeadcount += 1;
+                        if (!guest.parent_id && guest.attendees_data && Array.isArray(guest.attendees_data)) {
+                            const extraCompanions = guest.attendees_data.length - 1;
+                            if (extraCompanions > 0) totalHeadcount += extraCompanions;
+                        }
+                    });
+                }
 
                 return {
                     ...event,
-                    guest_count: guestCount || 0,
+                    guest_count: totalHeadcount,
                 };
             }));
 

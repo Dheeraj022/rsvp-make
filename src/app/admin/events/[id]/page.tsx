@@ -551,13 +551,13 @@ function EventDetails() {
     const [deleteLoading, setDeleteLoading] = useState(false);
 
     // Guest delete state
-    const [guestToDelete, setGuestToDelete] = useState<string | null>(null);
+    const [guestToDelete, setGuestToDelete] = useState<any | null>(null);
     const [showGuestDeleteModal, setShowGuestDeleteModal] = useState(false);
     const [guestDeletePassword, setGuestDeletePassword] = useState("");
     const [guestDeleteLoading, setGuestDeleteLoading] = useState(false);
 
-    const handleDeleteGuest = (guestId: string) => {
-        setGuestToDelete(guestId);
+    const handleDeleteGuest = (guest: any) => {
+        setGuestToDelete(guest);
         setGuestDeletePassword("");
         setShowGuestDeleteModal(true);
     };
@@ -567,6 +567,8 @@ function EventDetails() {
             toast.warning("Please enter your password to confirm.");
             return;
         }
+        if (!guestToDelete) return;
+
         setGuestDeleteLoading(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -578,33 +580,62 @@ function EventDetails() {
             });
             if (authError) throw new Error("Incorrect password. Please try again.");
 
-            // 1. Delete all companions first (linked via parent_id)
-            try {
-                const { error: companionError } = await supabase
+            // Case 1: Internal Companion (JSON-based)
+            if (!guestToDelete.isPrimary && !guestToDelete.isLinkedGuest) {
+                // Fetch current primary guest to get latest attendees_data
+                const { data: primaryGuest, error: fetchError } = await supabase
+                    .from("guests")
+                    .select("attendees_data")
+                    .eq("id", guestToDelete.id)
+                    .single();
+                
+                if (fetchError) throw fetchError;
+
+                const currentAttendees = primaryGuest.attendees_data || [];
+                const updatedAttendees = currentAttendees.filter((m: any) => m.name !== guestToDelete.actualName);
+
+                const { error: updateError } = await supabase
+                    .from("guests")
+                    .update({
+                        attendees_data: updatedAttendees,
+                        attending_count: updatedAttendees.length > 0 ? updatedAttendees.length + (guestToDelete.status === 'accepted' ? 1 : 0) : 1
+                    })
+                    .eq("id", guestToDelete.id);
+                
+                if (updateError) throw updateError;
+                toast.success(`Companion "${guestToDelete.actualName}" removed.`);
+            } 
+            // Case 2: Linked Companion (Separate row)
+            else if (guestToDelete.isLinkedGuest) {
+                const { error: deleteError } = await supabase
                     .from("guests")
                     .delete()
-                    .eq("parent_id", guestToDelete!);
+                    .eq("id", guestToDelete.id);
                 
-                if (companionError) {
-                    console.warn("Companion deletion failed (possibly column missing):", companionError);
-                    // We continue anyway to try and delete the primary guest
-                }
-            } catch (err) {
-                console.error("Error attempting companion delete:", err);
+                if (deleteError) throw deleteError;
+                toast.success(`Companion "${guestToDelete.actualName}" deleted.`);
+            }
+            // Case 3: Primary Guest (Original behavior)
+            else {
+                // Delete linked companions first
+                await supabase.from("guests").delete().eq("parent_id", guestToDelete.id);
+                
+                // Delete primary guest
+                const { error: primaryError } = await supabase
+                    .from("guests")
+                    .delete()
+                    .eq("id", guestToDelete.id);
+                
+                if (primaryError) throw primaryError;
+                toast.success("Guest and companions deleted successfully.");
             }
 
-            // 2. Delete the primary guest
-            const { error: primaryError } = await supabase.from("guests").delete().eq("id", guestToDelete!);
-            if (primaryError) throw primaryError;
-
-            // Update local state: remove the primary guest AND any linked companions
-            setGuests(prev => prev.filter(g => g.id !== guestToDelete && g.parent_id !== guestToDelete));
             setShowGuestDeleteModal(false);
             setGuestToDelete(null);
-            toast.success("Guest and companions deleted successfully.");
+            setGuestDeletePassword("");
+            fetchEventData(); // Refresh all stats and list
         } catch (error: any) {
-            console.error("Error deleting guest:", error);
-            toast.error("Failed to delete guest: " + error.message);
+            toast.error(error.message);
         } finally {
             setGuestDeleteLoading(false);
         }
@@ -1240,7 +1271,7 @@ function EventDetails() {
                                                                 size="sm"
                                                                 variant="ghost"
                                                                 className="h-9 w-9 rounded-xl p-0 hover:bg-rose-600 hover:text-white transition-all shadow-sm"
-                                                                onClick={() => handleDeleteGuest(guest.id)}
+                                                                onClick={() => handleDeleteGuest(guest)}
                                                             >
                                                                 <Trash2 size={16} />
                                                             </Button>
@@ -1708,13 +1739,19 @@ function EventDetails() {
                     <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowDeleteModal(false)} />
                     <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl relative animate-in zoom-in slide-in-from-bottom-8 duration-300 border border-zinc-100 dark:border-white/10">
                         <div className="p-8 md:p-10 space-y-8">
-                            <div className="space-y-4 text-center">
+                            <div className="space-y-2 text-center">
                                 <div className="w-20 h-20 bg-rose-500/10 rounded-3xl flex items-center justify-center mx-auto mb-2 border border-rose-500/20">
                                     <Trash2 className="text-rose-600 dark:text-rose-400" size={32} />
                                 </div>
                                 <div className="space-y-2">
-                                    <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">Destroy Event?</h3>
-                                    <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">This action is permanent. All guest data, RSVPs, and coordinated assignments will be purged.</p>
+                                    <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">Delete Guest?</h3>
+                                    <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                                        {guestToDelete?.isPrimary ? (
+                                            <>This will permanently remove <span className="text-zinc-900 dark:text-zinc-50 font-bold">"{guestToDelete.actualName}"</span> and all associated companions.</>
+                                        ) : (
+                                            <>Are you sure you want to remove <span className="text-zinc-900 dark:text-zinc-50 font-bold">"{guestToDelete?.actualName}"</span> from the guest list?</>
+                                        )}
+                                    </p>
                                 </div>
                             </div>
     

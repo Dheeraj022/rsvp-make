@@ -98,14 +98,33 @@ function AdminDashboard() {
             if (eventsError) throw eventsError;
 
             const eventsWithStats = await Promise.all((eventsData || []).map(async (event) => {
-                const { count: guestCount } = await supabase
+                const { data: guestsData } = await supabase
                     .from("guests")
-                    .select("*", { count: 'exact', head: true })
+                    .select("id, parent_id, attendees_data")
                     .eq("event_id", event.id);
+
+                let totalHeadcount = 0;
+                if (guestsData) {
+                    guestsData.forEach(guest => {
+                        // Count the row itself (Primary or Linked Companion)
+                        totalHeadcount += 1;
+                        
+                        // Add internal companions if they are NOT the same as the primary (to avoid double counting)
+                        if (!guest.parent_id && guest.attendees_data && Array.isArray(guest.attendees_data)) {
+                            // Only count companions who are different from the primary guest
+                            // The attendees_data usually contains names. We filter out those that are likely the primary.
+                            // However, since we already count the row, we just need to count ADDITIONAL entries.
+                            // In this app, attendees_data length usually reflects total party if RSVP'd, 
+                            // but for manual adds, it's what's in the JSON.
+                            const extraCompanions = guest.attendees_data.length - 1;
+                            if (extraCompanions > 0) totalHeadcount += extraCompanions;
+                        }
+                    });
+                }
 
                 return {
                     ...event,
-                    guest_count: guestCount || 0,
+                    guest_count: totalHeadcount,
                     hotel_count: 0,
                 };
             }));
