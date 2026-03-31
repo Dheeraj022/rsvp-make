@@ -848,6 +848,10 @@ function EventDetails() {
             });
 
             const allCompanionEntries = [...attendeeCompanions, ...linkedCompanions];
+            const totalGroupSize = 1 + allCompanionEntries.length;
+
+            const primaryEntryWithStats = { ...primaryEntry, groupSize: totalGroupSize };
+            const companionsWithStats = allCompanionEntries.map(c => ({ ...c, groupSize: totalGroupSize }));
 
             // Filter logic
             const matchesPrimary = 
@@ -861,25 +865,40 @@ function EventDetails() {
             );
 
             if (!query) {
-                result.push(primaryEntry);
-                result.push(...allCompanionEntries);
+                result.push(primaryEntryWithStats);
+                result.push(...companionsWithStats);
             } else if (matchesPrimary) {
-                result.push(primaryEntry);
-                result.push(...allCompanionEntries);
+                result.push(primaryEntryWithStats);
+                result.push(...companionsWithStats);
             } else if (matchingCompanions.length > 0) {
-                result.push(...matchingCompanions);
+                result.push(...companionsWithStats.filter(c => 
+                    matchingCompanions.some(mc => mc.uniqueKey === c.uniqueKey)
+                ));
             }
         });
 
         return result;
     }, [guests, searchQuery]);
 
-    const stats = {
-        total: guests.length,
-        accepted: guests.filter(g => g.status === "accepted").length,
-        declined: guests.filter(g => g.status === "declined").length,
-        pending: guests.filter(g => g.status === "pending").length,
-    };
+    const stats = useMemo(() => {
+        // Total primary invitation records
+        const invitationCount = guests.filter(g => !g.parent_id).length;
+
+        // Total individuals (Primary + Companions) across all invitations
+        const totalGuestsInvited = flattenedGuests.length;
+
+        const acceptedCount = flattenedGuests.filter(g => g.status === "accepted").length;
+        const declinedCount = guests.filter(g => !g.parent_id && g.status === "declined").length;
+        const pendingCount = guests.filter(g => !g.parent_id && g.status === "pending").length;
+
+        return {
+            invitations: invitationCount,
+            guests: totalGuestsInvited,
+            accepted: acceptedCount,
+            declined: declinedCount,
+            pending: pendingCount,
+        };
+    }, [guests, flattenedGuests]);
 
     const handleGuestUpdate = async () => {
         await fetchEventData(); // Refresh list
@@ -1022,9 +1041,10 @@ function EventDetails() {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
                     {[
-                        { label: "Total Invited", value: stats.total, color: "text-blue-600", bg: "bg-blue-600/10", border: "border-blue-100 dark:border-blue-900/30" },
+                        { label: "Guest Invited", value: stats.invitations, color: "text-blue-600", bg: "bg-blue-600/10", border: "border-blue-100 dark:border-blue-900/30" },
+                        { label: "Total Invited", value: stats.guests, color: "text-zinc-600", bg: "bg-zinc-600/10", border: "border-zinc-100 dark:border-zinc-900/30" },
                         { label: "Approved Guests", value: stats.accepted, color: "text-emerald-600", bg: "bg-emerald-600/10", border: "border-emerald-100 dark:border-emerald-900/30" },
                         { label: "Declined RSVPs", value: stats.declined, color: "text-rose-600", bg: "bg-rose-600/10", border: "border-rose-100 dark:border-rose-900/30" },
                         { label: "Pending Response", value: stats.pending, color: "text-amber-600", bg: "bg-amber-600/10", border: "border-amber-100 dark:border-amber-900/30" },
@@ -1185,10 +1205,12 @@ function EventDetails() {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-6">
-                                                        <div className="inline-flex items-center gap-1.5 text-zinc-900 dark:text-zinc-100">
-                                                            <Users size={14} className="text-zinc-400" />
-                                                            <span className="text-sm font-black">{guest.allowed_guests}</span>
-                                                        </div>
+                                                        {guest.isPrimary && (
+                                                            <div className="inline-flex items-center gap-1.5 text-zinc-900 dark:text-zinc-100">
+                                                                <Users size={14} className="text-zinc-400" />
+                                                                <span className="text-sm font-black">{guest.groupSize}</span>
+                                                            </div>
+                                                        )}
                                                     </td>
                                                     <td className="px-10 py-6 text-right">
                                                         <div className="flex items-center justify-end gap-2 duration-300">
@@ -1669,8 +1691,7 @@ function EventDetails() {
                                     Confirm Addition
                                 </Button>
                                 <Button 
-                                    variant="ghost" 
-                                    className="h-14 rounded-2xl px-8 font-black text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+                                    className="h-14 rounded-2xl px-8 font-black bg-red-600 text-white hover:bg-red-700 transition-all shadow-lg shadow-red-600/20"
                                     onClick={() => setShowAddGuestModal(false)}
                                 >
                                     Discard
