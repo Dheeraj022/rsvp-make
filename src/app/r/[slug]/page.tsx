@@ -885,6 +885,38 @@ export default function PublicEventPage() {
         }
     };
 
+    const resetState = () => {
+        setStep("landing");
+        setActiveSection("rsvp");
+        setTransportType("arrival");
+        setIsArrivalApplicable(null);
+        setIsDepartureApplicable(null);
+        setIsEditingRSVP(false);
+        setIsEditingTransport(false);
+        setRsvpStep(0);
+        setTransportStep(0);
+        setSearchQuery("");
+        setSearchResults([]);
+        setSelectedGuest(null);
+        setEmail("");
+        setPhone("");
+        setStatus("accepted");
+        setAttendingCount(1);
+        setAttendees([]);
+        setMessage("");
+        setDietary("");
+        setArrivalDate("");
+        setArrivalTime("");
+        setArrivalTravelers([]);
+        setDepartureDate("");
+        setDepartureTime("");
+        setDepartureTravelers([]);
+        setTransportMessage("");
+        setRsvpError("");
+        setTransportError("");
+        localStorage.removeItem(DRAFT_KEY);
+    };
+
     if (loading) {
         return <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black"><Loader2 className="animate-spin text-zinc-400" /></div>;
     }
@@ -1227,10 +1259,12 @@ export default function PublicEventPage() {
                                                                     <Label className="text-sm font-medium text-zinc-500 uppercase">Age <span className="text-red-400">*</span></Label>
                                                                     <Input
                                                                         type="number"
+                                                                        min="0"
                                                                         value={attendee.age}
                                                                         onChange={(e) => {
+                                                                            const val = e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value) || 0).toString();
                                                                             const newA = [...attendees];
-                                                                            newA[idx] = { ...newA[idx], age: e.target.value };
+                                                                            newA[idx] = { ...newA[idx], age: val };
                                                                             setAttendees(newA);
                                                                             setRsvpError("");
                                                                         }}
@@ -1696,7 +1730,10 @@ export default function PublicEventPage() {
                                     {status === 'accepted' ? "We can't wait to see you there." : "We're sorry you can't make it."}
                                 </p>
 
-                                <Button variant="outline" onClick={() => window.location.reload()}>
+                                <Button 
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-11 transition-all shadow-lg shadow-blue-500/20 font-bold" 
+                                    onClick={resetState}
+                                >
                                     Back to Event
                                 </Button>
                             </motion.div>
