@@ -747,6 +747,23 @@ function EventDetails() {
         document.body.removeChild(link);
     };
 
+    const handleDownloadTemplate = () => {
+        const template = [
+            { name: "Sample Name", phone: "91XXXXXXXXXX", email: "sample@example.com" }
+        ];
+        const csv = Papa.unparse(template);
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", "guest_import_template.csv");
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success("Template downloaded successfully!");
+    };
+
     const handleDeleteDepartureDetails = async (guestId: string) => {
         const confirmed = await toast.confirm("Delete Transport Details", "Are you sure you want to delete this guest's transport details?");
         if (!confirmed) return;
@@ -1081,6 +1098,14 @@ function EventDetails() {
                                             SEND ALL INVITES
                                         </Button>
                                     )}
+
+                                    <Button 
+                                        onClick={handleDownloadTemplate}
+                                        className="h-12 px-6 rounded-2xl bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-white/10 hover:border-blue-500/50 transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm"
+                                    >
+                                        <Download className="w-4 h-4 text-blue-500" />
+                                        TEMPLATE
+                                    </Button>
 
                                     <Button 
                                         onClick={() => setShowAddGuestModal(true)}
