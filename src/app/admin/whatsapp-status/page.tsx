@@ -3,14 +3,14 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import withRoleAuth from "@/components/admin/withRoleAuth";
-import { 
-    MessageCircle, 
-    Search, 
-    Calendar, 
-    Send, 
-    CheckCircle2, 
-    XCircle, 
-    Clock, 
+import {
+    MessageCircle,
+    Search,
+    Calendar,
+    Send,
+    CheckCircle2,
+    XCircle,
+    Clock,
     History,
     ChevronDown,
     Loader2,
@@ -133,10 +133,10 @@ function WhatsAppStatusPage() {
 
     const confirmSend = async () => {
         if (!selectedEvent || !selectedGuestForTemplate) return;
-        
+
         setSendingId(selectedGuestForTemplate.id);
         setShowTemplateModal(false);
-        
+
         try {
             const response = await fetch('/api/whatsapp/send', {
                 method: 'POST',
@@ -176,8 +176,8 @@ function WhatsAppStatusPage() {
 
     const filteredLogs = useMemo(() => {
         const query = searchQuery.toLowerCase();
-        return guestLogs.filter(log => 
-            log.name.toLowerCase().includes(query) || 
+        return guestLogs.filter(log =>
+            log.name.toLowerCase().includes(query) ||
             (log.phone && log.phone.includes(query))
         );
     }, [guestLogs, searchQuery]);
@@ -232,18 +232,18 @@ function WhatsAppStatusPage() {
                 ].map((item, i) => {
                     const Icon = item.icon;
                     return (
-                        <motion.div 
+                        <motion.div
                             key={item.label}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.1 }}
                             className="bg-white/40 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-[2.5rem] p-8 space-y-4 hover:shadow-xl transition-all relative overflow-hidden group shadow-sm"
                         >
-                            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center border", 
+                            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center border",
                                 item.color === 'blue' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                                item.color === 'green' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
-                                item.color === 'rose' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
-                                'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                    item.color === 'green' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                        item.color === 'rose' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                            'bg-amber-500/10 text-amber-500 border-amber-500/20'
                             )}>
                                 <Icon size={20} />
                             </div>
@@ -251,11 +251,11 @@ function WhatsAppStatusPage() {
                                 <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">{item.label}</p>
                                 <p className="text-4xl font-black text-zinc-900 dark:text-white mt-1">{item.value}</p>
                             </div>
-                            <div className={cn("absolute -right-4 -bottom-4 w-24 h-24 blur-3xl opacity-10 group-hover:opacity-20 transition-all", 
+                            <div className={cn("absolute -right-4 -bottom-4 w-24 h-24 blur-3xl opacity-10 group-hover:opacity-20 transition-all",
                                 item.color === 'blue' ? 'bg-blue-500' :
-                                item.color === 'green' ? 'bg-emerald-500' :
-                                item.color === 'rose' ? 'bg-rose-500' :
-                                'bg-amber-500'
+                                    item.color === 'green' ? 'bg-emerald-500' :
+                                        item.color === 'rose' ? 'bg-rose-500' :
+                                            'bg-amber-500'
                             )} />
                         </motion.div>
                     );
@@ -272,13 +272,13 @@ function WhatsAppStatusPage() {
                         </div>
                     </div>
                 )}
-                
+
                 <div className="p-8 border-b border-zinc-100 dark:border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-1">
                         <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Guest Communication Logs</h2>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Tracking {guestLogs.length} total invitees</p>
                     </div>
-                    
+
                     <div className="relative w-full md:w-80 group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-blue-500 transition-colors" />
                         <Input
@@ -339,10 +339,10 @@ function WhatsAppStatusPage() {
                                         </td>
                                         <td className="px-10 py-5">
                                             <div className="flex flex-col gap-1.5">
-                                                <span className={cn("inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter w-fit", 
+                                                <span className={cn("inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter w-fit",
                                                     log.last_status === 'Sent' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20' :
-                                                    log.last_status === 'Failed' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' :
-                                                    'bg-zinc-100 dark:bg-white/5 text-zinc-500 border border-zinc-200 dark:border-white/10'
+                                                        log.last_status === 'Failed' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' :
+                                                            'bg-zinc-100 dark:bg-white/5 text-zinc-500 border border-zinc-200 dark:border-white/10'
                                                 )}>
                                                     {log.last_status === 'Sent' && <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />}
                                                     {log.last_status}
@@ -356,9 +356,9 @@ function WhatsAppStatusPage() {
                                         </td>
                                         <td className="px-8 py-5 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="sm" 
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
                                                     className="h-10 px-4 rounded-xl text-emerald-600 hover:bg-emerald-600 hover:text-white font-bold border border-transparent hover:border-emerald-500/20 transition-all active:scale-95 shadow-sm disabled:opacity-50"
                                                     onClick={() => handleSendClick(log)}
                                                     disabled={sendingId === log.id}
@@ -370,9 +370,9 @@ function WhatsAppStatusPage() {
                                                     )}
                                                     Send
                                                 </Button>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="sm" 
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
                                                     className="h-10 px-4 rounded-xl text-blue-500 hover:bg-blue-600 hover:text-white font-bold border border-transparent hover:border-blue-500/20 transition-all active:scale-95 shadow-sm"
                                                     onClick={() => fetchHistory(log)}
                                                 >
@@ -393,14 +393,14 @@ function WhatsAppStatusPage() {
             <AnimatePresence>
                 {historyGuest && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             className="absolute inset-0 bg-zinc-950/60 dark:bg-black/80 backdrop-blur-md"
                             onClick={() => setHistoryGuest(null)}
                         />
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -417,10 +417,10 @@ function WhatsAppStatusPage() {
                                         <p className="text-zinc-500 font-bold font-mono text-sm tracking-widest uppercase">{historyGuest.phone}</p>
                                     </div>
                                 </div>
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    onClick={() => setHistoryGuest(null)} 
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setHistoryGuest(null)}
                                     className="rounded-2xl hover:bg-zinc-100 dark:hover:bg-white/5"
                                 >
                                     <X className="w-5 h-5 text-zinc-400" />
@@ -445,12 +445,12 @@ function WhatsAppStatusPage() {
                                     ) : (
                                         <div className="space-y-4">
                                             {historyLogs.map((log) => (
-                                                <div 
-                                                    key={log.id} 
+                                                <div
+                                                    key={log.id}
                                                     className="p-6 rounded-[2rem] bg-zinc-50/50 dark:bg-zinc-950 border border-zinc-100 dark:border-white/5 flex items-center justify-between group hover:border-blue-500/20 transition-all shadow-sm"
                                                 >
                                                     <div className="flex items-center gap-5">
-                                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border", 
+                                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border",
                                                             log.status === 'Sent' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
                                                         )}>
                                                             {log.status === 'Sent' ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
@@ -462,7 +462,7 @@ function WhatsAppStatusPage() {
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <div className={cn("px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border", 
+                                                    <div className={cn("px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border",
                                                         log.status === 'Sent' ? 'border-emerald-500/20 text-emerald-600 bg-emerald-500/5' : 'border-rose-500/20 text-rose-600 bg-rose-500/5'
                                                     )}>
                                                         {log.status}
@@ -476,7 +476,7 @@ function WhatsAppStatusPage() {
 
                             {/* Modal Footer */}
                             <div className="p-8 md:p-10 border-t border-zinc-100 dark:border-white/5 bg-zinc-50/30 dark:bg-zinc-950/30">
-                                <Button 
+                                <Button
                                     className="w-full h-16 rounded-[1.5rem] bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-black text-sm uppercase tracking-[0.25em] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-zinc-900/10 dark:shadow-white/5"
                                     onClick={() => setHistoryGuest(null)}
                                 >
@@ -492,14 +492,14 @@ function WhatsAppStatusPage() {
             <AnimatePresence>
                 {showTemplateModal && selectedGuestForTemplate && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             className="absolute inset-0 bg-zinc-950/60 dark:bg-black/80 backdrop-blur-md"
                             onClick={() => setShowTemplateModal(false)}
                         />
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -515,10 +515,10 @@ function WhatsAppStatusPage() {
                                         <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest leading-none">For {selectedGuestForTemplate.name}</p>
                                     </div>
                                 </div>
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    onClick={() => setShowTemplateModal(false)} 
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setShowTemplateModal(false)}
                                     className="rounded-xl hover:bg-zinc-100 dark:hover:bg-white/5"
                                 >
                                     <X className="w-5 h-5 text-zinc-400" />
@@ -539,16 +539,16 @@ function WhatsAppStatusPage() {
                                                 onClick={() => setSelectedTemplateType(template.id)}
                                                 className={cn(
                                                     "flex items-center gap-4 p-5 rounded-2xl border transition-all text-left group",
-                                                    isSelected 
-                                                        ? "bg-blue-500/5 border-blue-500 ring-1 ring-blue-500" 
+                                                    isSelected
+                                                        ? "bg-blue-500/5 border-blue-500 ring-1 ring-blue-500"
                                                         : "bg-zinc-50 dark:bg-zinc-950/20 border-zinc-100 dark:border-white/5 hover:border-zinc-300 dark:hover:border-white/10"
                                                 )}
                                             >
                                                 <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border",
                                                     template.color === 'blue' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                                                    template.color === 'amber' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                                                    template.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
-                                                    'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                                                        template.color === 'amber' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                                            template.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                                                'bg-rose-500/10 text-rose-500 border-rose-500/20'
                                                 )}>
                                                     <TIcon size={18} />
                                                 </div>
@@ -568,7 +568,7 @@ function WhatsAppStatusPage() {
                             </div>
 
                             <div className="p-8 border-t border-zinc-100 dark:border-white/5 bg-zinc-50/50 dark:bg-zinc-950/30">
-                                <Button 
+                                <Button
                                     className="w-full h-16 rounded-2xl bg-zinc-900 dark:bg-blue-500 text-white font-black text-sm uppercase tracking-[0.2em] shadow-xl hover:opacity-90 transition-all flex items-center justify-center gap-3"
                                     onClick={confirmSend}
                                 >
