@@ -34,7 +34,10 @@ export async function POST(request) {
             eventDate: formattedDate,
             eventLocation: event.location,
             rsvpLink: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/r/${event.slug}`,
-            campaignName: campaignName
+            campaignName: campaignName,
+            eventId: event.id,
+            guestId: guest.id,
+            messageType: 'RSVP Confirm'
         });
 
         if (!result.success) {

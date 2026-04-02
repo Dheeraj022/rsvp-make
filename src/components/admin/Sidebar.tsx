@@ -12,6 +12,7 @@ import {
     Settings,
     Menu,
     X,
+    MessageCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -22,6 +23,7 @@ const menuItems = [
     { name: "Events", href: "/admin/events", icon: Calendar },
     { name: "Hotels", href: "/admin/hotels", icon: Hotel },
     { name: "Coordinators", href: "/admin/coordinators", icon: UserCog },
+    { name: "WhatsApp Status", href: "/admin/whatsapp-status", icon: MessageCircle },
     { name: "Team Management", href: "/admin/team", icon: Users, adminOnly: true },
     { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
