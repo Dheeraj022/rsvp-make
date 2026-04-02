@@ -18,10 +18,10 @@ import {
     UserPlus, 
     Eye,
     Copy,
+    Link as LinkIcon,
     Hotel,
     MapPin,
     Users,
-    ChevronDown,
     Check,
     Pencil,
     X,
@@ -30,7 +30,8 @@ import {
     SmartphoneNfc,
     SmartphoneCharging,
     MessageSquare,
-    MessageSquareOff
+    MessageSquareOff,
+    CheckCircle2
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -162,6 +163,8 @@ function EventDetails() {
     const [sendingAllWhatsApp, setSendingAllWhatsApp] = useState(false);
     const [showNameUpdateModal, setShowNameUpdateModal] = useState(false);
     const [nameUpdatePassword, setNameUpdatePassword] = useState("");
+    const [isCopyingRsvp, setIsCopyingRsvp] = useState(false);
+    const [isCopyingInvite, setIsCopyingInvite] = useState(false);
 
     const eventId = params.id as string;
 
@@ -1009,12 +1012,29 @@ function EventDetails() {
                             onClick={() => {
                                 const url = `${window.location.origin}/r/${event?.slug}`;
                                 navigator.clipboard.writeText(url);
-                                toast.success("Invite link copied to clipboard!");
+                                setIsCopyingInvite(true);
+                                toast.success("Invite link copied!");
+                                setTimeout(() => setIsCopyingInvite(false), 2000);
                             }}
                         >
-                            <Copy className="h-4 w-4" />
-                            <span className="hidden sm:inline">Copy Invite Link</span>
-                            <span className="sm:hidden">Share</span>
+                            {isCopyingInvite ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            <span className="hidden sm:inline">{isCopyingInvite ? 'Copied' : 'Copy Invite Link'}</span>
+                            <span className="sm:hidden">{isCopyingInvite ? 'Done' : 'Share'}</span>
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="bg-white/50 dark:bg-zinc-900/40 border-indigo-200 dark:border-indigo-500/20 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 dark:hover:text-white transition-all shadow-sm"
+                            onClick={() => {
+                                const url = `${window.location.origin}/confirm?event_id=${event?.id}`;
+                                navigator.clipboard.writeText(url);
+                                setIsCopyingRsvp(true);
+                                toast.success("RSVP link copied!");
+                                setTimeout(() => setIsCopyingRsvp(false), 2000);
+                            }}
+                        >
+                            {isCopyingRsvp ? <CheckCircle2 className="h-4 w-4" /> : <LinkIcon className="h-4 w-4" />}
+                            <span className="hidden sm:inline">{isCopyingRsvp ? 'Copied' : 'Copy RSVP Link'}</span>
+                            <span className="sm:hidden">{isCopyingRsvp ? 'Done' : 'RSVP'}</span>
                         </Button>
                         <Button
                             variant="outline"
