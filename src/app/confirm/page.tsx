@@ -409,7 +409,7 @@ function ConfirmPageContent() {
                             {/* Footer Actions */}
                             <div className="p-8 md:p-12 border-t border-zinc-100 bg-zinc-50/50 space-y-6">
                                 {error && (
-                                    <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 text-[11px] font-black text-center uppercase tracking-widest animate-shake shadow-sm">
+                                    <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 text-[11px] font-black text-center uppercase tracking-widest animate-shake shadow-sm">
                                         Error: {error}
                                     </div>
                                 )}
@@ -424,8 +424,8 @@ function ConfirmPageContent() {
                                     </Button>
                                     <Button 
                                         type="button"
-                                        variant="ghost"
-                                        className="px-10 h-18 rounded-3xl text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 font-black uppercase text-[10px] tracking-[0.2em] transition-all"
+                                        variant="outline"
+                                        className="px-10 h-18 rounded-3xl text-zinc-500 hover:text-zinc-900 bg-white hover:bg-zinc-50 border-zinc-200 font-bold uppercase text-[10px] tracking-[0.2em] transition-all"
                                         onClick={() => handleConfirm('not_attending')}
                                         disabled={confirming}
                                     >
@@ -573,8 +573,7 @@ function ConfirmPageContent() {
                             </div>
 
                             <Button 
-                                variant="outline" 
-                                className="h-16 rounded-3xl border-zinc-200 text-zinc-900 hover:text-zinc-900 hover:bg-zinc-100 hover:border-zinc-300 font-black px-12 tracking-[0.2em] transition-all shadow-sm flex items-center justify-center mx-auto uppercase text-xs"
+                                className="h-16 rounded-3xl bg-zinc-900 text-white hover:bg-zinc-800 font-black px-12 tracking-[0.2em] transition-all shadow-xl shadow-zinc-900/20 flex items-center justify-center mx-auto uppercase text-xs border-none"
                                 onClick={() => {
                                     if (typeof window !== 'undefined') {
                                         window.close();
