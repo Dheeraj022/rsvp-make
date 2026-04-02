@@ -192,7 +192,7 @@ function ConfirmPageContent() {
                                             type="tel"
                                             placeholder="Registered Mobile Number"
                                             value={phone}
-                                            onChange={(e) => setPhone(e.target.value)}
+                                            onChange={(e) => setPhone(e.target.value.replace(/[^0-9+]/g, ''))}
                                             className="h-16 pl-14 border-none bg-transparent text-xl font-black placeholder:text-zinc-300 placeholder:font-bold focus-visible:ring-0 text-zinc-900"
                                             required
                                         />
