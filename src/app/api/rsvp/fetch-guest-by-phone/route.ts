@@ -7,18 +7,33 @@ import { supabase } from '@/lib/supabase';
  */
 export async function POST(request: Request) {
     try {
-        const { phone, event_id } = await request.json();
+        const { phone, event_id, slug } = await request.json();
 
-        if (!phone || !event_id) {
-            return NextResponse.json({ error: "Phone number and Event ID are required" }, { status: 400 });
+        if (!phone || (!event_id && !slug)) {
+            return NextResponse.json({ error: "Phone number and Event ID/Slug are required" }, { status: 400 });
         }
 
-        // 1. Fetch Guest by phone and event_id
-        // We look for a guest where the phone matches (canonicalizing phone might be needed, but we'll use exact match for now)
+        // 1. Fetch Event Details first to get the actual event_id
+        let query = supabase.from('events').select('*');
+        if (slug) {
+            query = query.eq('slug', slug);
+        } else {
+            query = query.eq('id', event_id);
+        }
+        
+        const { data: event, error: eventError } = await query.single();
+
+        if (eventError || !event) {
+            return NextResponse.json({ error: "Invalid event link." }, { status: 404 });
+        }
+
+        const actual_event_id = event.id;
+
+        // 2. Fetch Guest by phone and actual_event_id
         const { data: guests, error: guestsError } = await supabase
             .from('guests')
             .select('*')
-            .eq('event_id', event_id)
+            .eq('event_id', actual_event_id)
             .eq('phone', phone);
 
         if (guestsError) throw guestsError;
@@ -27,17 +42,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "No guest found with this phone number for this event." }, { status: 404 });
         }
 
-        // Take the first matching guest (though phone+event_id should ideally be unique)
         const guest = guests[0];
-
-        // 2. Fetch Event Details
-        const { data: event, error: eventError } = await supabase
-            .from('events')
-            .select('*')
-            .eq('id', event_id)
-            .single();
-
-        if (eventError) throw eventError;
 
         // 3. Prepare response data
         const responseData = {

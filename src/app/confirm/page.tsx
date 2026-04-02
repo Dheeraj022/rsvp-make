@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { 
     Phone, 
     ArrowRight, 
@@ -50,9 +50,11 @@ type Event = {
 
 function ConfirmPageContent() {
     const searchParams = useSearchParams();
+    const params = useParams();
     const router = useRouter();
     const toast = useToast();
     const event_id = searchParams.get('event_id');
+    const slug = params?.slug as string | undefined;
 
     const [step, setStep] = useState(1);
     const [phone, setPhone] = useState("");
@@ -66,7 +68,7 @@ function ConfirmPageContent() {
 
     const handleFetchDetails = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!phone || !event_id) return;
+        if (!phone || (!event_id && !slug)) return;
 
         setIsLoading(true);
         setError(null);
@@ -75,7 +77,7 @@ function ConfirmPageContent() {
             const response = await fetch('/api/rsvp/fetch-guest-by-phone', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, event_id })
+                body: JSON.stringify({ phone, event_id, slug })
             });
 
             const data = await response.json();
@@ -143,7 +145,7 @@ function ConfirmPageContent() {
         }
     };
 
-    if (!event_id) {
+    if (!event_id && !slug) {
         return (
             <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-50/50 via-zinc-50 to-zinc-50">
                 <div className="text-center space-y-6 max-w-md w-full">

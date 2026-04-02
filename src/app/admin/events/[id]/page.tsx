@@ -1026,7 +1026,7 @@ function EventDetails() {
                             variant="outline"
                             className="bg-white/50 dark:bg-zinc-900/40 border-indigo-200 dark:border-indigo-500/20 rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 dark:hover:text-white transition-all shadow-sm"
                             onClick={() => {
-                                const url = `${window.location.origin}/confirm?event_id=${event?.id}`;
+                                const url = `${window.location.origin}/confirm/${event?.slug}`;
                                 navigator.clipboard.writeText(url);
                                 setIsCopyingRsvp(true);
                                 toast.success("RSVP link copied!");
