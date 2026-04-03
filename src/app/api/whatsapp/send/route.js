@@ -21,6 +21,7 @@ export async function POST(request) {
         const campaignMaps = {
             'Invite': process.env.AISENSY_INVITE_CAMPAIGN || "GUEST_INVITE",
             'Reminder': process.env.AISENSY_REMINDER_CAMPAIGN || "rsvp_reminder",
+            'Thank You': process.env.AISENSY_THANKYOU_CAMPAIGN || "thankyou_template",
             'Arrival': process.env.AISENSY_ARRIVAL_CAMPAIGN || "GUEST_ARRIVAL",
             'Departure': process.env.AISENSY_DEPARTURE_CAMPAIGN || "GUEST_DEPARTURE",
             'RSVP Confirm': process.env.AISENSY_CONFIRM_CAMPAIGN || "RSVP_CONFIRM"

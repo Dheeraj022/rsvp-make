@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { sendWhatsAppMessage } from '@/services/whatsappService';
+import { format } from 'date-fns';
 
 /**
  * POST /api/rsvp/confirm-attendance
@@ -45,6 +47,66 @@ export async function POST(request: Request) {
             
         if (guestUpdateError) {
             console.error("Warning: Failed to update guest status in primary table:", guestUpdateError);
+        }
+
+        // 3. Send Thank You WhatsApp Message
+        try {
+            // Check if thank you message already sent
+            const { data: existingLog } = await supabase
+                .from('whatsapp_logs')
+                .select('id')
+                .eq('event_id', event_id)
+                .eq('guest_id', guest_id)
+                .eq('message_type', 'thank_you')
+                .maybeSingle();
+
+            if (!existingLog) {
+                // Fetch event and guest details
+                const { data: eventDetails } = await supabase
+                    .from('events')
+                    .select('name, date, location, slug')
+                    .eq('id', event_id)
+                    .single();
+                
+                const { data: guestDetails } = await supabase
+                    .from('guests')
+                    .select('name')
+                    .eq('id', guest_id)
+                    .single();
+
+                if (eventDetails && guestDetails) {
+                    const formattedDate = eventDetails.date ? format(new Date(eventDetails.date), "MMMM d, yyyy") : "";
+                    const rsvpLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/confirm/${eventDetails.slug}`;
+
+                    // Send WhatsApp message (omitting messageType to skip service's internal log format)
+                    const result = await sendWhatsAppMessage({
+                        phoneNumber: phone,
+                        guestName: guestDetails.name,
+                        eventName: eventDetails.name,
+                        eventDate: formattedDate,
+                        eventLocation: eventDetails.location,
+                        rsvpLink: rsvpLink,
+                        campaignName: process.env.AISENSY_THANKYOU_CAMPAIGN || 'thankyou_template',
+                        eventId: event_id,
+                        guestId: guest_id,
+                        messageType: undefined
+                    });
+
+                    if (result?.success || result?.success === true) {
+                        // Insert log entry explicitly as requested
+                        await supabase.from('whatsapp_logs').insert([{
+                            event_id: event_id,
+                            guest_id: guest_id,
+                            phone: phone,
+                            message_type: 'thank_you',
+                            status: 'sent',
+                            sent_at: new Date().toISOString()
+                        }]);
+                    }
+                }
+            }
+        } catch (thankYouError) {
+            console.error("Failed to process Thank You message:", thankYouError);
         }
 
         return NextResponse.json({
