@@ -93,20 +93,20 @@ function CoordinatorDashboard() {
     const [newGuestName, setNewGuestName] = useState("");
     const [newGuestPhone, setNewGuestPhone] = useState("");
     const [newGuestEmail, setNewGuestEmail] = useState("");
-    
+
     // Transport for new guest
     const [arrDate, setArrDate] = useState("");
     const [arrTime, setArrTime] = useState("");
     const [arrMode, setArrMode] = useState("Flight");
     const [arrTransportNo, setArrTransportNo] = useState("");
     const [arrStation, setArrStation] = useState("");
-    
+
     const [depDate, setDepDate] = useState("");
     const [depTime, setDepTime] = useState("");
     const [depMode, setDepMode] = useState("Flight");
     const [depTransportNo, setDepTransportNo] = useState("");
     const [depStation, setDepStation] = useState("");
-    
+
     // Primary Guest Linking
     const [selectedPrimaryGuestId, setSelectedPrimaryGuestId] = useState<string | null>(null);
 
@@ -114,9 +114,9 @@ function CoordinatorDashboard() {
     const [expandedSections, setExpandedSections] = useState<string[]>([]);
 
     const toggleSection = (section: string) => {
-        setExpandedSections(prev => 
-            prev.includes(section) 
-                ? prev.filter(s => s !== section) 
+        setExpandedSections(prev =>
+            prev.includes(section)
+                ? prev.filter(s => s !== section)
                 : [...prev, section]
         );
     };
@@ -163,7 +163,7 @@ function CoordinatorDashboard() {
             };
 
             // 2. Prepare Companion Entries (both attendees_data AND linked separately)
-            
+
             // 2a. Internal attendees_data companions
             const attendeeCompanions = (guest.attendees_data || []).map((m: any, i) => {
                 if (m.name === guest.name) return null;
@@ -206,12 +206,12 @@ function CoordinatorDashboard() {
             const allCompanionEntries = [...attendeeCompanions, ...linkedCompanions];
 
             // 3. Filter based on query
-            const matchesPrimary = 
+            const matchesPrimary =
                 primaryEntry.name.toLowerCase().includes(query) ||
                 primaryEntry.phone?.toLowerCase().includes(query) ||
                 primaryEntry.seat_number?.toLowerCase().includes(query);
 
-            const matchingCompanions = allCompanionEntries.filter(c => 
+            const matchingCompanions = allCompanionEntries.filter(c =>
                 c.actualName.toLowerCase().includes(query) ||
                 c.phone?.toLowerCase().includes(query)
             );
@@ -241,7 +241,7 @@ function CoordinatorDashboard() {
         guests.forEach(g => {
             const arrDriver = g.departure_details?.arrival?.driver;
             const depDriver = g.departure_details?.departure?.driver;
-            
+
             if (arrDriver?.name) {
                 driversMap.set(`${arrDriver.name}-${arrDriver.phone}`, { name: arrDriver.name, phone: arrDriver.phone });
             }
@@ -443,7 +443,7 @@ function CoordinatorDashboard() {
             const currentDetails = selectedGuestForDriver.departure_details || {};
             const updatedDetails = { ...currentDetails };
             const updatedAttendees = [...(selectedGuestForDriver.attendees_data || [])];
-            
+
             if (driverType === 'arrival') {
                 updatedDetails.arrival = {
                     ...(updatedDetails.arrival || {}),
@@ -482,7 +482,7 @@ function CoordinatorDashboard() {
 
             const { error } = await supabase
                 .from("guests")
-                .update({ 
+                .update({
                     departure_details: updatedDetails,
                     attendees_data: updatedAttendees
                 })
@@ -509,8 +509,8 @@ function CoordinatorDashboard() {
         if (!confirmed) return;
 
         try {
-            const driver = driverType === 'arrival' 
-                ? guest.departure_details?.arrival?.driver 
+            const driver = driverType === 'arrival'
+                ? guest.departure_details?.arrival?.driver
                 : guest.departure_details?.departure?.driver;
 
             if (!guest.phone) {
@@ -614,7 +614,7 @@ function CoordinatorDashboard() {
 
     const handleRemoveNote = async () => {
         if (!selectedGuestForNote) return;
-        
+
         // Ask for confirmation
         const confirmed = await toast.confirm("Remove Note", "Are you sure you want to remove this note?");
         if (!confirmed) return;
@@ -674,11 +674,11 @@ function CoordinatorDashboard() {
     const openDriverModal = (guest: Guest, type: 'arrival' | 'departure') => {
         setSelectedGuestForDriver(guest);
         setDriverType(type);
-        
-        const driver = type === 'arrival' 
-            ? guest.departure_details?.arrival?.driver 
+
+        const driver = type === 'arrival'
+            ? guest.departure_details?.arrival?.driver
             : guest.departure_details?.departure?.driver;
-            
+
         setDriverName(driver?.name || "");
         setDriverPhone(driver?.phone || "");
         setDriverVehicle(driver?.vehicle_number || "");
@@ -757,7 +757,7 @@ function CoordinatorDashboard() {
         setIsAddingGuest(true);
         try {
             let finalEventId = coordinator?.event_id;
-            
+
             // If coordinator has no explicit event_id, try to pull from existing guests
             if (!finalEventId && guests.length > 0) {
                 finalEventId = guests[0].event_id;
@@ -822,7 +822,7 @@ function CoordinatorDashboard() {
 
             toast.success("Guest added successfully!");
             setIsAddGuestModalOpen(false);
-            
+
             // Reset state
             setNewGuestName("");
             setNewGuestPhone("");
@@ -837,7 +837,7 @@ function CoordinatorDashboard() {
             setDepStation("");
             setSelectedPrimaryGuestId(null);
             setExpandedSections([]);
-            
+
             fetchCoordinatorAndGuests();
         } catch (error: any) {
             console.error("Error adding guest:", error);
@@ -1140,7 +1140,7 @@ function CoordinatorDashboard() {
                                     </>
                                 )}
                             </div>
-                            
+
                             {/* Event Information Section */}
                             <div className="px-8 py-6 bg-white dark:bg-zinc-900 flex flex-wrap items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-800">
                                 <div className="flex flex-col">
@@ -1221,7 +1221,7 @@ function CoordinatorDashboard() {
                                                                                 </a>
                                                                             )}
                                                                             {person.isPrimary && person.seat_number && <span className="text-[10px] font-black text-zinc-400 uppercase">Seat: {person.seat_number}</span>}
-                                                                            <button 
+                                                                            <button
                                                                                 onClick={() => openNoteModal(person, 'arrival')}
                                                                                 className={cn(
                                                                                     "text-[10px] font-bold flex items-center gap-1 transition-colors px-2 py-0.5 rounded cursor-pointer ml-auto",
@@ -1259,7 +1259,7 @@ function CoordinatorDashboard() {
                                                                                         <div className="flex flex-col">
                                                                                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter leading-none mb-1">Transport</span>
                                                                                             <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                                                                                                {person.departure_details.arrival.travelers[0].transport_number || "No Ref."} 
+                                                                                                {person.departure_details.arrival.travelers[0].transport_number || "No Ref."}
                                                                                                 <span className="text-zinc-400 ml-1">({person.departure_details.arrival.travelers[0].station_airport || "No Station"})</span>
                                                                                             </span>
                                                                                         </div>
@@ -1282,7 +1282,7 @@ function CoordinatorDashboard() {
                                                                             )}
                                                                             {/* Driver Info in Arrival Details */}
                                                                             <div className="pt-2 mt-2 border-t border-blue-100/50 dark:border-blue-900/10">
-                                                                                <button 
+                                                                                <button
                                                                                     onClick={() => openDriverModal(person, 'arrival')}
                                                                                     className="flex items-center gap-2 group/driver w-full text-left outline-none"
                                                                                 >
@@ -1302,7 +1302,7 @@ function CoordinatorDashboard() {
                                                                                     </div>
                                                                                 </button>
                                                                                 {person.departure_details?.arrival?.driver?.name && (
-                                                                                    <button 
+                                                                                    <button
                                                                                         onClick={(e) => { e.stopPropagation(); handleSendDriverNotification(person, 'arrival'); }}
                                                                                         className="w-full mt-2 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
                                                                                     >
@@ -1328,8 +1328,8 @@ function CoordinatorDashboard() {
                                                                 </td>
                                                                 <td className="px-10 py-10">
                                                                     <Button
-                                                                        onClick={() => person.isPrimary 
-                                                                            ? handleCheckIn(person.id, person.check_in_status) 
+                                                                        onClick={() => person.isPrimary
+                                                                            ? handleCheckIn(person.id, person.check_in_status)
                                                                             : handleSubMemberCheckIn(person.id, person.companionIndex, person.checked_in)
                                                                         }
                                                                         className={cn(
@@ -1381,7 +1381,7 @@ function CoordinatorDashboard() {
                                                                         {person.phone}
                                                                     </a>
                                                                 )}
-                                                                <button 
+                                                                <button
                                                                     onClick={() => openNoteModal(person, 'arrival')}
                                                                     className={cn(
                                                                         "text-[10px] font-bold flex items-center gap-1 transition-colors px-2 py-0.5 rounded cursor-pointer",
@@ -1415,11 +1415,11 @@ function CoordinatorDashboard() {
                                                                             <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter block">
                                                                                 {person.departure_details.arrival.travelers[0].mode_of_travel || "Transport"}
                                                                             </span>
-                                                                                <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
-                                                                                    <Navigation size={10} className="text-blue-500" />
-                                                                                    {person.departure_details.arrival.travelers[0].transport_number || "No Ref."}
-                                                                                    <span className="text-zinc-400 font-normal ml-1">({person.departure_details.arrival.travelers[0].station_airport || "No Station"})</span>
-                                                                                </p>
+                                                                            <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                                                                                <Navigation size={10} className="text-blue-500" />
+                                                                                {person.departure_details.arrival.travelers[0].transport_number || "No Ref."}
+                                                                                <span className="text-zinc-400 font-normal ml-1">({person.departure_details.arrival.travelers[0].station_airport || "No Station"})</span>
+                                                                            </p>
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -1434,7 +1434,7 @@ function CoordinatorDashboard() {
                                                                 )}
                                                                 {/* Mobile Driver Display */}
                                                                 <div className="mt-3 pt-3 border-t border-blue-100/50 dark:border-blue-900/20">
-                                                                    <button 
+                                                                    <button
                                                                         onClick={() => openDriverModal(person, 'arrival')}
                                                                         className="w-full flex items-center justify-between p-2 rounded-xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-900/20 outline-none"
                                                                     >
@@ -1454,7 +1454,7 @@ function CoordinatorDashboard() {
                                                                         </p>
                                                                     </button>
                                                                     {person.departure_details?.arrival?.driver?.name && (
-                                                                        <button 
+                                                                        <button
                                                                             onClick={(e) => { e.stopPropagation(); handleSendDriverNotification(person, 'arrival'); }}
                                                                             className="w-full mt-2 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
                                                                         >
@@ -1467,8 +1467,8 @@ function CoordinatorDashboard() {
 
                                                         <div className="flex items-center gap-3">
                                                             <Button
-                                                                onClick={() => person.isPrimary 
-                                                                    ? handleCheckIn(person.id, person.check_in_status) 
+                                                                onClick={() => person.isPrimary
+                                                                    ? handleCheckIn(person.id, person.check_in_status)
                                                                     : handleSubMemberCheckIn(person.id, person.companionIndex, person.checked_in)
                                                                 }
                                                                 className={cn(
@@ -1531,7 +1531,7 @@ function CoordinatorDashboard() {
                                                                                     {person.phone}
                                                                                 </a>
                                                                             )}
-                                                                            <button 
+                                                                            <button
                                                                                 onClick={() => openNoteModal(person, 'departure')}
                                                                                 className={cn(
                                                                                     "text-[10px] font-bold flex items-center gap-1 transition-colors px-2 py-0.5 rounded cursor-pointer ml-auto",
@@ -1581,7 +1581,7 @@ function CoordinatorDashboard() {
                                                                                         <div className="flex flex-col">
                                                                                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter leading-none mb-1">Ref.</span>
                                                                                             <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                                                                                                {person.departure_details.departure.travelers[0].transport_number || "No Ref."} 
+                                                                                                {person.departure_details.departure.travelers[0].transport_number || "No Ref."}
                                                                                                 <span className="text-zinc-400 ml-1">({person.departure_details.departure.travelers[0].station_airport || "No Station"})</span>
                                                                                             </span>
                                                                                         </div>
@@ -1590,8 +1590,8 @@ function CoordinatorDashboard() {
                                                                             )}
                                                                             {/* Driver Info in Departure Details */}
                                                                             <div className="pt-2 mt-2 border-t border-orange-100/50 dark:border-orange-900/10">
-                                                                                <button 
-                                                                                     onClick={() => openDriverModal(person, 'departure')}
+                                                                                <button
+                                                                                    onClick={() => openDriverModal(person, 'departure')}
                                                                                     className="flex items-center gap-2 group/driver w-full text-left outline-none"
                                                                                 >
                                                                                     <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 shrink-0 group-hover/driver:bg-indigo-100 transition-colors">
@@ -1610,7 +1610,7 @@ function CoordinatorDashboard() {
                                                                                     </div>
                                                                                 </button>
                                                                                 {person.departure_details?.departure?.driver?.name && (
-                                                                                    <button 
+                                                                                    <button
                                                                                         onClick={(e) => { e.stopPropagation(); handleSendDriverNotification(person, 'departure'); }}
                                                                                         className="w-full mt-2 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
                                                                                     >
@@ -1636,7 +1636,7 @@ function CoordinatorDashboard() {
                                                                 </td>
                                                                 <td className="px-8 py-8 text-center min-w-[160px]">
                                                                     <Button
-                                                                        onClick={() => person.isPrimary 
+                                                                        onClick={() => person.isPrimary
                                                                             ? handleDepartureCheckIn(person.id, person.departure_status)
                                                                             : handleSubMemberDeparture(person.id, person.companionIndex, person.departed)
                                                                         }
@@ -1683,7 +1683,7 @@ function CoordinatorDashboard() {
                                                                         Primary: {person.displayName}
                                                                     </span>
                                                                 )}
-                                                                <button 
+                                                                <button
                                                                     onClick={() => openNoteModal(person, 'departure')}
                                                                     className={cn(
                                                                         "text-[10px] font-bold flex items-center gap-1 transition-colors px-2 py-0.5 rounded cursor-pointer",
@@ -1726,7 +1726,7 @@ function CoordinatorDashboard() {
                                                                 </div>
                                                                 {/* Mobile Driver Display for Departure */}
                                                                 <div className="mt-3 pt-3 border-t border-orange-100/50 dark:border-orange-900/20">
-                                                                    <button 
+                                                                    <button
                                                                         onClick={() => openDriverModal(person, 'departure')}
                                                                         className="w-full flex items-center justify-between p-2 rounded-xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-900/20"
                                                                     >
@@ -1744,7 +1744,7 @@ function CoordinatorDashboard() {
                                                                         <span className="text-[10px] font-bold text-indigo-600">Assign +</span>
                                                                     </button>
                                                                     {person.departure_details?.departure?.driver?.name && (
-                                                                        <button 
+                                                                        <button
                                                                             onClick={(e) => { e.stopPropagation(); handleSendDriverNotification(person, 'departure'); }}
                                                                             className="w-full mt-2 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
                                                                         >
@@ -1756,7 +1756,7 @@ function CoordinatorDashboard() {
                                                         )}
 
                                                         <Button
-                                                            onClick={() => person.isPrimary 
+                                                            onClick={() => person.isPrimary
                                                                 ? handleDepartureCheckIn(person.id, person.departure_status)
                                                                 : handleSubMemberDeparture(person.id, person.companionIndex, person.departed)
                                                             }
@@ -1794,7 +1794,7 @@ function CoordinatorDashboard() {
                                         <p className="text-sm text-zinc-500 font-medium">{selectedGuestForDriver.actualName || selectedGuestForDriver.name}</p>
                                     </div>
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => setIsDriverModalOpen(false)}
                                     className="w-10 h-10 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center text-zinc-400 transition-colors"
                                 >
@@ -1802,7 +1802,7 @@ function CoordinatorDashboard() {
                                 </button>
                             </div>
 
-                             <form onSubmit={handleUpdateDriver} className="space-y-6">
+                            <form onSubmit={handleUpdateDriver} className="space-y-6">
                                 {/* Assignment Toggle */}
                                 {selectedGuestForDriver.attendees_data && selectedGuestForDriver.attendees_data.length > 0 && (
                                     <div className="p-4 bg-zinc-50 dark:bg-black/20 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-3">
@@ -1882,13 +1882,13 @@ function CoordinatorDashboard() {
                                     </div>
                                 </div>
 
-                                { /* Individual Companion Inputs */ }
+                                { /* Individual Companion Inputs */}
                                 {!assignSameDriver && selectedGuestForDriver.attendees_data?.map((m: any, idx: number) => (
                                     m.name === selectedGuestForDriver.name ? null : (
                                         <div key={idx} className="space-y-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
                                             <div className="flex items-center justify-between px-1">
                                                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest italic">Driver for {m.name}</label>
-                                                <button 
+                                                <button
                                                     type="button"
                                                     onClick={() => {
                                                         setCompanionDrivers(prev => ({
@@ -1911,9 +1911,9 @@ function CoordinatorDashboard() {
                                                         const found = availableDrivers.find(d => d.name === val);
                                                         setCompanionDrivers(prev => ({
                                                             ...prev,
-                                                            [idx]: { 
-                                                                name: val, 
-                                                                phone: found ? found.phone : (prev[idx]?.phone || "") 
+                                                            [idx]: {
+                                                                name: val,
+                                                                phone: found ? found.phone : (prev[idx]?.phone || "")
                                                             }
                                                         }));
                                                     }}
@@ -1990,7 +1990,7 @@ function CoordinatorDashboard() {
             {/* Add Guest Modal */}
             {isAddGuestModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
-                    <div 
+                    <div
                         className="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm transition-opacity"
                         onClick={() => setIsAddGuestModalOpen(false)}
                     />
@@ -2292,7 +2292,7 @@ function CoordinatorDashboard() {
             {/* Note Modal */}
             {isNoteModalOpen && selectedGuestForNote && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-                    <div 
+                    <div
                         className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm transition-opacity"
                         onClick={() => setIsNoteModalOpen(false)}
                     />
@@ -2369,7 +2369,7 @@ function CoordinatorDashboard() {
     );
 }
 
-export default withAuth(CoordinatorDashboard, { 
-    loginPath: '/coordinator/login', 
-    requiredRole: 'coordinator' 
+export default withAuth(CoordinatorDashboard, {
+    loginPath: '/coordinator/login',
+    requiredRole: 'coordinator'
 });
