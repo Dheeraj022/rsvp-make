@@ -529,7 +529,7 @@ function WhatsAppStatusPage() {
                                 <div className="grid grid-cols-1 gap-3">
                                     {[
                                         { id: 'Invite', label: 'Wedding Invitation', icon: Send, color: 'blue' },
-                                        { id: 'Reminder', label: 'Friendly Reminder', icon: Bell, color: 'amber' },
+                                        { id: 'Reminder', label: 'RSVP Reminder', icon: Bell, color: 'amber' },
                                     ].map((template) => {
                                         const TIcon = template.icon;
                                         const isSelected = selectedTemplateType === template.id;

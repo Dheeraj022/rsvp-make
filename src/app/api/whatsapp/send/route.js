@@ -20,7 +20,7 @@ export async function POST(request) {
         // Map UI labels to campaign environment variables
         const campaignMaps = {
             'Invite': process.env.AISENSY_INVITE_CAMPAIGN || "GUEST_INVITE",
-            'Reminder': process.env.AISENSY_REMINDER_CAMPAIGN || "GUEST_REMINDER",
+            'Reminder': process.env.AISENSY_REMINDER_CAMPAIGN || "rsvp_reminder",
             'Arrival': process.env.AISENSY_ARRIVAL_CAMPAIGN || "GUEST_ARRIVAL",
             'Departure': process.env.AISENSY_DEPARTURE_CAMPAIGN || "GUEST_DEPARTURE",
             'RSVP Confirm': process.env.AISENSY_CONFIRM_CAMPAIGN || "RSVP_CONFIRM"
