@@ -73,6 +73,7 @@ function CoordinatorDashboard() {
     const [selectedGuestForDriver, setSelectedGuestForDriver] = useState<any>(null);
     const [driverName, setDriverName] = useState("");
     const [driverPhone, setDriverPhone] = useState("");
+    const [driverVehicle, setDriverVehicle] = useState("");
     const [driverType, setDriverType] = useState<'arrival' | 'departure'>('arrival');
     const [isUpdatingDriver, setIsUpdatingDriver] = useState(false);
     const [coordinator, setCoordinator] = useState<any>(null);
@@ -122,7 +123,7 @@ function CoordinatorDashboard() {
 
     // New State for Individual Companion Drivers
     const [assignSameDriver, setAssignSameDriver] = useState(true);
-    const [companionDrivers, setCompanionDrivers] = useState<Record<number, { name: string; phone: string }>>({});
+    const [companionDrivers, setCompanionDrivers] = useState<Record<number, { name: string; phone: string; vehicle_number?: string }>>({});
 
     const router = useRouter();
 
@@ -446,12 +447,12 @@ function CoordinatorDashboard() {
             if (driverType === 'arrival') {
                 updatedDetails.arrival = {
                     ...(updatedDetails.arrival || {}),
-                    driver: { name: driverName, phone: driverPhone }
+                    driver: { name: driverName, phone: driverPhone, vehicle_number: driverVehicle }
                 };
             } else {
                 updatedDetails.departure = {
                     ...(updatedDetails.departure || {}),
-                    driver: { name: driverName, phone: driverPhone }
+                    driver: { name: driverName, phone: driverPhone, vehicle_number: driverVehicle }
                 };
             }
 
@@ -497,6 +498,52 @@ function CoordinatorDashboard() {
             toast.error(`Failed to assign driver: ${error.message || "Unknown error"}`);
         } finally {
             setIsUpdatingDriver(false);
+        }
+    };
+
+    const handleSendDriverNotification = async (guest: any, driverType: 'arrival' | 'departure') => {
+        const confirmed = await toast.confirm(
+            "Send Notification",
+            "Are you sure you want to send driver details to the guest?"
+        );
+        if (!confirmed) return;
+
+        try {
+            const driver = driverType === 'arrival' 
+                ? guest.departure_details?.arrival?.driver 
+                : guest.departure_details?.departure?.driver;
+
+            if (!guest.phone) {
+                toast.error("Guest does not have a phone number.");
+                return;
+            }
+
+            const payload = {
+                guest: { id: guest.id, name: guest.actualName || guest.name, phone: guest.phone },
+                driver: { name: driver.name, phone: driver.phone },
+                eventId: guest.event_id || coordinator?.event_id,
+                eventName: guest.events?.name
+            };
+
+            const response = await fetch("/api/whatsapp/send-driver", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                toast.success(`Notification sent to ${guest.actualName || guest.name}`);
+            } else {
+                if (result.duplicate) {
+                    toast.error("Notification already sent to this guest.");
+                } else {
+                    toast.error(`Failed: ${result.error}`);
+                }
+            }
+        } catch (error: any) {
+            toast.error("Failed to send driver notification");
         }
     };
 
@@ -634,20 +681,21 @@ function CoordinatorDashboard() {
             
         setDriverName(driver?.name || "");
         setDriverPhone(driver?.phone || "");
+        setDriverVehicle(driver?.vehicle_number || "");
 
         // Determine if same driver is assigned (default to true)
         let sameDriver = true;
         const companions = guest.attendees_data || [];
-        const companionDriversMap: Record<number, { name: string; phone: string }> = {};
+        const companionDriversMap: Record<number, { name: string; phone: string; vehicle_number?: string }> = {};
 
         companions.forEach((m, idx) => {
             const cDriver = type === 'arrival' ? m.arrival_driver : m.departure_driver;
             if (cDriver) {
                 sameDriver = false;
-                companionDriversMap[idx] = { name: cDriver.name, phone: cDriver.phone };
+                companionDriversMap[idx] = { name: cDriver.name, phone: cDriver.phone, vehicle_number: cDriver.vehicle_number || "" };
             } else {
                 // If not assigned, initialize with main driver info (shadowed)
-                companionDriversMap[idx] = { name: driver?.name || "", phone: driver?.phone || "" };
+                companionDriversMap[idx] = { name: driver?.name || "", phone: driver?.phone || "", vehicle_number: driver?.vehicle_number || "" };
             }
         });
 
@@ -1253,6 +1301,14 @@ function CoordinatorDashboard() {
                                                                                         )}
                                                                                     </div>
                                                                                 </button>
+                                                                                {person.departure_details?.arrival?.driver?.name && (
+                                                                                    <button 
+                                                                                        onClick={(e) => { e.stopPropagation(); handleSendDriverNotification(person, 'arrival'); }}
+                                                                                        className="w-full mt-2 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
+                                                                                    >
+                                                                                        <Mail size={12} /> Send Alert
+                                                                                    </button>
+                                                                                )}
                                                                             </div>
                                                                         </div>
                                                                     ) : (
@@ -1397,6 +1453,14 @@ function CoordinatorDashboard() {
                                                                             {person.departure_details?.arrival?.driver?.phone || "Assign +"}
                                                                         </p>
                                                                     </button>
+                                                                    {person.departure_details?.arrival?.driver?.name && (
+                                                                        <button 
+                                                                            onClick={(e) => { e.stopPropagation(); handleSendDriverNotification(person, 'arrival'); }}
+                                                                            className="w-full mt-2 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
+                                                                        >
+                                                                            <Mail size={12} /> Send Alert
+                                                                        </button>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         )}
@@ -1545,6 +1609,14 @@ function CoordinatorDashboard() {
                                                                                         )}
                                                                                     </div>
                                                                                 </button>
+                                                                                {person.departure_details?.departure?.driver?.name && (
+                                                                                    <button 
+                                                                                        onClick={(e) => { e.stopPropagation(); handleSendDriverNotification(person, 'departure'); }}
+                                                                                        className="w-full mt-2 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
+                                                                                    >
+                                                                                        <Mail size={12} /> Send Alert
+                                                                                    </button>
+                                                                                )}
                                                                             </div>
                                                                         </div>
                                                                     ) : (
@@ -1671,6 +1743,14 @@ function CoordinatorDashboard() {
                                                                         </div>
                                                                         <span className="text-[10px] font-bold text-indigo-600">Assign +</span>
                                                                     </button>
+                                                                    {person.departure_details?.departure?.driver?.name && (
+                                                                        <button 
+                                                                            onClick={(e) => { e.stopPropagation(); handleSendDriverNotification(person, 'departure'); }}
+                                                                            className="w-full mt-2 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
+                                                                        >
+                                                                            <Mail size={12} /> Send Alert
+                                                                        </button>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         )}
@@ -1790,6 +1870,15 @@ function CoordinatorDashboard() {
                                                 required
                                             />
                                         </div>
+                                        <div className="relative">
+                                            <Bus className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+                                            <Input
+                                                placeholder="Vehicle Number (Optional)"
+                                                value={driverVehicle}
+                                                onChange={(e) => setDriverVehicle(e.target.value)}
+                                                className="h-14 pl-12 rounded-2xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus-visible:ring-indigo-500/20 font-bold uppercase"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1850,6 +1939,21 @@ function CoordinatorDashboard() {
                                                         }}
                                                         className="h-12 pl-10 rounded-xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus-visible:ring-indigo-500/20 font-bold text-sm"
                                                         required={!assignSameDriver}
+                                                    />
+                                                </div>
+                                                <div className="relative">
+                                                    <Bus className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
+                                                    <Input
+                                                        placeholder="Vehicle Number (Optional)"
+                                                        value={companionDrivers[idx]?.vehicle_number || ""}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            setCompanionDrivers(prev => ({
+                                                                ...prev,
+                                                                [idx]: { ...prev[idx], vehicle_number: val }
+                                                            }));
+                                                        }}
+                                                        className="h-12 pl-10 rounded-xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20 focus-visible:ring-indigo-500/20 font-bold text-sm uppercase"
                                                     />
                                                 </div>
                                             </div>

@@ -1,5 +1,19 @@
 import { supabase } from '@/lib/supabase';
 
+/**
+ * @param {Object} params
+ * @param {string} params.phoneNumber
+ * @param {string} params.guestName
+ * @param {string} [params.eventName]
+ * @param {string} [params.eventDate]
+ * @param {string} [params.eventLocation]
+ * @param {string} [params.rsvpLink]
+ * @param {string} params.campaignName
+ * @param {string} [params.eventId]
+ * @param {string} [params.guestId]
+ * @param {string} [params.messageType]
+ * @param {any[]} [params.customParams]
+ */
 export const sendWhatsAppMessage = async ({
     phoneNumber,
     guestName,
@@ -10,7 +24,8 @@ export const sendWhatsAppMessage = async ({
     campaignName,
     eventId,
     guestId,
-    messageType
+    messageType,
+    customParams
 }) => {
     const apiKey = process.env.AISENSY_API_KEY;
 
@@ -21,7 +36,7 @@ export const sendWhatsAppMessage = async ({
 
     // Prepare template parameters for the message
     // The order must match the placeholders {{1}}, {{2}}, etc. in your AiSensy template
-    const templateParams = [
+    const templateParams = customParams || [
         guestName,
         eventName,
         eventDate,
