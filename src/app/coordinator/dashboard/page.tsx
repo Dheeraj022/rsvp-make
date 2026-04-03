@@ -1304,7 +1304,7 @@ function CoordinatorDashboard() {
                                                                                 {person.departure_details?.arrival?.driver?.name && (
                                                                                     <button
                                                                                         onClick={(e) => { e.stopPropagation(); handleSendDriverNotification(person, 'arrival'); }}
-                                                                                        className="w-full mt-2 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
+                                                                                        className="w-full mt-2 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#128C7E] text-white font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
                                                                                     >
                                                                                         <Mail size={12} /> Send Alert
                                                                                     </button>
@@ -1456,7 +1456,7 @@ function CoordinatorDashboard() {
                                                                     {person.departure_details?.arrival?.driver?.name && (
                                                                         <button
                                                                             onClick={(e) => { e.stopPropagation(); handleSendDriverNotification(person, 'arrival'); }}
-                                                                            className="w-full mt-2 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
+                                                                            className="w-full mt-2 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#128C7E] text-white font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
                                                                         >
                                                                             <Mail size={12} /> Send Alert
                                                                         </button>
@@ -1612,7 +1612,7 @@ function CoordinatorDashboard() {
                                                                                 {person.departure_details?.departure?.driver?.name && (
                                                                                     <button
                                                                                         onClick={(e) => { e.stopPropagation(); handleSendDriverNotification(person, 'departure'); }}
-                                                                                        className="w-full mt-2 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
+                                                                                        className="w-full mt-2 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#128C7E] text-white font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
                                                                                     >
                                                                                         <Mail size={12} /> Send Alert
                                                                                     </button>
@@ -1746,7 +1746,7 @@ function CoordinatorDashboard() {
                                                                     {person.departure_details?.departure?.driver?.name && (
                                                                         <button
                                                                             onClick={(e) => { e.stopPropagation(); handleSendDriverNotification(person, 'departure'); }}
-                                                                            className="w-full mt-2 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
+                                                                            className="w-full mt-2 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#128C7E] text-white font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1 transition-colors"
                                                                         >
                                                                             <Mail size={12} /> Send Alert
                                                                         </button>
