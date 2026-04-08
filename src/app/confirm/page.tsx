@@ -2,16 +2,16 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter, useParams } from "next/navigation";
-import { 
-    Phone, 
-    ArrowRight, 
-    CheckCircle2, 
-    XCircle, 
-    Calendar, 
-    MapPin, 
-    Users, 
-    Hotel, 
-    PlaneLanding, 
+import {
+    Phone,
+    ArrowRight,
+    CheckCircle2,
+    XCircle,
+    Calendar,
+    MapPin,
+    Users,
+    Hotel,
+    PlaneLanding,
     PlaneTakeoff,
     User,
     Loader2,
@@ -206,13 +206,13 @@ function ConfirmPageContent() {
                                         <div className="space-y-3 pt-2">
                                             <p className="text-rose-600 text-sm font-black animate-shake uppercase tracking-tight">{error}</p>
                                             <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">
-                                                Need help? Contact <a href="https://shaadiplatform.com/contact" target="_blank" className="text-indigo-600 hover:underline transition-all">shaadiplatform.com/contact</a>
+                                                Need help? Contact <a href="tel:+919990863337" className="text-indigo-600 hover:underline transition-all">+91-9990863337</a>
                                             </p>
                                         </div>
                                     )}
                                 </div>
-                                
-                                <Button 
+
+                                <Button
                                     className="w-full h-16 rounded-[1.5rem] bg-indigo-600 text-white hover:bg-indigo-700 transition-all font-black text-sm tracking-[0.2em] uppercase shadow-2xl shadow-indigo-600/20 disabled:opacity-50 flex items-center justify-center gap-3 active:scale-[0.98]"
                                     type="submit"
                                     disabled={isLoading || !phone}
@@ -235,10 +235,10 @@ function ConfirmPageContent() {
                         <motion.div
                             key="step2"
                             initial={{ opacity: 0, scale: 0.98 }}
-                            animate={{ 
-                                opacity: 1, 
+                            animate={{
+                                opacity: 1,
                                 scale: step === 3 ? 0.95 : 1,
-                                filter: step === 3 ? "blur(8px)" : "blur(0px)" 
+                                filter: step === 3 ? "blur(8px)" : "blur(0px)"
                             }}
                             className={cn(
                                 "bg-white border border-zinc-200 rounded-[3rem] overflow-hidden shadow-[0_32px_80px_-20px_rgba(0,0,0,0.12)] flex flex-col min-h-[500px] transition-all duration-500",
@@ -248,7 +248,7 @@ function ConfirmPageContent() {
                             {/* Card Header Overlay */}
                             <div className="p-8 md:p-12 border-b border-zinc-100 space-y-6 relative overflow-hidden bg-white">
                                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600" />
-                                
+
                                 <div className="flex items-start justify-between">
                                     <div className="space-y-1">
                                         <div className="flex items-center gap-2 text-indigo-600 font-black tracking-[0.3em] uppercase text-[10px]">
@@ -262,7 +262,7 @@ function ConfirmPageContent() {
                                         <User size={40} strokeWidth={1} />
                                     </div>
                                 </div>
-                                
+
                                 {/* Family Members Badge List */}
                                 {guest.attendees_data && guest.attendees_data.length > 0 && (
                                     <div className="flex flex-wrap gap-2 pt-2">
@@ -332,7 +332,7 @@ function ConfirmPageContent() {
                                 {(guest.departure_details?.arrival?.date || guest.departure_details?.departure?.date) && (
                                     <div className="space-y-8 pt-8 border-t border-zinc-100">
                                         <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Logistical Itinerary</h3>
-                                        
+
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             {/* Arrival Manifest */}
                                             {guest.departure_details?.arrival?.date && (
@@ -345,7 +345,7 @@ function ConfirmPageContent() {
                                                             {format(new Date(guest.departure_details.arrival.date), "MMM d • HH:mm")}
                                                         </span>
                                                     </div>
-                                                    
+
                                                     <div className="space-y-3">
                                                         {guest.departure_details.arrival.travelers?.map((t: any, i: number) => (
                                                             <div key={i} className="p-4 rounded-2xl bg-white border border-zinc-100 flex items-center justify-between gap-4 shadow-sm hover:translate-y-[-2px] transition-all">
@@ -354,9 +354,9 @@ function ConfirmPageContent() {
                                                                     <p className="text-[9px] font-bold text-zinc-400 uppercase leading-none mt-1">{t.mode_of_travel} • Terminal {t.station_airport}</p>
                                                                 </div>
                                                                 {t.ticket_url && (
-                                                                    <a 
-                                                                        href={t.ticket_url} 
-                                                                        target="_blank" 
+                                                                    <a
+                                                                        href={t.ticket_url}
+                                                                        target="_blank"
                                                                         rel="noopener noreferrer"
                                                                         className="h-10 px-4 rounded-xl bg-blue-600 text-white text-[9px] font-black uppercase tracking-[0.1em] flex items-center justify-center hover:bg-blue-700 transition-all shrink-0 shadow-lg shadow-blue-600/10"
                                                                     >
@@ -380,7 +380,7 @@ function ConfirmPageContent() {
                                                             {format(new Date(guest.departure_details.departure.date), "MMM d • HH:mm")}
                                                         </span>
                                                     </div>
-                                                    
+
                                                     <div className="space-y-3">
                                                         {guest.departure_details.departure.travelers?.map((t: any, i: number) => (
                                                             <div key={i} className="p-4 rounded-2xl bg-white border border-zinc-100 flex items-center justify-between gap-4 shadow-sm hover:translate-y-[-2px] transition-all">
@@ -389,9 +389,9 @@ function ConfirmPageContent() {
                                                                     <p className="text-[9px] font-bold text-zinc-400 uppercase leading-none mt-1">{t.mode_of_travel} • Terminal {t.station_airport}</p>
                                                                 </div>
                                                                 {t.ticket_url && (
-                                                                    <a 
-                                                                        href={t.ticket_url} 
-                                                                        target="_blank" 
+                                                                    <a
+                                                                        href={t.ticket_url}
+                                                                        target="_blank"
                                                                         rel="noopener noreferrer"
                                                                         className="h-10 px-4 rounded-xl bg-zinc-900 text-white text-[9px] font-black uppercase tracking-[0.1em] flex items-center justify-center hover:bg-black transition-all shrink-0 shadow-lg shadow-black/10"
                                                                     >
@@ -416,7 +416,7 @@ function ConfirmPageContent() {
                                     </div>
                                 )}
                                 <div className="flex flex-col md:flex-row gap-4 items-center">
-                                    <Button 
+                                    <Button
                                         type="button"
                                         className="flex-1 w-full h-18 rounded-3xl bg-indigo-600 hover:bg-indigo-700 text-white hover:text-white font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-indigo-600/20 transition-all disabled:opacity-50 active:scale-95 border-none"
                                         onClick={() => setStep(3)}
@@ -424,7 +424,7 @@ function ConfirmPageContent() {
                                     >
                                         {confirming ? <Loader2 className="w-5 h-5 animate-spin" /> : "YES, I'M ATTENDING"}
                                     </Button>
-                                    <Button 
+                                    <Button
                                         type="button"
                                         variant="outline"
                                         className="px-10 h-18 rounded-3xl text-zinc-500 hover:text-zinc-900 bg-white hover:bg-zinc-50 border-zinc-200 font-bold uppercase text-[10px] tracking-[0.2em] transition-all"
@@ -457,7 +457,7 @@ function ConfirmPageContent() {
                                             </span>
                                             <h2 className="text-3xl font-black tracking-tight text-zinc-900">Who is attending?</h2>
                                         </div>
-                                        <button 
+                                        <button
                                             onClick={() => setStep(2)}
                                             className="w-10 h-10 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-400 hover:text-zinc-900 transition-colors"
                                         >
@@ -470,7 +470,7 @@ function ConfirmPageContent() {
                                     {guest.attendees_data?.map((member: any, i: number) => {
                                         const isSelected = selectedAttendees.includes(member.name);
                                         return (
-                                            <div 
+                                            <div
                                                 key={i}
                                                 onClick={() => {
                                                     if (isSelected) {
@@ -481,8 +481,8 @@ function ConfirmPageContent() {
                                                 }}
                                                 className={cn(
                                                     "p-6 rounded-3xl border transition-all cursor-pointer flex items-center justify-between group",
-                                                    isSelected 
-                                                        ? "bg-indigo-50 border-indigo-200 shadow-sm" 
+                                                    isSelected
+                                                        ? "bg-indigo-50 border-indigo-200 shadow-sm"
                                                         : "bg-zinc-50/50 border-zinc-100 hover:border-zinc-200"
                                                 )}
                                             >
@@ -500,11 +500,11 @@ function ConfirmPageContent() {
                                                         {member.name}
                                                     </span>
                                                 </div>
-                                                
+
                                                 <div className={cn(
                                                     "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm",
-                                                    isSelected 
-                                                        ? "bg-indigo-600 text-white" 
+                                                    isSelected
+                                                        ? "bg-indigo-600 text-white"
                                                         : "bg-white border border-zinc-200 text-zinc-400"
                                                 )}>
                                                     {isSelected ? "Confirm" : "Not Confirm"}
@@ -515,7 +515,7 @@ function ConfirmPageContent() {
                                 </div>
 
                                 <div className="p-8 md:p-10 border-t border-zinc-100 bg-zinc-50/50 shrink-0">
-                                    <Button 
+                                    <Button
                                         className="w-full h-18 rounded-3xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-indigo-600/20 transition-all active:scale-95 border-none"
                                         onClick={() => handleConfirm('confirmed', selectedAttendees)}
                                         disabled={confirming || selectedAttendees.length === 0}
@@ -539,14 +539,14 @@ function ConfirmPageContent() {
                             className="text-center space-y-10"
                         >
                             <div className="relative">
-                                <motion.div 
+                                <motion.div
                                     initial={{ scale: 0 }}
                                     animate={{ scale: 1 }}
                                     transition={{ type: "spring", damping: 10, stiffness: 100 }}
                                     className={cn(
                                         "w-32 h-32 rounded-[2.5rem] flex items-center justify-center mx-auto border shadow-xl relative z-10",
-                                        selectedStatus === 'confirmed' 
-                                            ? "bg-emerald-50 text-emerald-500 border-emerald-100 shadow-emerald-500/5" 
+                                        selectedStatus === 'confirmed'
+                                            ? "bg-emerald-50 text-emerald-500 border-emerald-100 shadow-emerald-500/5"
                                             : "bg-zinc-50 text-zinc-400 border-zinc-200"
                                     )}
                                 >
@@ -567,14 +567,14 @@ function ConfirmPageContent() {
                                     {selectedStatus === 'confirmed' ? "Great, see you soon!" : "We'll miss you!"}
                                 </h1>
                                 <p className="text-zinc-500 text-lg font-bold leading-relaxed max-w-sm mx-auto">
-                                    {selectedStatus === 'confirmed' 
+                                    {selectedStatus === 'confirmed'
                                         ? <>Your attendance for <span className="text-zinc-900 font-black">{event?.name}</span> has been confirmed.</>
                                         : <>Thank you for letting us know. We have recorded your response for <span className="text-zinc-900 font-black">{event?.name}</span>.</>
                                     }
                                 </p>
                             </div>
 
-                            <Button 
+                            <Button
                                 className="h-16 rounded-3xl bg-zinc-900 text-white hover:bg-zinc-800 font-black px-12 tracking-[0.2em] transition-all shadow-xl shadow-zinc-900/20 flex items-center justify-center mx-auto uppercase text-xs border-none"
                                 onClick={() => {
                                     if (typeof window !== 'undefined') {
