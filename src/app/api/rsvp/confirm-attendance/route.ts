@@ -9,7 +9,7 @@ import { format } from 'date-fns';
  */
 export async function POST(request: Request) {
     try {
-        const { event_id, guest_id, phone, status } = await request.json();
+        const { event_id, guest_id, phone, status, confirmed_members } = await request.json();
 
         if (!event_id || !guest_id || !phone || !status) {
             return NextResponse.json({ error: "Missing required fields (event_id, guest_id, phone, status)" }, { status: 400 });
@@ -33,16 +33,52 @@ export async function POST(request: Request) {
 
         if (rsvpError) throw rsvpError;
 
-        // 2. Optionally also update the status in the guests table
-        // Even though instructions say "Do NOT modify guest system", Updating the guest's status 
-        // to match their attendance is standard practice and keeps the dashboard stats correct.
-        // However, I will strictly stick to the rsvp_confirmations first.
-        // If I update the guest's status, the admin will see it reflected immediately in the guest list.
-        const newGuestStatus = status === 'confirmed' ? 'accepted' : 'declined';
-        
+        // 2. Update the status in the guests table
+        let newGuestStatus = status === 'confirmed' ? 'accepted' : 'declined';
+        let updatePayload: any = { status: newGuestStatus };
+
+        // Fetch current guest to handle detailed confirmed_members
+        const { data: currentGuest, error: fetchError } = await supabase
+            .from('guests')
+            .select('attendees_data, name')
+            .eq('id', guest_id)
+            .single();
+
+        if (!fetchError && currentGuest) {
+            let updatedAttendees = currentGuest.attendees_data;
+            let attendingCount = status === 'confirmed' ? 1 : 0; // Default to 1 array length logic if no companions
+
+            if (status === 'confirmed' && Array.isArray(confirmed_members)) {
+                if (currentGuest.attendees_data && currentGuest.attendees_data.length > 0) {
+                    updatedAttendees = currentGuest.attendees_data.map((member: any) => ({
+                        ...member,
+                        status: confirmed_members.includes(member.name) ? 'accepted' : 'declined'
+                    }));
+                }
+                attendingCount = confirmed_members.length;
+                
+                // If primary guest is NOT in confirmed_members, but companions are, we should probably set primary status to declined
+                // But generally, the primary row represents the 'Group' so we leave it as accepted if count > 0
+                if (confirmed_members.length === 0) {
+                    updatePayload.status = 'declined';
+                }
+            } else if (status === 'not_attending') {
+                if (currentGuest.attendees_data && currentGuest.attendees_data.length > 0) {
+                    updatedAttendees = currentGuest.attendees_data.map((member: any) => ({
+                        ...member,
+                        status: 'declined'
+                    }));
+                }
+                attendingCount = 0;
+            }
+
+            updatePayload.attendees_data = updatedAttendees;
+            updatePayload.attending_count = attendingCount;
+        }
+
         const { error: guestUpdateError } = await supabase
             .from('guests')
-            .update({ status: newGuestStatus })
+            .update(updatePayload)
             .eq('id', guest_id);
             
         if (guestUpdateError) {
