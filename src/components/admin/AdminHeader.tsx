@@ -4,6 +4,7 @@ import { LogOut, Plus, Search, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 interface AdminHeaderProps {
@@ -27,7 +28,12 @@ export default function AdminHeader({ title, isSidebarOpen, setIsSidebarOpen }: 
                     variant="ghost"
                     size="icon"
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                    className="h-10 w-10 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-xl"
+                    className={cn(
+                        "h-10 w-10 rounded-xl transition-all duration-300",
+                        isSidebarOpen 
+                            ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700" 
+                            : "text-zinc-500 hover:text-blue-600 hover:bg-blue-500/10"
+                    )}
                 >
                     {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
                 </Button>

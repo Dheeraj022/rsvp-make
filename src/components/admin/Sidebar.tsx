@@ -117,14 +117,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                         "flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 group relative",
                                         isActive
                                             ? "bg-blue-500/10 text-blue-400 font-semibold"
-                                            : "hover:bg-white/5 hover:text-zinc-200"
+                                            : "hover:bg-blue-500/10 hover:text-blue-400"
                                     )}
                                 >
                                     <Icon
                                         size={20}
                                         className={cn(
                                             "transition-all duration-300",
-                                            isActive ? "text-blue-500 scale-110" : "group-hover:text-zinc-200"
+                                            isActive ? "text-blue-500 scale-110" : "group-hover:text-blue-500"
                                         )}
                                     />
                                     {isOpen && <span className="text-sm tracking-wide">{item.name}</span>}
