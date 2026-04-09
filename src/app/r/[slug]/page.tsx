@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Loader2, MapPin, Calendar, Check, Search, ArrowRight, ArrowLeft, Upload, ChevronDown, FileText } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays, subDays, parseISO } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/useToast";
 
@@ -178,6 +178,16 @@ export default function PublicEventPage() {
 
     const [transportMessage, setTransportMessage] = useState("");
     const [uploadingTicket, setUploadingTicket] = useState<string | null>(null);
+
+    // Date Range Restriction (Event \u00b1 5 days)
+    const { minDateStr, maxDateStr } = useMemo(() => {
+        if (!event?.date) return { minDateStr: "", maxDateStr: "" };
+        const eventDt = parseISO(event.date);
+        return {
+            minDateStr: format(subDays(eventDt, 5), "yyyy-MM-dd"),
+            maxDateStr: format(addDays(eventDt, 5), "yyyy-MM-dd")
+        };
+    }, [event?.date]);
     const [submittingTransport, setSubmittingTransport] = useState(false);
     const [expandedGuest, setExpandedGuest] = useState<number | null>(null);
     const [rsvpError, setRsvpError] = useState<string>("");
@@ -452,6 +462,10 @@ export default function PublicEventPage() {
                 setTransportError("Please select a pick-up date.");
                 return;
             }
+            if (minDateStr && maxDateStr && (arrivalDate < minDateStr || arrivalDate > maxDateStr)) {
+                setTransportError("Please select a valid date within event range (\u00b15 days)");
+                return;
+            }
             if (!arrivalTime) {
                 setTransportError("Please select a pick-up time.");
                 return;
@@ -476,6 +490,10 @@ export default function PublicEventPage() {
         if (isDepartureApplicable && transportStep === arrivalSteps + 1) {
             if (!departureDate) {
                 setTransportError("Please select a drop-off date.");
+                return;
+            }
+            if (minDateStr && maxDateStr && (departureDate < minDateStr || departureDate > maxDateStr)) {
+                setTransportError("Please select a valid date within event range (\u00b15 days)");
                 return;
             }
             if (!departureTime) {
@@ -1415,12 +1433,14 @@ export default function PublicEventPage() {
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             <div className="space-y-2">
                                                                 <Label className="text-sm font-medium text-zinc-500">Pick-up Date <span className="text-red-400">*</span></Label>
-                                                                <Input
-                                                                    type="date"
-                                                                    value={arrivalDate}
-                                                                    onChange={(e) => { setArrivalDate(e.target.value); setTransportError(""); }}
-                                                                    className={`h-11 text-sm rounded-xl border-2 dark:bg-zinc-950 dark:border-zinc-800 ${transportError && transportError.includes('date') && transportStep === 1 ? 'border-red-400' : ''}`}
-                                                                />
+                                                                    <Input
+                                                                        type="date"
+                                                                        min={minDateStr}
+                                                                        max={maxDateStr}
+                                                                        value={arrivalDate}
+                                                                        onChange={(e) => { setArrivalDate(e.target.value); setTransportError(""); }}
+                                                                        className={`h-11 text-sm rounded-xl border-2 dark:bg-zinc-950 dark:border-zinc-800 ${transportError && transportError.includes('date') && transportStep === 1 ? 'border-red-400' : ''}`}
+                                                                    />
                                                             </div>
                                                             <div className="space-y-2">
                                                                 <Label className="text-sm font-medium text-zinc-500">Pick-up Time <span className="text-red-400">*</span></Label>
@@ -1583,6 +1603,8 @@ export default function PublicEventPage() {
                                                                 <Label className="text-sm font-medium text-zinc-500">Drop Date <span className="text-red-400">*</span></Label>
                                                                 <Input
                                                                     type="date"
+                                                                    min={minDateStr}
+                                                                    max={maxDateStr}
                                                                     value={departureDate}
                                                                     onChange={(e) => { setDepartureDate(e.target.value); setTransportError(""); }}
                                                                     className={`h-11 text-sm rounded-xl border-2 dark:bg-zinc-950 dark:border-zinc-800 ${transportError && transportError.includes('date') && transportStep > 1 ? 'border-red-400' : ''}`}
