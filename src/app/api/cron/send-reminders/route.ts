@@ -113,7 +113,12 @@ export async function GET(request: Request) {
                         campaignName: process.env.AISENSY_REMINDER_CAMPAIGN || 'rsvp_reminder', // Use environment variable with fallback
                         eventId: event.id,
                         guestId: guest.id,
-                        messageType: messageType
+                        messageType: messageType,
+                        customParams: [
+                            guest.name,
+                            event.name,
+                            event.slug
+                        ]
                     });
 
                     // Update status

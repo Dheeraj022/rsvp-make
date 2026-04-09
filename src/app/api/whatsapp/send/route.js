@@ -36,11 +36,18 @@ export async function POST(request) {
         let customParams = undefined;
 
         if (messageType === 'Thank You') {
-            // {{1}} Guest Name, {{2}} Event Name, {{3}} RSVP Link
+            // {{1}} Guest Name, {{2}} Event Name, {{3}} RSVP Link (Full URL for this template)
             customParams = [
                 guest.name,
                 event.name,
                 `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/r/${event.slug}`
+            ];
+        } else if (messageType === 'Reminder') {
+            // {{1}} Guest Name, {{2}} Event Name, {{3}} Event Slug (Just the slug for this template)
+            customParams = [
+                guest.name,
+                event.name,
+                event.slug
             ];
         }
 
