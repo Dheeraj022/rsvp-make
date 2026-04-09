@@ -32,6 +32,18 @@ export async function POST(request) {
         // Format the date for the WhatsApp message
         const formattedDate = event.date ? format(new Date(event.date), "MMMM d, yyyy") : "";
 
+        // Define custom parameters based on message type
+        let customParams = undefined;
+
+        if (messageType === 'Thank You') {
+            // {{1}} Guest Name, {{2}} Event Name, {{3}} RSVP Link
+            customParams = [
+                guest.name,
+                event.name,
+                `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/r/${event.slug}`
+            ];
+        }
+
         // Send message using the service
         const response = await sendWhatsAppMessage({
             phoneNumber: guest.phone,
@@ -43,7 +55,8 @@ export async function POST(request) {
             campaignName: campaignName,
             eventId: event.id,
             guestId: guest.id,
-            messageType: messageType
+            messageType: messageType,
+            customParams: customParams
         });
 
         if (response.success) {

@@ -125,7 +125,12 @@ export async function POST(request: Request) {
                         campaignName: process.env.AISENSY_THANKYOU_CAMPAIGN || 'thankyou_template',
                         eventId: event_id,
                         guestId: guest_id,
-                        messageType: undefined
+                        messageType: undefined,
+                        customParams: [
+                            guestDetails.name,
+                            eventDetails.name,
+                            rsvpLink
+                        ]
                     });
 
                     if (result?.success || result?.success === true) {
