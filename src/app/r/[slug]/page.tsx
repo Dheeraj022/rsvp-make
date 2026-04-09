@@ -1077,10 +1077,7 @@ export default function PublicEventPage() {
 
                                 {/* Status Message */}
                                 {selectedGuest.status !== 'pending' && (
-                                    <div className={`p-4 rounded-xl mb-6 text-sm border flex items-start gap-3 ${selectedGuest.departure_details?.arrival_applicable !== undefined || selectedGuest.departure_details?.departure_applicable !== undefined
-                                        ? "bg-green-50 border-green-100 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300"
-                                        : "bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300"
-                                        }`}>
+                                    <div className={`p-4 rounded-xl mb-6 text-sm border flex items-start gap-3 bg-green-50 border-green-100 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300`}>
                                         <div className="mt-0.5 flex-shrink-0">
                                             <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                                                 <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
