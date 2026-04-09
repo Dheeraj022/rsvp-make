@@ -394,9 +394,16 @@ export default function PublicEventPage() {
         // Step-level validation
         setRsvpError("");
         if (status === 'accepted') {
-            if (rsvpStep === 2 && !email) {
-                setRsvpError("Please enter your email address.");
-                return;
+            if (rsvpStep === 2) {
+                if (!email) {
+                    setRsvpError("Please enter your email address.");
+                    return;
+                }
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    setRsvpError("Please enter a valid email address.");
+                    return;
+                }
             }
             if (rsvpStep === 3 && !phone) {
                 setRsvpError("Please enter your phone number.");
