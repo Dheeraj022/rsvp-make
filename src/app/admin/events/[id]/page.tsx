@@ -52,6 +52,7 @@ type Event = {
     assigned_hotel_name?: string;
     drop_locations?: string[];
     is_whatsapp_enabled?: boolean;
+    has_transport?: boolean;
 };
 
 type Guest = {
@@ -160,6 +161,7 @@ function EventDetails() {
     const [editableName, setEditableName] = useState("");
     const [nameUpdateLoading, setNameUpdateLoading] = useState(false);
     const [whatsappUpdateLoading, setWhatsappUpdateLoading] = useState(false);
+    const [transportUpdateLoading, setTransportUpdateLoading] = useState(false);
     const [sendingWhatsApp, setSendingWhatsApp] = useState<Record<string, boolean>>({});
     const [sendingAllWhatsApp, setSendingAllWhatsApp] = useState(false);
     const [showNameUpdateModal, setShowNameUpdateModal] = useState(false);
@@ -342,6 +344,26 @@ function EventDetails() {
             toast.error("Error updating WhatsApp preference: " + error.message);
         } finally {
             setWhatsappUpdateLoading(false);
+        }
+    };
+    
+    const handleToggleTransport = async () => {
+        if (!event) return;
+        setTransportUpdateLoading(true);
+        try {
+            const nextStatus = !event.has_transport;
+            const { error } = await supabase
+                .from("events")
+                .update({ has_transport: nextStatus })
+                .eq("id", eventId);
+
+            if (error) throw error;
+            setEvent(prev => prev ? ({ ...prev, has_transport: nextStatus }) : null);
+            toast.success(`Transport options ${nextStatus ? 'enabled' : 'disabled'} successfully.`);
+        } catch (error: any) {
+            toast.error("Error updating transport preference: " + error.message);
+        } finally {
+            setTransportUpdateLoading(false);
         }
     };
 
@@ -1056,6 +1078,25 @@ function EventDetails() {
                             )}
                             <span className="hidden sm:inline">
                                 WhatsApp: {event?.is_whatsapp_enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={handleToggleTransport}
+                            disabled={transportUpdateLoading}
+                            className={`rounded-xl h-10 text-xs font-bold uppercase tracking-widest gap-2 transition-all shadow-sm border ${
+                                event?.has_transport 
+                                ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 dark:bg-blue-900/20 dark:border-blue-500/30 dark:text-blue-400 dark:hover:bg-blue-500 dark:hover:text-white' 
+                                : 'bg-zinc-50 border-zinc-200 text-zinc-700 hover:bg-zinc-600 hover:text-white hover:border-zinc-600 dark:bg-zinc-900/20 dark:border-zinc-500/30 dark:text-zinc-400 dark:hover:bg-zinc-500 dark:hover:text-white'
+                            }`}
+                        >
+                            {transportUpdateLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <LinkIcon className="h-4 w-4" />
+                            )}
+                            <span className="hidden sm:inline">
+                                Transport: {event?.has_transport ? 'Enabled' : 'Disabled'}
                             </span>
                         </Button>
                         <Button 

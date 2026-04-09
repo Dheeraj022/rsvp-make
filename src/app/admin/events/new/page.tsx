@@ -17,9 +17,9 @@ function CreateEvent() {
     const [formData, setFormData] = useState({
         name: "",
         date: "",
-        location: "",
         slug: "",
         drop_locations: "",
+        has_transport: false,
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -54,7 +54,8 @@ function CreateEvent() {
                 admin_id: user.id,
                 created_by_name: user.user_metadata?.full_name || "Admin",
                 created_by_email: user.email,
-                drop_locations: formData.drop_locations.split(',').map(s => s.trim()).filter(s => s !== "")
+                drop_locations: formData.drop_locations.split(',').map(s => s.trim()).filter(s => s !== ""),
+                has_transport: formData.has_transport
             });
 
             if (error) throw error;
@@ -161,9 +162,27 @@ function CreateEvent() {
                                 className="h-10 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-md focus:border-zinc-400 focus:ring-0 transition-all font-medium text-sm"
                             />
                             <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-tight pl-1 opacity-70">Locations for the transport form</p>
-                            
-                            <hr className="mt-4 border-zinc-100 dark:border-zinc-900" />
                         </div>
+
+                        {/* Transport Toggle */}
+                        <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-all hover:bg-zinc-100 dark:hover:bg-zinc-900">
+                            <input
+                                type="checkbox"
+                                id="has_transport"
+                                name="has_transport"
+                                checked={formData.has_transport}
+                                onChange={(e) => setFormData(prev => ({ ...prev, has_transport: e.target.checked }))}
+                                className="w-5 h-5 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500"
+                            />
+                            <div className="space-y-0.5">
+                                <Label htmlFor="has_transport" className="text-sm font-bold text-zinc-900 dark:text-zinc-50 cursor-pointer">
+                                    Enable Transport Option
+                                </Label>
+                                <p className="text-[10px] text-zinc-500 font-medium">When enabled, guests can provide arrival and departure transport details.</p>
+                            </div>
+                        </div>
+
+                        <hr className="mt-4 border-zinc-100 dark:border-zinc-900" />
                     </div>
 
                     <div className="pt-2">

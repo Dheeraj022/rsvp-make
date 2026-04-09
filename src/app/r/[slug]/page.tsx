@@ -19,6 +19,8 @@ type Event = {
     date: string;
     location: string;
     description: string;
+    slug: string;
+    has_transport?: boolean;
     drop_locations?: string[];
 };
 
@@ -62,7 +64,8 @@ const StepWrapper = ({
     showPrev = true,
     isLast = false,
     isSubmitting = false,
-    activeSection
+    activeSection,
+    nextButtonText
 }: {
     stepNumber: number;
     question: string;
@@ -73,6 +76,7 @@ const StepWrapper = ({
     isLast?: boolean;
     isSubmitting?: boolean;
     activeSection: string;
+    nextButtonText?: string;
 }) => (
     <motion.div
         initial={{ opacity: 0, x: 20 }}
@@ -102,17 +106,21 @@ const StepWrapper = ({
                         onClick={onNext}
                         className="rounded-xl px-8 h-11 text-sm font-semibold shadow-md active:scale-95 transition-all"
                     >
-                        Continue
+                        {nextButtonText || 'Continue'}
                     </Button>
                 ) : (
-                    <Button
-                        size="lg"
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="rounded-xl px-8 h-11 text-sm font-semibold shadow-md active:scale-95 transition-all"
-                    >
-                        {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : 'Complete'}
-                    </Button>
+                        <Button
+                            size="lg"
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="rounded-xl px-8 h-11 text-sm font-semibold shadow-md active:scale-95 transition-all"
+                        >
+                            {isSubmitting ? (
+                                <Loader2 className="animate-spin mr-2" />
+                            ) : (
+                                nextButtonText || 'Complete'
+                            )}
+                        </Button>
                 )}
 
                 <div className="hidden sm:block text-xs text-zinc-400 font-medium">
@@ -764,11 +772,16 @@ export default function PublicEventPage() {
                 } catch (err) {
                     console.error("Failed to send RSVP confirmation WhatsApp:", err);
                 }
-
-                // Switch to transport section
-                setActiveSection("transport");
-                setIsEditingRSVP(false);
-                toast.success("RSVP submitted successfully! Please provide your travel details.");
+                if (event?.has_transport === false) {
+                    clearDraft();
+                    setStep("success");
+                    toast.success("RSVP submitted successfully! Thank you.");
+                } else {
+                    // Switch to transport section
+                    setActiveSection("transport");
+                    setIsEditingRSVP(false);
+                    toast.success("RSVP submitted successfully! Please provide your travel details.");
+                }
             } else {
                 // Show success screen if declined
                 // Trigger Confirmation WhatsApp for Decline as well
@@ -1102,18 +1115,20 @@ export default function PublicEventPage() {
                                     >
                                         RSVP
                                     </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setActiveSection("transport");
-                                        }}
-                                        className={`flex-1 px-6 py-2.5 rounded-lg font-medium transition-all duration-200 ${activeSection === "transport"
-                                            ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 shadow-sm"
-                                            : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
-                                            }`}
-                                    >
-                                        Transport
-                                    </button>
+                                    {event?.has_transport !== false && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setActiveSection("transport");
+                                            }}
+                                            className={`flex-1 px-6 py-2.5 rounded-lg font-medium transition-all duration-200 ${activeSection === "transport"
+                                                ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 shadow-sm"
+                                                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                                                }`}
+                                        >
+                                            Transport
+                                        </button>
+                                    )}
                                 </div>
 
                                 {/* RSVP Section */}
@@ -1329,6 +1344,7 @@ export default function PublicEventPage() {
                                                         onPrev={handlePrevRsvp}
                                                         isLast={true}
                                                         isSubmitting={submitting}
+                                                        nextButtonText={event?.has_transport === false ? "Submit RSVP" : "Complete"}
                                                     >
                                                         <Textarea
                                                             placeholder="Type your message here..."
