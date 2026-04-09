@@ -523,9 +523,6 @@ export default function PublicEventPage() {
 
             if (error) throw error;
             setEvent(data);
-            toast.success("RSVP details saved successfully!");
-            setStep("success");
-            localStorage.removeItem(DRAFT_KEY);
         } catch (error: any) {
             console.error("Error submitting RSVP:", error);
             toast.error("An error occurred while saving your RSVP.");
