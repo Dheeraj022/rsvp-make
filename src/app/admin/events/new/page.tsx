@@ -17,6 +17,7 @@ function CreateEvent() {
     const [formData, setFormData] = useState({
         name: "",
         date: "",
+        location: "",
         slug: "",
         drop_locations: "",
         has_transport: false,
