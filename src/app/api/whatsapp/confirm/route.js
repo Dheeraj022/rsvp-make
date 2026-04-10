@@ -22,10 +22,12 @@ export async function POST(request) {
             return NextResponse.json({ message: "WhatsApp is disabled for this event. Skipping message." });
         }
 
-        const campaignName = process.env.AISENSY_CONFIRM_CAMPAIGN || "RSVP_CONFIRM_TEMPLATE";
+        const campaignName = process.env.AISENSY_RSVP_CONFIRM_CAMPAIGN || process.env.AISENSY_THANKYOU_CAMPAIGN || process.env.AISENSY_CONFIRM_CAMPAIGN || "thankyou_template";
         
         // Format the date for the WhatsApp message
         const formattedDate = event.date ? format(new Date(event.date), "MMMM d, yyyy") : "";
+
+        const rsvpLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/r/${event.slug}`;
 
         const result = await sendWhatsAppMessage({
             phoneNumber: guest.phone,
@@ -33,12 +35,45 @@ export async function POST(request) {
             eventName: event.name,
             eventDate: formattedDate,
             eventLocation: event.location,
-            rsvpLink: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/r/${event.slug}`,
+            rsvpLink: rsvpLink,
             campaignName: campaignName,
             eventId: event.id,
             guestId: guest.id,
-            messageType: 'RSVP Confirm'
+            messageType: 'RSVP Confirm',
+            customParams: [
+                guest.name,
+                event.name,
+                formattedDate
+            ]
         });
+
+        if (result.success) {
+            // --- SECOND MESSAGE: Transport Pending Reminder (Asynchronous) ---
+            if (event.has_transport === true) {
+                // Background delay to avoid "spam" feel and not block the UI
+                setTimeout(async () => {
+                    try {
+                        await sendWhatsAppMessage({
+                            phoneNumber: guest.phone,
+                            guestName: guest.name,
+                            eventName: event.name,
+                            rsvpLink: rsvpLink,
+                            campaignName: process.env.AISENSY_TRANSPORT_PENDING_CAMPAIGN || 'rsvp_submit_transport_reminder',
+                            eventId: event.id,
+                            guestId: guest.id,
+                            messageType: 'Transport Reminder',
+                            customParams: [
+                                guest.name,
+                                event.name,
+                                rsvpLink // Variables mapping: {{1}} Name, {{2}} Event, {{3}} Link
+                            ]
+                        });
+                    } catch (err) {
+                        console.error("Async Transport Reminder Error:", err);
+                    }
+                }, 8000); // 8 second delay
+            }
+        }
 
         if (!result.success) {
             return NextResponse.json({ error: result.error || "Failed to send WhatsApp message" }, { status: 500 });
