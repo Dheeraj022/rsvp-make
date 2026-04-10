@@ -178,6 +178,7 @@ export default function PublicEventPage() {
 
     const [transportMessage, setTransportMessage] = useState("");
     const [uploadingTicket, setUploadingTicket] = useState<string | null>(null);
+    const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
 
     // Date Range Restriction (Event \u00b1 5 days)
     const { minDateStr, maxDateStr } = useMemo(() => {
@@ -230,6 +231,21 @@ export default function PublicEventPage() {
         }
         setIsDraftLoaded(true);
     }, [slug]);
+
+    // Handle Countdown Redirect
+    useEffect(() => {
+        if (redirectCountdown === null) return;
+
+        if (redirectCountdown > 0) {
+            const timer = setTimeout(() => {
+                setRedirectCountdown(redirectCountdown - 1);
+            }, 1000);
+            return () => clearTimeout(timer);
+        } else {
+            setStep("success");
+            setRedirectCountdown(null);
+        }
+    }, [redirectCountdown]);
 
     // Save draft to localStorage whenever relevant state changes
     useEffect(() => {
@@ -904,15 +920,10 @@ export default function PublicEventPage() {
                 departure_details: transportDetails
             });
 
-            if (transportType === "arrival" && isArrivalApplicable !== false) {
-                setTransportType("departure");
-                toast.success("Arrival details saved! Please add departure details.");
-            } else {
-                toast.success("Transport details submitted successfully!");
-                setIsEditingTransport(false);
-                clearDraft();
-                setStep("success");
-            }
+            toast.success("Your transport information is successfully submitted!");
+            setIsEditingTransport(false);
+            clearDraft();
+            setRedirectCountdown(5); // Start the 5-sec countdown
         } catch (err: any) {
             toast.error("Error submitting transport details: " + err.message);
         } finally {
@@ -949,6 +960,7 @@ export default function PublicEventPage() {
         setTransportMessage("");
         setRsvpError("");
         setTransportError("");
+        setRedirectCountdown(null);
         localStorage.removeItem(DRAFT_KEY);
     };
 
@@ -1384,11 +1396,24 @@ export default function PublicEventPage() {
                                             <div>
                                                 <p className="font-semibold text-zinc-900 dark:text-zinc-50">Transport Details Submitted</p>
                                                 <p className="text-sm text-zinc-500">Your travel information has been recorded.</p>
+                                                {redirectCountdown !== null && (
+                                                    <div className="mt-4 flex flex-col items-center gap-2">
+                                                        <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xl animate-pulse">
+                                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                                            <span>{redirectCountdown}</span>
+                                                        </div>
+                                                        <p className="text-[10px] text-zinc-400 uppercase tracking-widest font-medium">Redirecting to success...</p>
+                                                    </div>
+                                                )}
                                             </div>
                                             <Button
                                                 variant="outline"
-                                                onClick={() => setIsEditingTransport(true)}
+                                                onClick={() => {
+                                                    setIsEditingTransport(true);
+                                                    setRedirectCountdown(null);
+                                                }}
                                                 className="w-full"
+                                                disabled={redirectCountdown !== null && redirectCountdown <= 2}
                                             >
                                                 Edit transport information
                                             </Button>
