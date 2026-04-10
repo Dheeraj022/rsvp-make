@@ -244,8 +244,21 @@ export default function PublicEventPage() {
         } else {
             setStep("success");
             setRedirectCountdown(null);
+            
+            // Send Thank You WhatsApp message after transport details submitted
+            if (selectedGuest && event) {
+                fetch('/api/whatsapp/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        guest: selectedGuest,
+                        event: event,
+                        messageType: 'Thank You'
+                    })
+                }).catch(err => console.error("Failed to send Thank You WhatsApp:", err));
+            }
         }
-    }, [redirectCountdown]);
+    }, [redirectCountdown, selectedGuest, event]);
 
     // Save draft to localStorage whenever relevant state changes
     useEffect(() => {
