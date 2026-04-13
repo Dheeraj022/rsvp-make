@@ -33,6 +33,7 @@ type Coordinator = {
         event_id: string;
         events: {
             name: string;
+            date?: string;
         };
     }[];
     created_at: string;
@@ -42,6 +43,7 @@ type Coordinator = {
 type Event = {
     id: string;
     name: string;
+    date?: string;
 };
 
 function CoordinatorsPage() {
