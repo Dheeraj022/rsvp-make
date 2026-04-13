@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
             serviceRoleKey
         );
 
-        const { type, email, password, name, managerName, username, eventId, adminId } = await req.json();
+        const { type, email, password, name, managerName, username, eventIds, adminId } = await req.json();
 
         if (!type || !email || !password || !name || !adminId) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -50,16 +50,27 @@ export async function POST(req: NextRequest) {
             });
             if (dbError) throw dbError;
         } else if (type === 'coordinator') {
-            const { error: dbError } = await supabaseAdmin.from("coordinators").insert({
+            // First create the coordinator record
+            const { data: coordinator, error: dbError } = await supabaseAdmin.from("coordinators").insert({
                 name,
                 username: username || name.toLowerCase().replace(/\s+/g, "_"),
                 email,
                 user_id: userId,
                 admin_id: adminId,
-                event_id: eventId || null,
                 is_active: false // Approval required by default
-            });
+            }).select('id').single();
+
             if (dbError) throw dbError;
+
+            // Then insert event assignments if provided
+            if (coordinator && eventIds && Array.isArray(eventIds) && eventIds.length > 0) {
+                const assignments = eventIds.map((eventId: string) => ({
+                    coordinator_id: coordinator.id,
+                    event_id: eventId
+                }));
+                const { error: assignError } = await supabaseAdmin.from("coordinator_events").insert(assignments);
+                if (assignError) throw assignError;
+            }
         }
 
         return NextResponse.json({ success: true, userId });

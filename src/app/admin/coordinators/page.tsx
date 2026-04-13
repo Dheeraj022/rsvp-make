@@ -26,11 +26,13 @@ type Coordinator = {
     name: string;
     username: string;
     email?: string;
-    event_id?: string;
+    coordinator_events?: {
+        event_id: string;
+        events: {
+            name: string;
+        };
+    }[];
     created_at: string;
-    events?: {
-        name: string;
-    };
     is_active: boolean;
 };
 
@@ -53,13 +55,13 @@ function CoordinatorsPage() {
     const [newUsername, setNewUsername] = useState("");
     const [newEmail, setNewEmail] = useState("");
     const [newPassword, setNewPassword] = useState("");
-    const [selectedEventId, setSelectedEventId] = useState<string>("");
+    const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
     const [isCreating, setIsCreating] = useState(false);
 
     // Edit Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingCoordinator, setEditingCoordinator] = useState<Coordinator | null>(null);
-    const [editEventId, setEditEventId] = useState<string>("");
+    const [editEventIds, setEditEventIds] = useState<string[]>([]);
     const [isUpdating, setIsUpdating] = useState(false);
 
     useEffect(() => {
@@ -84,8 +86,11 @@ function CoordinatorsPage() {
                 .from("coordinators")
                 .select(`
                     *,
-                    events (
-                        name
+                    coordinator_events (
+                        event_id,
+                        events (
+                            name
+                        )
                     )
                 `)
                 .order("created_at", { ascending: false });
@@ -129,7 +134,7 @@ function CoordinatorsPage() {
                     password: newPassword,
                     name: newName,
                     username: newUsername,
-                    eventId: selectedEventId || null,
+                    eventIds: selectedEventIds,
                     adminId: user.id
                 }),
             });
@@ -143,9 +148,8 @@ function CoordinatorsPage() {
             setNewUsername("");
             setNewEmail("");
             setNewPassword("");
-            setSelectedEventId("");
-            setSelectedEventId("");
-            toast.success("Coordinator created successfully! If you were logged out, please log back in.");
+            setSelectedEventIds([]);
+            toast.success("Coordinator created successfully!");
         } catch (error: any) {
             toast.error("Failed to create coordinator: " + error.message);
         } finally {
@@ -200,7 +204,7 @@ function CoordinatorsPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     coordinatorId: editingCoordinator.id,
-                    eventId: editEventId || null,
+                    eventIds: editEventIds,
                 }),
             });
 
@@ -306,7 +310,15 @@ function CoordinatorsPage() {
                                             </td>
                                             <td className="px-6 py-5">
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900">
-                                                    {c.events?.name || "No event"}
+                                                    {c.coordinator_events && c.coordinator_events.length > 0 ? (
+                                                        c.coordinator_events.map((ce, i) => (
+                                                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/50">
+                                                                {ce.events?.name}
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-zinc-400 text-xs italic">No event assigned</span>
+                                                    )}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-5">
@@ -339,7 +351,7 @@ function CoordinatorsPage() {
                                                         className="h-8 w-8 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 transition-colors"
                                                         onClick={() => {
                                                             setEditingCoordinator(c);
-                                                            setEditEventId(c.event_id || "");
+                                                            setEditEventIds(c.coordinator_events?.map(ce => ce.event_id) || []);
                                                             setIsEditModalOpen(true);
                                                         }}
                                                     >
@@ -389,8 +401,19 @@ function CoordinatorsPage() {
                                             <span className="text-xs text-zinc-600 dark:text-zinc-300 font-medium truncate">{c.email || "N/A"}</span>
                                         </div>
                                         <div className="flex flex-col gap-1 items-end text-right">
-                                            <span className="text-[9px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Assigned Event</span>
-                                            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">{c.events?.name || "Unassigned"}</span>
+                                            <span className="text-[9px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Assigned Events</span>
+                                            <div className="flex flex-wrap justify-end gap-1">
+                                                {c.coordinator_events && c.coordinator_events.length > 0 ? (
+                                                    c.coordinator_events.slice(0, 2).map((ce, i) => (
+                                                        <span key={i} className="text-[10px] font-bold text-blue-600 dark:text-blue-400">{ce.events?.name}</span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-[10px] text-zinc-400 italic">Unassigned</span>
+                                                )}
+                                                {c.coordinator_events && c.coordinator_events.length > 2 && (
+                                                    <span className="text-[10px] text-zinc-400">+{c.coordinator_events.length - 2} more</span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -414,7 +437,7 @@ function CoordinatorsPage() {
                                                 className="h-8 w-8 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50"
                                                 onClick={() => {
                                                     setEditingCoordinator(c);
-                                                    setEditEventId(c.event_id || "");
+                                                    setEditEventIds(c.coordinator_events?.map(ce => ce.event_id) || []);
                                                     setIsEditModalOpen(true);
                                                 }}
                                             >
@@ -496,22 +519,34 @@ function CoordinatorsPage() {
                                 />
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-3 pt-2">
                                 <label className="text-sm font-medium text-zinc-700 dark:text-zinc-50 flex items-center gap-2">
-                                    Assigned Event
+                                    Assigned Events
+                                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">(Select Multiple)</span>
                                 </label>
-                                <select
-                                    value={selectedEventId}
-                                    onChange={(e) => setSelectedEventId(e.target.value)}
-                                    className="w-full h-12 px-4 bg-zinc-50 dark:bg-white/5 border-none dark:border dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm font-bold text-zinc-900 dark:text-zinc-50"
-                                >
-                                    <option value="" className="dark:bg-zinc-950">Select an event (Optional)</option>
-                                    {events.map((event) => (
-                                        <option key={event.id} value={event.id} className="dark:bg-zinc-950">
-                                            {event.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-3 bg-zinc-50 dark:bg-white/5 rounded-2xl border border-zinc-100 dark:border-white/10 custom-scrollbar">
+                                    {events.length === 0 ? (
+                                        <div className="py-4 text-center text-xs text-zinc-400">No events found</div>
+                                    ) : (
+                                        events.map((event) => (
+                                            <label key={event.id} className="flex items-center gap-3 p-2 hover:bg-white dark:hover:bg-white/5 rounded-xl cursor-pointer transition-all border border-transparent hover:border-zinc-200 dark:hover:border-white/10 group">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedEventIds.includes(event.id)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setSelectedEventIds([...selectedEventIds, event.id]);
+                                                        } else {
+                                                            setSelectedEventIds(selectedEventIds.filter(id => id !== event.id));
+                                                        }
+                                                    }}
+                                                    className="w-5 h-5 rounded-lg border-zinc-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer"
+                                                />
+                                                <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-blue-600 transition-colors truncate">{event.name}</span>
+                                            </label>
+                                        ))
+                                    )}
+                                </div>
                             </div>
 
                             <div className="pt-6">
@@ -546,20 +581,34 @@ function CoordinatorsPage() {
                             <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed">
                                 This will grant them access to all guests of that event.
                             </p>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-1">Select Event</label>
-                                <select
-                                    value={editEventId}
-                                    onChange={(e) => setEditEventId(e.target.value)}
-                                    className="w-full h-12 px-4 bg-zinc-50 dark:bg-white/5 border-none dark:border dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm font-bold text-zinc-900 dark:text-zinc-50"
-                                >
-                                    <option value="" className="dark:bg-zinc-950">No Event Assigned</option>
-                                    {events.map((event) => (
-                                        <option key={event.id} value={event.id} className="dark:bg-zinc-950">
-                                            {event.name}
-                                        </option>
-                                    ))}
-                                </select>
+                            <div className="space-y-3">
+                                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-50 flex items-center gap-2">
+                                    Assign Events
+                                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">(Select Multiple)</span>
+                                </label>
+                                <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-3 bg-zinc-50 dark:bg-white/5 rounded-2xl border border-zinc-100 dark:border-white/10 custom-scrollbar">
+                                    {events.length === 0 ? (
+                                        <div className="py-4 text-center text-xs text-zinc-400">No events found</div>
+                                    ) : (
+                                        events.map((event) => (
+                                            <label key={event.id} className="flex items-center gap-3 p-2 hover:bg-white dark:hover:bg-white/5 rounded-xl cursor-pointer transition-all border border-transparent hover:border-zinc-200 dark:hover:border-white/10 group">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={editEventIds.includes(event.id)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setEditEventIds([...editEventIds, event.id]);
+                                                        } else {
+                                                            setEditEventIds(editEventIds.filter(id => id !== event.id));
+                                                        }
+                                                    }}
+                                                    className="w-5 h-5 rounded-lg border-zinc-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer"
+                                                />
+                                                <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-blue-600 transition-colors truncate">{event.name}</span>
+                                            </label>
+                                        ))
+                                    )}
+                                </div>
                             </div>
 
                             <div className="pt-6">

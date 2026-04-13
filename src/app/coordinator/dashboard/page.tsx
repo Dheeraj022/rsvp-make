@@ -107,6 +107,10 @@ function CoordinatorDashboard() {
     const [depTransportNo, setDepTransportNo] = useState("");
     const [depStation, setDepStation] = useState("");
 
+    // Event Selection for multiple events
+    const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+    const [assignedEvents, setAssignedEvents] = useState<any[]>([]);
+
     // Primary Guest Linking
     const [selectedPrimaryGuestId, setSelectedPrimaryGuestId] = useState<string | null>(null);
 
@@ -132,7 +136,7 @@ function CoordinatorDashboard() {
 
     useEffect(() => {
         fetchCoordinatorAndGuests();
-    }, []);
+    }, [selectedEventId]);
 
     // Flattened and Filtered Guests
     const flattenedGuests = useMemo(() => {
@@ -382,7 +386,14 @@ function CoordinatorDashboard() {
             // Fetch coordinator metadata
             const { data: coordData, error: coordError } = await supabase
                 .from("coordinators")
-                .select("*")
+                .select(`
+                    *,
+                    main_event:events!event_id ( name, date ),
+                    coordinator_events (
+                        event_id,
+                        events ( name, date )
+                    )
+                `)
                 .eq("user_id", user.id)
                 .single();
 
@@ -405,9 +416,44 @@ function CoordinatorDashboard() {
                     events ( name, date )
                 `);
 
-            if (coordData.event_id) {
-                // If the coordinator is assigned to an event, show all guests for that event
-                guestsQuery = guestsQuery.eq("event_id", coordData.event_id);
+            const eventsFromDB = (coordData.coordinator_events || []).map((ce: any) => ({
+                id: ce.event_id,
+                name: ce.events?.name || "Assigned Event",
+                date: ce.events?.date
+            }));
+            
+            // Add the legacy event_id if it exists and isn't already included
+            if (coordData.main_event && coordData.event_id) {
+                const alreadyExists = eventsFromDB.some((e: any) => e.id === coordData.event_id);
+                if (!alreadyExists) {
+                    eventsFromDB.push({
+                        id: coordData.event_id,
+                        name: coordData.main_event.name,
+                        date: coordData.main_event.date
+                    });
+                }
+            }
+            
+            // Deduplicate by ID just in case
+            const uniqueEvents = Array.from(new Map(eventsFromDB.filter(e => e.id).map(e => [e.id, e])).values());
+            setAssignedEvents(uniqueEvents);
+
+            // If no event selected yet, default to first one if it exists
+            let currentEventId = selectedEventId;
+            if (!currentEventId) {
+                if (eventsFromDB.length > 0) {
+                    currentEventId = eventsFromDB[0].id;
+                } else if (coordData.event_id) {
+                    currentEventId = coordData.event_id;
+                }
+            }
+
+            if (currentEventId && !selectedEventId) {
+                setSelectedEventId(currentEventId);
+            }
+
+            if (currentEventId) {
+                guestsQuery = guestsQuery.eq("event_id", currentEventId);
             } else {
                 // Otherwise only guests directly assigned to the coordinator
                 guestsQuery = guestsQuery.eq("coordinator_id", coordData.id);
@@ -758,6 +804,11 @@ function CoordinatorDashboard() {
         try {
             let finalEventId = coordinator?.event_id;
 
+            // If no single event_id, try to use the first assigned event from coordinator_events
+            if (!finalEventId && coordinator?.coordinator_events && coordinator.coordinator_events.length > 0) {
+                finalEventId = coordinator.coordinator_events[0].event_id;
+            }
+
             // If coordinator has no explicit event_id, try to pull from existing guests
             if (!finalEventId && guests.length > 0) {
                 finalEventId = guests[0].event_id;
@@ -1026,13 +1077,31 @@ function CoordinatorDashboard() {
 
                 {/* Modern Mobile Header */}
                 <header className="lg:hidden bg-white dark:bg-zinc-900 border-b p-4 flex items-center justify-between sticky top-0 z-40 gap-2">
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)} className="rounded-xl bg-zinc-50 shadow-sm">
-                            <Menu size={20} />
-                        </Button>
-                        <h2 className="font-black text-lg tracking-tighter uppercase text-zinc-900 dark:text-zinc-50">
-                            {activeTab === "arrived" ? "Arrived" : "Departure"}
-                        </h2>
+                    <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)} className="rounded-xl bg-zinc-50 shadow-sm transition-all active:scale-95">
+                                <Menu size={20} />
+                            </Button>
+                            <h2 className="font-black text-lg tracking-tighter uppercase text-zinc-900 dark:text-zinc-50">
+                                {activeTab === "arrived" ? "Arrived" : "Departure"}
+                            </h2>
+                        </div>
+                        {assignedEvents.length > 1 && (
+                            <div className="flex items-center gap-1 mt-1 ml-1 px-2 py-0.5 bg-blue-50/50 dark:bg-blue-500/10 rounded-lg border border-blue-100/50 dark:border-blue-500/10 w-fit">
+                                <Calendar size={10} className="text-blue-500" />
+                                <select 
+                                    value={selectedEventId || ""}
+                                    onChange={(e) => setSelectedEventId(e.target.value)}
+                                    className="bg-transparent border-none outline-none text-[10px] font-black text-blue-600 dark:text-blue-400 cursor-pointer appearance-none uppercase tracking-widest"
+                                >
+                                    {assignedEvents.map(event => (
+                                        <option key={event.id} value={event.id} className="dark:bg-zinc-950">
+                                            {event.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
                         <Button
@@ -1061,14 +1130,37 @@ function CoordinatorDashboard() {
                     <div className="max-w-5xl mx-auto space-y-8">
 
                         {/* Content Header (Desktop) */}
-                        <div className="hidden lg:flex items-center justify-between">
-                            <div>
-                                <h1 className="text-4xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
-                                    {activeTab === "arrived" ? "Arrived Dashboard" : "Departure Dashboard"}
-                                </h1>
-                                <p className="text-zinc-500 font-medium mt-1">Manage guest schedules and status effectively.</p>
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                        <div>
+                            <h1 className="text-3xl font-black text-zinc-900 border-none outline-none dark:text-zinc-50 tracking-tight">Arrived Dashboard</h1>
+                            <p className="text-zinc-500 dark:text-zinc-400 mt-1 font-medium">Manage guest schedules and status effectively.</p>
+                        </div>
+                        
+                        {/* Event Switcher */}
+                        {assignedEvents.length > 0 && (
+                            <div className="flex items-center gap-2 bg-white dark:bg-white/5 p-1.5 rounded-2xl border border-zinc-100 dark:border-white/10 shadow-sm transition-all hover:shadow-md animate-in fade-in zoom-in duration-300">
+                                <Calendar size={16} className="text-blue-500 ml-2" />
+                                <div className="flex flex-col">
+                                    <span className="text-[8px] font-black text-blue-600 uppercase tracking-tighter ml-0.5 leading-none">Switch Event</span>
+                                    <select 
+                                        value={selectedEventId || ""}
+                                        onChange={(e) => setSelectedEventId(e.target.value)}
+                                        className="bg-transparent border-none outline-none text-xs font-bold text-zinc-900 dark:text-zinc-50 pr-8 cursor-pointer appearance-none"
+                                    >
+                                        {assignedEvents.map(event => (
+                                            <option key={event.id} value={event.id} className="dark:bg-zinc-950">
+                                                {event.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="pointer-events-none -ml-6 mr-2">
+                                    <ChevronDown size={12} className="text-zinc-400" />
+                                </div>
                             </div>
-                            <div className="flex items-center gap-3">
+                        )}
+                        
+                        <div className="flex items-center gap-3">
                                 <Button
                                     onClick={() => setIsAddGuestModalOpen(true)}
                                     className="rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 px-6 gap-2 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
@@ -1142,26 +1234,28 @@ function CoordinatorDashboard() {
                             </div>
 
                             {/* Event Information Section */}
-                            <div className="px-8 py-6 bg-white dark:bg-zinc-900 flex flex-wrap items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-800">
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none mb-1.5">Scheduled Event</span>
-                                    <h2 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
-                                        {guests[0]?.events?.name || "No Event Assigned"}
-                                    </h2>
-                                </div>
-                                {guests[0]?.events?.date && (
-                                    <div className="flex items-center gap-4 bg-blue-50/50 dark:bg-blue-900/10 px-5 py-3 rounded-2xl border border-blue-100/50 dark:border-blue-900/20">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
-                                            <Calendar size={20} />
+                            <div className="bg-white dark:bg-white/5 rounded-[2.5rem] p-6 sm:p-8 border border-zinc-100 dark:border-white/10 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-1">Scheduled Event</span>
+                                        <h2 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
+                                            {assignedEvents.find(e => e.id === selectedEventId)?.name || coordinator?.events?.name || "Event Name"}
+                                        </h2>
+                                    </div>
+                                    <div className="flex items-center gap-4 bg-zinc-50/50 dark:bg-white/5 p-4 rounded-3xl border border-zinc-100 dark:border-white/10">
+                                        <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0">
+                                            <Calendar size={24} />
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Event Date</span>
-                                            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                                                {format(new Date(guests[0].events.date), "MMMM d, yyyy")}
-                                            </span>
+                                        <div>
+                                            <p className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Event Date</p>
+                                            <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">
+                                                {assignedEvents.find(e => e.id === selectedEventId)?.date 
+                                                    ? format(new Date(assignedEvents.find(e => e.id === selectedEventId).date), "MMMM dd, yyyy") 
+                                                    : (coordinator?.events?.date ? format(new Date(coordinator.events.date), "MMMM dd, yyyy") : "TBD")}
+                                            </p>
                                         </div>
                                     </div>
-                                )}
+                                </div>
                             </div>
 
                             {/* Dashboard Search */}
