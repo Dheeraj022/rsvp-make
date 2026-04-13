@@ -435,7 +435,7 @@ function CoordinatorDashboard() {
             }
             
             // Deduplicate by ID just in case
-            const uniqueEvents = Array.from(new Map(eventsFromDB.filter(e => e.id).map(e => [e.id, e])).values());
+            const uniqueEvents = Array.from(new Map(eventsFromDB.filter((e: any) => e.id).map((e: any) => [e.id, e])).values());
             setAssignedEvents(uniqueEvents);
 
             // If no event selected yet, default to first one if it exists
