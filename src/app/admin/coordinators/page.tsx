@@ -15,8 +15,11 @@ import {
     Trash2,
     Pencil,
     UserCheck,
-    CheckCircle
+    CheckCircle,
+    Calendar
 } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/useToast";
 import { Input } from "@/components/ui/input";
 
@@ -526,25 +529,57 @@ function CoordinatorsPage() {
                                 </label>
                                 <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-3 bg-zinc-50 dark:bg-white/5 rounded-2xl border border-zinc-100 dark:border-white/10 custom-scrollbar">
                                     {events.length === 0 ? (
-                                        <div className="py-4 text-center text-xs text-zinc-400">No events found</div>
+                                        <div className="py-8 text-center">
+                                            <Calendar className="mx-auto h-8 w-8 text-zinc-300 dark:text-zinc-700 mb-2" />
+                                            <div className="text-xs text-zinc-400 font-medium">No events found</div>
+                                        </div>
                                     ) : (
-                                        events.map((event) => (
-                                            <label key={event.id} className="flex items-center gap-3 p-2 hover:bg-white dark:hover:bg-white/5 rounded-xl cursor-pointer transition-all border border-transparent hover:border-zinc-200 dark:hover:border-white/10 group">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedEventIds.includes(event.id)}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) {
-                                                            setSelectedEventIds([...selectedEventIds, event.id]);
-                                                        } else {
-                                                            setSelectedEventIds(selectedEventIds.filter(id => id !== event.id));
-                                                        }
-                                                    }}
-                                                    className="w-5 h-5 rounded-lg border-zinc-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer"
-                                                />
-                                                <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-blue-600 transition-colors truncate">{event.name}</span>
-                                            </label>
-                                        ))
+                                        events.map((event) => {
+                                            const isSelected = selectedEventIds.includes(event.id);
+                                            return (
+                                                <label 
+                                                    key={event.id} 
+                                                    className={cn(
+                                                        "flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all border group relative overflow-hidden",
+                                                        isSelected 
+                                                            ? "bg-blue-50/50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30" 
+                                                            : "bg-white dark:bg-white/5 border-zinc-100 dark:border-white/10 hover:border-zinc-200 dark:hover:border-white/20"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                                                        isSelected ? "bg-blue-500 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700"
+                                                    )}>
+                                                        <Calendar size={18} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className={cn(
+                                                            "text-sm font-bold block truncate transition-colors",
+                                                            isSelected ? "text-blue-600 dark:text-blue-400" : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-900"
+                                                        )}>
+                                                            {event.name}
+                                                        </span>
+                                                        {event.date && (
+                                                            <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
+                                                                {format(new Date(event.date), "MMM dd, yyyy")}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedEventIds([...selectedEventIds, event.id]);
+                                                            } else {
+                                                                setSelectedEventIds(selectedEventIds.filter(id => id !== event.id));
+                                                            }
+                                                        }}
+                                                        className="w-5 h-5 rounded-lg border-zinc-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer accent-blue-600"
+                                                    />
+                                                </label>
+                                            );
+                                        })
                                     )}
                                 </div>
                             </div>
@@ -588,25 +623,57 @@ function CoordinatorsPage() {
                                 </label>
                                 <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-3 bg-zinc-50 dark:bg-white/5 rounded-2xl border border-zinc-100 dark:border-white/10 custom-scrollbar">
                                     {events.length === 0 ? (
-                                        <div className="py-4 text-center text-xs text-zinc-400">No events found</div>
+                                        <div className="py-8 text-center">
+                                            <Calendar className="mx-auto h-8 w-8 text-zinc-300 dark:text-zinc-700 mb-2" />
+                                            <div className="text-xs text-zinc-400 font-medium">No events found</div>
+                                        </div>
                                     ) : (
-                                        events.map((event) => (
-                                            <label key={event.id} className="flex items-center gap-3 p-2 hover:bg-white dark:hover:bg-white/5 rounded-xl cursor-pointer transition-all border border-transparent hover:border-zinc-200 dark:hover:border-white/10 group">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={editEventIds.includes(event.id)}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) {
-                                                            setEditEventIds([...editEventIds, event.id]);
-                                                        } else {
-                                                            setEditEventIds(editEventIds.filter(id => id !== event.id));
-                                                        }
-                                                    }}
-                                                    className="w-5 h-5 rounded-lg border-zinc-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer"
-                                                />
-                                                <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-blue-600 transition-colors truncate">{event.name}</span>
-                                            </label>
-                                        ))
+                                        events.map((event) => {
+                                            const isSelected = editEventIds.includes(event.id);
+                                            return (
+                                                <label 
+                                                    key={event.id} 
+                                                    className={cn(
+                                                        "flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all border group relative overflow-hidden",
+                                                        isSelected 
+                                                            ? "bg-blue-50/50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30" 
+                                                            : "bg-white dark:bg-white/5 border-zinc-100 dark:border-white/10 hover:border-zinc-200 dark:hover:border-white/20"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                                                        isSelected ? "bg-blue-500 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700"
+                                                    )}>
+                                                        <Calendar size={18} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className={cn(
+                                                            "text-sm font-bold block truncate transition-colors",
+                                                            isSelected ? "text-blue-600 dark:text-blue-400" : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-900"
+                                                        )}>
+                                                            {event.name}
+                                                        </span>
+                                                        {event.date && (
+                                                            <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
+                                                                {format(new Date(event.date), "MMM dd, yyyy")}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setEditEventIds([...editEventIds, event.id]);
+                                                            } else {
+                                                                setEditEventIds(editEventIds.filter(id => id !== event.id));
+                                                            }
+                                                        }}
+                                                        className="w-5 h-5 rounded-lg border-zinc-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer accent-blue-600"
+                                                    />
+                                                </label>
+                                            );
+                                        })
                                     )}
                                 </div>
                             </div>

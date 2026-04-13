@@ -28,8 +28,10 @@ import {
     PlaneLanding,
     Mail,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Check
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -110,6 +112,7 @@ function CoordinatorDashboard() {
     // Event Selection for multiple events
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const [assignedEvents, setAssignedEvents] = useState<any[]>([]);
+    const [isEventMenuOpen, setIsEventMenuOpen] = useState(false);
 
     // Primary Guest Linking
     const [selectedPrimaryGuestId, setSelectedPrimaryGuestId] = useState<string | null>(null);
@@ -1138,25 +1141,81 @@ function CoordinatorDashboard() {
                         
                         {/* Event Switcher */}
                         {assignedEvents.length > 0 && (
-                            <div className="flex items-center gap-2 bg-white dark:bg-white/5 p-1.5 rounded-2xl border border-zinc-100 dark:border-white/10 shadow-sm transition-all hover:shadow-md animate-in fade-in zoom-in duration-300">
-                                <Calendar size={16} className="text-blue-500 ml-2" />
-                                <div className="flex flex-col">
-                                    <span className="text-[8px] font-black text-blue-600 uppercase tracking-tighter ml-0.5 leading-none">Switch Event</span>
-                                    <select 
-                                        value={selectedEventId || ""}
-                                        onChange={(e) => setSelectedEventId(e.target.value)}
-                                        className="bg-transparent border-none outline-none text-xs font-bold text-zinc-900 dark:text-zinc-50 pr-8 cursor-pointer appearance-none"
-                                    >
-                                        {assignedEvents.map(event => (
-                                            <option key={event.id} value={event.id} className="dark:bg-zinc-950">
-                                                {event.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="pointer-events-none -ml-6 mr-2">
-                                    <ChevronDown size={12} className="text-zinc-400" />
-                                </div>
+                            <div className="relative">
+                                <button 
+                                    onClick={() => setIsEventMenuOpen(!isEventMenuOpen)}
+                                    className="flex items-center gap-2 bg-white dark:bg-white/5 p-1.5 pl-3 rounded-2xl border border-zinc-100 dark:border-white/10 shadow-sm transition-all hover:shadow-md hover:border-blue-200 dark:hover:border-blue-500/30 group animate-in fade-in zoom-in duration-300 h-12"
+                                >
+                                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                                        <Calendar size={16} />
+                                    </div>
+                                    <div className="flex flex-col items-start pr-8">
+                                        <span className="text-[8px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter leading-none mb-0.5">Switch Event</span>
+                                        <span className="text-xs font-bold text-zinc-900 dark:text-zinc-50 truncate max-w-[120px]">
+                                            {assignedEvents.find(e => e.id === selectedEventId)?.name || "Select Event"}
+                                        </span>
+                                    </div>
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                        <ChevronDown size={14} className={cn("text-zinc-400 transition-transform duration-300", isEventMenuOpen && "rotate-180")} />
+                                    </div>
+                                </button>
+
+                                <AnimatePresence>
+                                    {isEventMenuOpen && (
+                                        <>
+                                            {/* Backdrop */}
+                                            <div 
+                                                className="fixed inset-0 z-40" 
+                                                onClick={() => setIsEventMenuOpen(false)} 
+                                            />
+                                            
+                                            {/* Menu */}
+                                            <motion.div 
+                                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                                transition={{ duration: 0.2, ease: "easeOut" }}
+                                                className="absolute right-0 mt-2 w-64 bg-white dark:bg-zinc-950 rounded-2xl border border-zinc-100 dark:border-white/10 shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
+                                            >
+                                                <div className="p-2 space-y-1">
+                                                    {assignedEvents.map((event) => {
+                                                        const isSelected = event.id === selectedEventId;
+                                                        return (
+                                                            <button
+                                                                key={event.id}
+                                                                onClick={() => {
+                                                                    setSelectedEventId(event.id);
+                                                                    setIsEventMenuOpen(false);
+                                                                }}
+                                                                className={cn(
+                                                                    "w-full flex items-center justify-between p-3 rounded-xl transition-all group",
+                                                                    isSelected 
+                                                                        ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20" 
+                                                                        : "hover:bg-zinc-50 dark:hover:bg-white/5 text-zinc-700 dark:text-zinc-300"
+                                                                )}
+                                                            >
+                                                                <div className="flex flex-col items-start min-w-0">
+                                                                    <span className="text-xs font-bold truncate w-full">{event.name}</span>
+                                                                    <span className={cn(
+                                                                        "text-[9px] font-medium",
+                                                                        isSelected ? "text-blue-100" : "text-zinc-400"
+                                                                    )}>
+                                                                        {event.date ? format(new Date(event.date), "MMM dd, yyyy") : "Date TBD"}
+                                                                    </span>
+                                                                </div>
+                                                                {isSelected && (
+                                                                    <div className="bg-white/20 p-1 rounded-full text-white">
+                                                                        <Check size={12} />
+                                                                    </div>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </motion.div>
+                                        </>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         )}
                         
