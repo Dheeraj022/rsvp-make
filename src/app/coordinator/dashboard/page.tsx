@@ -1089,22 +1089,6 @@ function CoordinatorDashboard() {
                                 {activeTab === "arrived" ? "Arrived" : "Departure"}
                             </h2>
                         </div>
-                        {assignedEvents.length > 1 && (
-                            <div className="flex items-center gap-1 mt-1 ml-1 px-2 py-0.5 bg-blue-50/50 dark:bg-blue-500/10 rounded-lg border border-blue-100/50 dark:border-blue-500/10 w-fit">
-                                <Calendar size={10} className="text-blue-500" />
-                                <select 
-                                    value={selectedEventId || ""}
-                                    onChange={(e) => setSelectedEventId(e.target.value)}
-                                    className="bg-transparent border-none outline-none text-[10px] font-black text-blue-600 dark:text-blue-400 cursor-pointer appearance-none uppercase tracking-widest"
-                                >
-                                    {assignedEvents.map(event => (
-                                        <option key={event.id} value={event.id} className="dark:bg-zinc-950">
-                                            {event.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
                     </div>
                     <div className="flex items-center gap-2">
                         <Button
@@ -1132,108 +1116,112 @@ function CoordinatorDashboard() {
                 <div className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-12 space-y-8">
                     <div className="max-w-5xl mx-auto space-y-8">
 
-                        {/* Content Header (Desktop) */}
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                        <div>
-                            <h1 className="text-3xl font-black text-zinc-900 border-none outline-none dark:text-zinc-50 tracking-tight">Arrived Dashboard</h1>
-                            <p className="text-zinc-500 dark:text-zinc-400 mt-1 font-medium">Manage guest schedules and status effectively.</p>
-                        </div>
-                        
-                        {/* Event Switcher */}
-                        {assignedEvents.length > 0 && (
-                            <div className="relative">
-                                <button 
-                                    onClick={() => setIsEventMenuOpen(!isEventMenuOpen)}
-                                    className="flex items-center gap-2 bg-white dark:bg-white/5 p-1.5 pl-3 rounded-2xl border border-zinc-100 dark:border-white/10 shadow-sm transition-all hover:shadow-md hover:border-blue-200 dark:hover:border-blue-500/30 group animate-in fade-in zoom-in duration-300 h-12"
-                                >
-                                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all">
-                                        <Calendar size={16} />
-                                    </div>
-                                    <div className="flex flex-col items-start pr-8">
-                                        <span className="text-[8px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter leading-none mb-0.5">Switch Event</span>
-                                        <span className="text-xs font-bold text-zinc-900 dark:text-zinc-50 truncate max-w-[120px]">
-                                            {assignedEvents.find(e => e.id === selectedEventId)?.name || "Select Event"}
-                                        </span>
-                                    </div>
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                        <ChevronDown size={14} className={cn("text-zinc-400 transition-transform duration-300", isEventMenuOpen && "rotate-180")} />
-                                    </div>
-                                </button>
+                        {/* Content Header (Desktop/Tablet) */}
+                        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 mb-8 mt-4 lg:mt-0 px-1">
+                            <div className="space-y-4 lg:space-y-2 xl:space-y-0 lg:flex lg:flex-col xl:flex-row lg:items-start xl:items-end lg:gap-4 xl:gap-6 flex-1">
+                                <div>
+                                    <h1 className="text-3xl lg:text-3xl xl:text-4xl font-black text-zinc-900 border-none outline-none dark:text-zinc-50 tracking-tight">Arrived Dashboard</h1>
+                                    <p className="text-zinc-500 dark:text-zinc-400 mt-1 font-medium">Manage guest schedules and status effectively.</p>
+                                </div>
+                                
+                                {/* Event Switcher */}
+                                {assignedEvents.length > 0 && (
+                                    <div className="relative w-full md:w-auto mt-2 lg:mt-1 xl:mt-0">
+                                        <button 
+                                            onClick={() => setIsEventMenuOpen(!isEventMenuOpen)}
+                                            className="flex items-center gap-2 bg-white dark:bg-white/5 p-1.5 pl-3 rounded-2xl border border-zinc-100 dark:border-white/10 shadow-sm transition-all hover:shadow-md hover:border-blue-200 dark:hover:border-blue-500/30 group animate-in fade-in zoom-in duration-300 h-14 md:h-12 w-full md:min-w-[180px] md:w-auto lg:h-12"
+                                        >
+                                            <div className="w-10 h-10 md:w-8 md:h-8 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                                                <Calendar size={18} className="md:size-4" />
+                                            </div>
+                                            <div className="flex flex-col items-start pr-8">
+                                                <span className="text-[8px] md:text-[7px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter leading-none mb-0.5">Switch Event</span>
+                                                <span className="text-sm md:text-xs font-bold text-zinc-900 dark:text-zinc-50 truncate max-w-[200px] md:max-w-[150px]">
+                                                    {assignedEvents.find(e => e.id === selectedEventId)?.name || "Select Event"}
+                                                </span>
+                                            </div>
+                                            <div className="absolute right-4 md:right-3 top-1/2 -translate-y-1/2">
+                                                <ChevronDown size={16} className={cn("text-zinc-400 transition-transform duration-300 md:size-3.5", isEventMenuOpen && "rotate-180")} />
+                                            </div>
+                                        </button>
 
-                                <AnimatePresence>
-                                    {isEventMenuOpen && (
-                                        <>
-                                            {/* Backdrop */}
-                                            <div 
-                                                className="fixed inset-0 z-40" 
-                                                onClick={() => setIsEventMenuOpen(false)} 
-                                            />
-                                            
-                                            {/* Menu */}
-                                            <motion.div 
-                                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                                transition={{ duration: 0.2, ease: "easeOut" }}
-                                                className="absolute right-0 mt-2 w-64 bg-white dark:bg-zinc-950 rounded-2xl border border-zinc-100 dark:border-white/10 shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
-                                            >
-                                                <div className="p-2 space-y-1">
-                                                    {assignedEvents.map((event) => {
-                                                        const isSelected = event.id === selectedEventId;
-                                                        return (
-                                                            <button
-                                                                key={event.id}
-                                                                onClick={() => {
-                                                                    setSelectedEventId(event.id);
-                                                                    setIsEventMenuOpen(false);
-                                                                }}
-                                                                className={cn(
-                                                                    "w-full flex items-center justify-between p-3 rounded-xl transition-all group",
-                                                                    isSelected 
-                                                                        ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20" 
-                                                                        : "hover:bg-zinc-50 dark:hover:bg-white/5 text-zinc-700 dark:text-zinc-300"
-                                                                )}
-                                                            >
-                                                                <div className="flex flex-col items-start min-w-0">
-                                                                    <span className="text-xs font-bold truncate w-full">{event.name}</span>
-                                                                    <span className={cn(
-                                                                        "text-[9px] font-medium",
-                                                                        isSelected ? "text-blue-100" : "text-zinc-400"
-                                                                    )}>
-                                                                        {event.date ? format(new Date(event.date), "MMM dd, yyyy") : "Date TBD"}
-                                                                    </span>
-                                                                </div>
-                                                                {isSelected && (
-                                                                    <div className="bg-white/20 p-1 rounded-full text-white">
-                                                                        <Check size={12} />
-                                                                    </div>
-                                                                )}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </motion.div>
-                                        </>
-                                    )}
-                                </AnimatePresence>
+                                        <AnimatePresence>
+                                            {isEventMenuOpen && (
+                                                <>
+                                                    {/* Backdrop */}
+                                                    <div 
+                                                        className="fixed inset-0 z-40" 
+                                                        onClick={() => setIsEventMenuOpen(false)} 
+                                                    />
+                                                    
+                                                    {/* Menu */}
+                                                    <motion.div 
+                                                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                                        transition={{ duration: 0.2, ease: "easeOut" }}
+                                                        className="absolute left-0 mt-2 w-full md:w-72 bg-white dark:bg-zinc-950 rounded-2xl border border-zinc-100 dark:border-white/10 shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
+                                                    >
+                                                        <div className="p-2 space-y-1">
+                                                            {assignedEvents.map((event) => {
+                                                                const isSelected = event.id === selectedEventId;
+                                                                return (
+                                                                    <button
+                                                                        key={event.id}
+                                                                        onClick={() => {
+                                                                            setSelectedEventId(event.id);
+                                                                            setIsEventMenuOpen(false);
+                                                                        }}
+                                                                        className={cn(
+                                                                            "w-full flex items-center justify-between p-3 rounded-xl transition-all group",
+                                                                            isSelected 
+                                                                                ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20" 
+                                                                                : "hover:bg-zinc-50 dark:hover:bg-white/5 text-zinc-700 dark:text-zinc-300"
+                                                                        )}
+                                                                    >
+                                                                        <div className="flex flex-col items-start min-w-0">
+                                                                            <span className="text-xs font-bold truncate w-full">{event.name}</span>
+                                                                            <span className={cn(
+                                                                                "text-[9px] font-medium",
+                                                                                isSelected ? "text-blue-100" : "text-zinc-400"
+                                                                            )}>
+                                                                                {event.date ? format(new Date(event.date), "MMM dd, yyyy") : "Date TBD"}
+                                                                            </span>
+                                                                        </div>
+                                                                        {isSelected && (
+                                                                            <div className="bg-white/20 p-1 rounded-full text-white">
+                                                                                <Check size={12} />
+                                                                            </div>
+                                                                        )}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </motion.div>
+                                                </>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                        
-                        <div className="flex items-center gap-3">
+                            
+                            <div className="hidden md:flex items-center gap-2 sm:gap-3 lg:gap-3 flex-wrap xl:flex-nowrap mt-4 xl:mt-0">
                                 <Button
                                     onClick={() => setIsAddGuestModalOpen(true)}
                                     className="rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 px-6 gap-2 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
                                 >
                                     <UserPlus size={18} />
-                                    <span>Add Guest</span>
+                                    <span className="hidden sm:inline">Add Guest</span>
+                                    <span className="sm:hidden">Add</span>
                                 </Button>
                                 <Button
                                     variant="outline"
                                     onClick={handleExportExcel}
-                                    className="rounded-2xl border-emerald-200 text-emerald-600 font-bold hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all h-12 px-6 gap-2"
+                                    className="rounded-2xl border-emerald-200 text-emerald-600 font-bold h-12 px-3 sm:px-4 lg:px-6 gap-2 hover:bg-emerald-600 hover:text-white transition-all shrink-0"
                                 >
                                     <FileSpreadsheet size={18} />
-                                    Export Excel
+                                    <span className="hidden md:inline-block">Export Excel</span>
+                                    <span className="md:hidden">Export</span>
                                 </Button>
                                 <Button
                                     variant="outline"
@@ -1253,15 +1241,15 @@ function CoordinatorDashboard() {
                             <div className="grid grid-cols-2 gap-px bg-zinc-100 dark:bg-zinc-800 border-b border-zinc-100 dark:border-zinc-800">
                                 {activeTab === "arrived" ? (
                                     <>
-                                        <div className="bg-white dark:bg-zinc-900 p-8 sm:p-10 flex flex-col gap-1">
-                                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Total Expecting</span>
-                                            <span className="text-4xl font-black text-blue-600">
+                                        <div className="bg-white dark:bg-zinc-900 p-8 md:p-10 lg:p-12 flex flex-col gap-1 border-r border-zinc-100 dark:border-zinc-800">
+                                            <span className="text-[10px] md:text-xs font-black text-zinc-400 uppercase tracking-widest">Total Expecting</span>
+                                            <span className="text-4xl md:text-5xl font-black text-blue-600">
                                                 {guests.reduce((acc, g) => acc + 1 + (g.attendees_data || []).filter((a: any) => a.name !== g.name).length, 0)}
                                             </span>
                                         </div>
-                                        <div className="bg-white dark:bg-zinc-900 p-8 sm:p-10 flex flex-col gap-1">
-                                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Arrived Now</span>
-                                            <span className="text-4xl font-black text-emerald-500">
+                                        <div className="bg-white dark:bg-zinc-900 p-8 md:p-10 lg:p-12 flex flex-col gap-1">
+                                            <span className="text-[10px] md:text-xs font-black text-zinc-400 uppercase tracking-widest">Arrived Now</span>
+                                            <span className="text-4xl md:text-5xl font-black text-emerald-500">
                                                 {guests.reduce((acc, g) => {
                                                     const mainArrived = g.check_in_status === "arrived" ? 1 : 0;
                                                     const subArrived = (g.attendees_data || []).filter((a: any) => a.checked_in && a.name !== g.name).length;
@@ -1272,15 +1260,15 @@ function CoordinatorDashboard() {
                                     </>
                                 ) : (
                                     <>
-                                        <div className="bg-white dark:bg-zinc-900 p-8 sm:p-10 flex flex-col gap-1">
-                                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">To Depart</span>
-                                            <span className="text-4xl font-black text-blue-600">
+                                        <div className="bg-white dark:bg-zinc-900 p-8 md:p-10 lg:p-12 flex flex-col gap-1 border-r border-zinc-100 dark:border-zinc-800">
+                                            <span className="text-[10px] md:text-xs font-black text-zinc-400 uppercase tracking-widest">To Depart</span>
+                                            <span className="text-4xl md:text-5xl font-black text-blue-600">
                                                 {guests.reduce((acc, g) => acc + 1 + (g.attendees_data || []).filter((a: any) => a.name !== g.name).length, 0)}
                                             </span>
                                         </div>
-                                        <div className="bg-white dark:bg-zinc-900 p-8 sm:p-10 flex flex-col gap-1">
-                                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Already Departed</span>
-                                            <span className="text-4xl font-black text-indigo-500">
+                                        <div className="bg-white dark:bg-zinc-900 p-8 md:p-10 lg:p-12 flex flex-col gap-1">
+                                            <span className="text-[10px] md:text-xs font-black text-zinc-400 uppercase tracking-widest">Already Departed</span>
+                                            <span className="text-4xl md:text-5xl font-black text-indigo-500">
                                                 {guests.reduce((acc, g) => {
                                                     const mainDeparted = g.departure_status === "departed" ? 1 : 0;
                                                     const subDeparted = (g.attendees_data || []).filter((a: any) => a.departed && a.name !== g.name).length;
