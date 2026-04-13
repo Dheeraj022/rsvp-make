@@ -40,8 +40,7 @@ type GuestLog = {
     phone: string;
     invite_count: number;
     reminder_count: number;
-    arrival_count: number;
-    departure_count: number;
+    service_count: number;
     confirm_count: number;
     last_status: string;
     last_sent_at: string | null;
@@ -297,6 +296,7 @@ function WhatsAppStatusPage() {
                                 <th className="px-8 py-6">Guest Info</th>
                                 <th className="px-6 py-6">Invites</th>
                                 <th className="px-6 py-6">Reminders</th>
+                                <th className="px-6 py-6">Service Alerts</th>
                                 <th className="px-10 py-6">Status</th>
                                 <th className="px-8 py-6 text-right">Actions</th>
                             </tr>
@@ -336,6 +336,12 @@ function WhatsAppStatusPage() {
                                         </td>
                                         <td className="px-6 py-5">
                                             <span className={cn("text-xs font-bold", log.reminder_count > 0 ? "text-zinc-900 dark:text-white" : "text-zinc-300 dark:text-zinc-700")}>{log.reminder_count}</span>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="flex items-center gap-2">
+                                                <span className={cn("text-xs font-bold", log.service_count > 0 ? "text-indigo-600 dark:text-indigo-400" : "text-zinc-300 dark:text-zinc-700")}>{log.service_count}</span>
+                                                {log.service_count > 0 && <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />}
+                                            </div>
                                         </td>
                                         <td className="px-10 py-5">
                                             <div className="flex flex-col gap-1.5">

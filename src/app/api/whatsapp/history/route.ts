@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 /**
  * GET /api/whatsapp/history?guest_id=&event_id=
@@ -15,11 +15,10 @@ export async function GET(request: Request) {
     }
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('whatsapp_logs')
             .select('*')
             .eq('guest_id', guestId)
-            .eq('event_id', eventId)
             .order('sent_at', { ascending: false });
 
         if (error) throw error;

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 /**
  * GET /api/whatsapp/logs
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
     try {
         // 1. Fetch all guests for this event
-        const { data: guests, error: guestsError } = await supabase
+        const { data: guests, error: guestsError } = await supabaseAdmin
             .from('guests')
             .select('id, name, phone')
             .eq('event_id', eventId)
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
         if (guestsError) throw guestsError;
 
         // 2. Fetch all logs for this event
-        const { data: logs, error: logsError } = await supabase
+        const { data: logs, error: logsError } = await supabaseAdmin
             .from('whatsapp_logs')
             .select('*')
             .eq('event_id', eventId)
@@ -44,8 +44,7 @@ export async function GET(request: Request) {
                 logsByGuest[log.guest_id] = {
                     invite_count: 0,
                     reminder_count: 0,
-                    arrival_count: 0,
-                    departure_count: 0,
+                    service_count: 0,
                     confirm_count: 0,
                     last_status: log.status,
                     last_sent_at: log.sent_at
@@ -59,8 +58,7 @@ export async function GET(request: Request) {
             const typeLower = log.message_type.toLowerCase();
             if (typeLower.includes('invite')) guestStats.invite_count++;
             else if (typeLower.includes('reminder')) guestStats.reminder_count++;
-            else if (typeLower.includes('arrival')) guestStats.arrival_count++;
-            else if (typeLower.includes('departure')) guestStats.departure_count++;
+            else if (typeLower.includes('driver') || typeLower.includes('arrival') || typeLower.includes('departure')) guestStats.service_count++;
             else if (typeLower.includes('confirm')) guestStats.confirm_count++;
 
             if (log.status === 'Sent') totalSent++;
@@ -73,8 +71,7 @@ export async function GET(request: Request) {
             ...(logsByGuest[guest.id] || {
                 invite_count: 0,
                 reminder_count: 0,
-                arrival_count: 0,
-                departure_count: 0,
+                service_count: 0,
                 confirm_count: 0,
                 last_status: 'Not Sent',
                 last_sent_at: null

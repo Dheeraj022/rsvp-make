@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 /**
  * @param {Object} params
@@ -83,15 +84,16 @@ export const sendWhatsAppMessage = async ({
         // --- Log to database ---
         if (eventId && guestId && messageType) {
             try {
-                await supabase.from('whatsapp_logs').insert([{
+                const { error: logError } = await supabaseAdmin.from('whatsapp_logs').insert([{
                     event_id: eventId,
                     guest_id: guestId,
                     phone: phoneNumber,
                     message_type: messageType,
                     status: success ? 'Sent' : 'Failed'
                 }]);
+                if (logError) throw logError;
             } catch (logError) {
-                console.error("WhatsApp Log Database Error:", logError);
+                console.error("CRITICAL: WhatsApp Log Database Error:", logError);
             }
         }
 
@@ -104,7 +106,7 @@ export const sendWhatsAppMessage = async ({
         // Log failure if IDs provided
         if (eventId && guestId && messageType) {
             try {
-                await supabase.from('whatsapp_logs').insert([{
+                await supabaseAdmin.from('whatsapp_logs').insert([{
                     event_id: eventId,
                     guest_id: guestId,
                     phone: phoneNumber,
