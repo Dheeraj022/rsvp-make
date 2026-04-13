@@ -201,7 +201,7 @@ function WhatsAppStatusPage() {
                         <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
                             <MessageCircle size={24} />
                         </div>
-                        <h1 className="text-4xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">WhatsApp Status</h1>
+                        <h1 className="text-[1.75rem] md:text-4xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">WhatsApp Status</h1>
                     </div>
                     <p className="text-zinc-500 dark:text-zinc-400 font-medium">Monitor message delivery and communication history</p>
                 </div>
@@ -222,7 +222,7 @@ function WhatsAppStatusPage() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 {[
                     { label: "Total Sent", value: summary.totalSent, icon: Send, color: "blue" },
                     { label: "Delivered", value: summary.delivered, icon: CheckCircle2, color: "green" },
@@ -236,9 +236,9 @@ function WhatsAppStatusPage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.1 }}
-                            className="bg-white/40 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-[2.5rem] p-8 space-y-4 hover:shadow-xl transition-all relative overflow-hidden group shadow-sm"
+                            className="bg-white/40 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-[2rem] md:rounded-[2.5rem] p-5 md:p-8 space-y-3 md:space-y-4 hover:shadow-xl transition-all relative overflow-hidden group shadow-sm"
                         >
-                            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center border",
+                            <div className={cn("w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center border",
                                 item.color === 'blue' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
                                     item.color === 'green' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
                                         item.color === 'rose' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
@@ -248,7 +248,7 @@ function WhatsAppStatusPage() {
                             </div>
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">{item.label}</p>
-                                <p className="text-4xl font-black text-zinc-900 dark:text-white mt-1">{item.value}</p>
+                                <p className="text-2xl md:text-4xl font-black text-zinc-900 dark:text-white mt-1">{item.value}</p>
                             </div>
                             <div className={cn("absolute -right-4 -bottom-4 w-24 h-24 blur-3xl opacity-10 group-hover:opacity-20 transition-all",
                                 item.color === 'blue' ? 'bg-blue-500' :
@@ -262,7 +262,7 @@ function WhatsAppStatusPage() {
             </div>
 
             {/* Main Content Table */}
-            <div className="bg-white/40 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-zinc-200/50 dark:shadow-none relative backdrop-blur-md">
+            <div className="bg-white/40 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl shadow-zinc-200/50 dark:shadow-none relative backdrop-blur-md">
                 {dataLoading && (
                     <div className="absolute inset-0 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-[2px] z-10 flex items-center justify-center transition-all">
                         <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-white/10 p-4 rounded-2xl flex items-center gap-3 shadow-xl">
@@ -272,7 +272,7 @@ function WhatsAppStatusPage() {
                     </div>
                 )}
 
-                <div className="p-8 border-b border-zinc-100 dark:border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="p-5 md:p-8 border-b border-zinc-100 dark:border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-1">
                         <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Guest Communication Logs</h2>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Tracking {guestLogs.length} total invitees</p>
@@ -293,12 +293,12 @@ function WhatsAppStatusPage() {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-zinc-50/50 dark:bg-white/5 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500 border-b border-zinc-100 dark:border-white/5">
-                                <th className="px-8 py-6">Guest Info</th>
-                                <th className="px-6 py-6">Invites</th>
-                                <th className="px-6 py-6">Reminders</th>
-                                <th className="px-6 py-6">Service Alerts</th>
-                                <th className="px-10 py-6">Status</th>
-                                <th className="px-8 py-6 text-right">Actions</th>
+                                <th className="sticky left-0 z-20 bg-zinc-50/90 dark:bg-zinc-900/90 backdrop-blur-md px-4 md:px-8 py-6 shadow-[2px_0_10px_rgba(0,0,0,0.05)]">Guest Info</th>
+                                <th className="px-3 md:px-6 py-6">Invites</th>
+                                <th className="px-3 md:px-6 py-6">Reminders</th>
+                                <th className="px-3 md:px-6 py-6">Service Alerts</th>
+                                <th className="px-5 md:px-10 py-6 min-w-[120px]">Status</th>
+                                <th className="px-4 md:px-8 py-6 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100 dark:divide-white/5">
@@ -317,7 +317,7 @@ function WhatsAppStatusPage() {
                             ) : (
                                 filteredLogs.map((log) => (
                                     <tr key={log.id} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-all group">
-                                        <td className="px-8 py-5">
+                                        <td className="sticky left-0 z-10 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-4 md:px-8 py-5 shadow-[2px_0_10px_rgba(0,0,0,0.05)]">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 rounded-xl bg-white dark:bg-white/5 border border-zinc-100 dark:border-white/10 flex items-center justify-center text-zinc-400 dark:text-zinc-600 font-bold group-hover:text-blue-500 transition-colors shadow-sm">
                                                     {log.name[0]}
@@ -328,24 +328,24 @@ function WhatsAppStatusPage() {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5">
+                                        <td className="px-3 md:px-6 py-5">
                                             <div className="flex items-center gap-2">
                                                 <span className={cn("text-xs font-bold", log.invite_count > 0 ? "text-zinc-900 dark:text-white" : "text-zinc-300 dark:text-zinc-700")}>{log.invite_count}</span>
                                                 {log.invite_count > 0 && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5">
+                                        <td className="px-3 md:px-6 py-5">
                                             <span className={cn("text-xs font-bold", log.reminder_count > 0 ? "text-zinc-900 dark:text-white" : "text-zinc-300 dark:text-zinc-700")}>{log.reminder_count}</span>
                                         </td>
-                                        <td className="px-6 py-5">
+                                        <td className="px-3 md:px-6 py-5">
                                             <div className="flex items-center gap-2">
                                                 <span className={cn("text-xs font-bold", log.service_count > 0 ? "text-indigo-600 dark:text-indigo-400" : "text-zinc-300 dark:text-zinc-700")}>{log.service_count}</span>
                                                 {log.service_count > 0 && <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />}
                                             </div>
                                         </td>
-                                        <td className="px-10 py-5">
+                                        <td className="px-5 md:px-10 py-5">
                                             <div className="flex flex-col gap-1.5">
-                                                <span className={cn("inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter w-fit",
+                                                <span className={cn("inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter w-fit whitespace-nowrap",
                                                     log.last_status === 'Sent' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20' :
                                                         log.last_status === 'Failed' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' :
                                                             'bg-zinc-100 dark:bg-white/5 text-zinc-500 border border-zinc-200 dark:border-white/10'
@@ -360,7 +360,7 @@ function WhatsAppStatusPage() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-8 py-5 text-right">
+                                        <td className="px-4 md:px-8 py-5 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <Button
                                                     variant="ghost"
@@ -410,17 +410,17 @@ function WhatsAppStatusPage() {
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-white/10 rounded-[3rem] w-full max-w-2xl max-h-[85vh] relative overflow-hidden flex flex-col shadow-2xl"
+                            className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-white/10 rounded-[2rem] md:rounded-[3rem] w-full max-w-2xl max-h-[90vh] md:max-h-[85vh] relative overflow-hidden flex flex-col shadow-2xl"
                         >
                             {/* Modal Header */}
-                            <div className="p-8 md:p-10 border-b border-zinc-100 dark:border-white/5 flex items-start justify-between bg-zinc-50/50 dark:bg-zinc-900/50">
-                                <div className="flex items-center gap-6">
-                                    <div className="w-16 h-16 rounded-[1.5rem] bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
-                                        <User size={32} />
+                            <div className="p-6 md:p-10 border-b border-zinc-100 dark:border-white/5 flex items-start justify-between bg-zinc-50/50 dark:bg-zinc-900/50">
+                                <div className="flex items-center gap-4 md:gap-6">
+                                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl md:rounded-[1.5rem] bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
+                                        <User className="w-6 h-6 md:w-8 md:h-8" />
                                     </div>
-                                    <div className="space-y-1">
-                                        <h2 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">{historyGuest.name}</h2>
-                                        <p className="text-zinc-500 font-bold font-mono text-sm tracking-widest uppercase">{historyGuest.phone}</p>
+                                    <div className="space-y-0.5 md:space-y-1">
+                                        <h2 className="text-xl md:text-3xl font-black text-zinc-900 dark:text-white tracking-tight">{historyGuest.name}</h2>
+                                        <p className="text-zinc-500 font-bold font-mono text-[10px] md:text-sm tracking-widest uppercase">{historyGuest.phone}</p>
                                     </div>
                                 </div>
                                 <Button
@@ -434,11 +434,11 @@ function WhatsAppStatusPage() {
                             </div>
 
                             {/* Modal Content */}
-                            <div className="p-8 md:p-10 overflow-y-auto flex-1 bg-white dark:bg-zinc-900">
+                            <div className="p-6 md:p-10 overflow-y-auto flex-1 bg-white dark:bg-zinc-900">
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Communication History</h3>
-                                        <div className="h-px bg-zinc-100 dark:bg-white/5 flex-1 mx-6" />
+                                        <div className="h-px bg-zinc-100 dark:bg-white/5 flex-1 ml-4 md:ml-6" />
                                     </div>
 
                                     {historyLoading ? (
@@ -453,18 +453,18 @@ function WhatsAppStatusPage() {
                                             {historyLogs.map((log) => (
                                                 <div
                                                     key={log.id}
-                                                    className="p-6 rounded-[2rem] bg-zinc-50/50 dark:bg-zinc-950 border border-zinc-100 dark:border-white/5 flex items-center justify-between group hover:border-blue-500/20 transition-all shadow-sm"
+                                                    className="p-4 md:p-6 rounded-[1.5rem] md:rounded-[2.rem] bg-zinc-50/50 dark:bg-zinc-950 border border-zinc-100 dark:border-white/5 flex items-center justify-between group hover:border-blue-500/20 transition-all shadow-sm"
                                                 >
-                                                    <div className="flex items-center gap-5">
+                                                    <div className="flex items-center gap-3 md:gap-5">
                                                         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border",
                                                             log.status === 'Sent' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
                                                         )}>
                                                             {log.status === 'Sent' ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
                                                         </div>
                                                         <div className="flex flex-col">
-                                                            <span className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-tight">{log.message_type}</span>
-                                                            <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-600 uppercase">
-                                                                {format(new Date(log.sent_at), "MMMM d, yyyy • h:mm a")}
+                                                            <span className="text-xs md:text-sm font-black text-zinc-900 dark:text-white uppercase tracking-tight">{log.message_type}</span>
+                                                            <span className="text-[9px] md:text-[10px] font-bold text-zinc-400 dark:text-zinc-600 uppercase">
+                                                                {format(new Date(log.sent_at), "MMM d, yyyy • h:mm a")}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -481,14 +481,15 @@ function WhatsAppStatusPage() {
                             </div>
 
                             {/* Modal Footer */}
-                            <div className="p-8 md:p-10 border-t border-zinc-100 dark:border-white/5 bg-zinc-50/30 dark:bg-zinc-950/30">
+                            <div className="p-6 md:p-8 bg-zinc-50/50 dark:bg-zinc-900/50 border-t border-zinc-100 dark:border-white/5">
                                 <Button
-                                    className="w-full h-16 rounded-[1.5rem] bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-black text-sm uppercase tracking-[0.25em] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-zinc-900/10 dark:shadow-white/5"
                                     onClick={() => setHistoryGuest(null)}
+                                    className="w-full h-14 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-black uppercase tracking-[0.2em] shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
                                 >
                                     Close History Path
                                 </Button>
                             </div>
+
                         </motion.div>
                     </div>
                 )}
