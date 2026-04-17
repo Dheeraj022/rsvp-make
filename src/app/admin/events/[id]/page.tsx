@@ -32,7 +32,8 @@ import {
     MessageSquare,
     MessageSquareOff,
     CheckCircle2,
-    ChevronDown
+    ChevronDown,
+    Mail
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -164,6 +165,8 @@ function EventDetails() {
     const [transportUpdateLoading, setTransportUpdateLoading] = useState(false);
     const [sendingWhatsApp, setSendingWhatsApp] = useState<Record<string, boolean>>({});
     const [sendingAllWhatsApp, setSendingAllWhatsApp] = useState(false);
+    const [sendingEmail, setSendingEmail] = useState<Record<string, boolean>>({});
+    const [sendingAllEmail, setSendingAllEmail] = useState(false);
     const [showNameUpdateModal, setShowNameUpdateModal] = useState(false);
     const [nameUpdatePassword, setNameUpdatePassword] = useState("");
     const [isCopyingRsvp, setIsCopyingRsvp] = useState(false);
@@ -417,7 +420,7 @@ function EventDetails() {
             return;
         }
 
-        const confirmed = await toast.confirm("Bulk Invitation", `Are you sure you want to send WhatsApp invitations to all ${guestsWithPhone.length} guests?`);
+        const confirmed = await toast.confirm("Bulk WhatsApp Invitation", `Are you sure you want to send WhatsApp invitations to all ${guestsWithPhone.length} guests?`);
         if (!confirmed) return;
 
         setSendingAllWhatsApp(true);
@@ -445,6 +448,87 @@ function EventDetails() {
             toast.error("Failed to trigger bulk WhatsApp invites: " + error.message);
         } finally {
             setSendingAllWhatsApp(false);
+        }
+    };
+
+    const handleSendIndividualEmail = async (guest: any) => {
+        if (!guest.email) {
+            toast.warning("This guest does not have an email address.");
+            return;
+        }
+
+        if (!event) {
+            toast.error("Event data not loaded.");
+            return;
+        }
+
+        setSendingEmail(prev => ({ ...prev, [guest.id]: true }));
+        try {
+            const response = await fetch('/api/email/invite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    guests: [guest],
+                    event: event
+                })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                if (result.successes > 0) {
+                    toast.success("Email invitation sent successfully!");
+                } else if (result.errors && result.errors.length > 0) {
+                    toast.error(`Failed to send Email:\n- ${result.errors.join('\n- ')}`);
+                } else {
+                    toast.warning("Email invitation failed. Please check the logs.");
+                }
+            } else {
+                toast.error(`Error: ${result.error || "Failed to send Email"}`);
+            }
+        } catch (error: any) {
+            toast.error("Failed to trigger Email invite: " + error.message);
+        } finally {
+            setSendingEmail(prev => ({ ...prev, [guest.id]: false }));
+        }
+    };
+
+    const handleSendAllEmailInvites = async () => {
+        if (!event) return;
+        
+        const guestsWithEmail = guests.filter(g => g.email);
+        if (guestsWithEmail.length === 0) {
+            toast.info("No guests with email addresses found.");
+            return;
+        }
+
+        const confirmed = await toast.confirm("Bulk Email Invitation", `Are you sure you want to send email invitations to all ${guestsWithEmail.length} guests?`);
+        if (!confirmed) return;
+
+        setSendingAllEmail(true);
+        try {
+            const response = await fetch('/api/email/invite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    guests: guestsWithEmail,
+                    event: event
+                })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                let statusMsg = `Bulk Email Status: ${result.message}`;
+                if (result.errors && result.errors.length > 0) {
+                    statusMsg += `\n\nErrors:\n- ${result.errors.join('\n- ')}`;
+                }
+                toast.alert("Bulk Email Summary", statusMsg, result.failures > 0 ? "warning" : "success");
+            } else {
+                toast.error(`Error: ${result.error || "Failed to send bulk email"}`);
+            }
+        } catch (error: any) {
+            toast.error("Failed to trigger bulk email invites: " + error.message);
+        } finally {
+            setSendingAllEmail(false);
         }
     };
 
@@ -520,6 +604,33 @@ function EventDetails() {
                             }
                         } catch (error) {
                             console.error("Failed to trigger WhatsApp invites:", error);
+                        }
+                    }
+
+                    // Trigger Email Invites
+                    const confirmedEmail = await toast.confirm("Send Email Invites", `Do you want to send email invites to the ${parsedGuests.length} newly imported guests?`);
+                    if (confirmedEmail) {
+                        try {
+                            const response = await fetch('/api/email/invite', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    guests: parsedGuests.filter((g: any) => g.email),
+                                    event: event
+                                })
+                            });
+                            const result = await response.json();
+                            if (response.ok) {
+                                let statusMsg = `Email Invitation Status: ${result.message}`;
+                                if (result.errors && result.errors.length > 0) {
+                                    statusMsg += `\n\nErrors:\n- ${result.errors.join('\n- ')}`;
+                                }
+                                toast.info(statusMsg);
+                            } else {
+                                console.error("Email Invite Error:", result.error);
+                            }
+                        } catch (error) {
+                            console.error("Failed to trigger email invites:", error);
                         }
                     }
 
@@ -1220,12 +1331,21 @@ function EventDetails() {
                                         <Button 
                                             onClick={handleSendAllInvites}
                                             disabled={sendingAllWhatsApp || guests.filter(g => g.phone).length === 0}
-                                            className="col-span-2 h-11 sm:h-12 px-4 sm:px-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all font-bold text-[10px] sm:text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-md shadow-emerald-500/10 dark:bg-emerald-900/20 dark:border-emerald-500/30 dark:text-emerald-400 dark:hover:bg-emerald-500 dark:hover:text-white"
+                                            className="h-11 sm:h-12 px-4 sm:px-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all font-bold text-[10px] sm:text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-md shadow-emerald-500/10 dark:bg-emerald-900/20 dark:border-emerald-500/30 dark:text-emerald-400 dark:hover:bg-emerald-500 dark:hover:text-white"
                                         >
                                             {sendingAllWhatsApp ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
-                                            SEND ALL INVITES
+                                            WHATSAPP
                                         </Button>
                                     )}
+
+                                    <Button 
+                                        onClick={handleSendAllEmailInvites}
+                                        disabled={sendingAllEmail || guests.filter(g => g.email).length === 0}
+                                        className="h-11 sm:h-12 px-4 sm:px-6 rounded-2xl bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all font-bold text-[10px] sm:text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-md shadow-blue-500/10 dark:bg-blue-900/20 dark:border-blue-500/30 dark:text-blue-400 dark:hover:bg-blue-500 dark:hover:text-white"
+                                    >
+                                        {sendingAllEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                                        EMAIL
+                                    </Button>
 
                                     <Button 
                                         onClick={() => setShowAddGuestModal(true)}
@@ -1319,6 +1439,20 @@ function EventDetails() {
                                                                     <Loader2 size={16} className="animate-spin" />
                                                                 ) : (
                                                                     <MessageSquare size={16} />
+                                                                )}
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                className="h-9 w-9 rounded-xl p-0 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm dark:text-blue-400 dark:hover:bg-blue-500 dark:hover:text-white"
+                                                                onClick={() => handleSendIndividualEmail(guest)}
+                                                                disabled={sendingEmail[guest.id] || !guest.email}
+                                                                title={guest.email ? "Send Email Invite" : "No email address"}
+                                                            >
+                                                                {sendingEmail[guest.id] ? (
+                                                                    <Loader2 size={16} className="animate-spin" />
+                                                                ) : (
+                                                                    <Mail size={16} />
                                                                 )}
                                                             </Button>
                                                             <Button
